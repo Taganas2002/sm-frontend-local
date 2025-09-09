@@ -1,0 +1,106 @@
+{
+  "name": "schoolmanagement",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Offline School Management (Desktop)",
+  "author": "Your Company",
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "dev:electron": "wait-on http://localhost:5173 && electron .",
+    "dev:desktop": "concurrently -k \"npm:dev\" \"npm:dev:electron\"",
+    "build:web": "vite build",
+    "dist": "npm run build:web && electron-builder",
+    "dist:portable": "npm run build:web && electron-builder --win portable"
+  },
+  "dependencies": {
+    "@alloc/quick-lru": "5.2.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@fullcalendar/core": "^6.1.19",
+    "@fullcalendar/daygrid": "^6.1.19",
+    "@fullcalendar/interaction": "^6.1.19",
+    "@fullcalendar/list": "^6.1.19",
+    "@fullcalendar/react": "^6.1.19",
+    "@fullcalendar/timegrid": "^6.1.19",
+    "@mui/icons-material": "^7.3.1",
+    "@mui/material": "^7.3.1",
+    "@mui/x-data-grid": "^8.10.0",
+    "@nivo/bar": "^0.99.0",
+    "@nivo/core": "^0.99.0",
+    "@nivo/geo": "^0.99.0",
+    "@nivo/line": "^0.99.0",
+    "@nivo/pie": "^0.99.0",
+    "@tailwindcss/vite": "^4.1.12",
+    "@tanstack/react-query": "^5.85.5",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.6.4",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^13.5.0",
+    "ajv": "^8.17.1",
+    "ajv-keywords": "^5.1.0",
+    "axios": "^1.11.0",
+    "dayjs": "^1.11.18",
+    "formik": "^2.4.6",
+    "jss-rtl": "^0.3.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-pro-sidebar": "^1.1.0",
+    "react-router-dom": "^6.30.1",
+    "stylis-plugin-rtl": "^2.1.1",
+    "tailwindcss": "^4.1.12",
+    "web-vitals": "^2.1.4",
+    "yup": "^1.7.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.33.0",
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7",
+    "@vitejs/plugin-react": "^5.0.0",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.0.0",
+    "electron": "^38.0.0",
+    "electron-builder": "^26.0.12",
+    "eslint": "^9.33.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.3.0",
+    "vite": "^7.1.2",
+    "wait-on": "^8.0.4"
+  },
+  "build": {
+    "appId": "com.school.local",
+    "productName": "SchoolManagement",
+    "executableName": "SchoolManagement",
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "electron-resources/",
+        "to": "electron-resources",
+        "filter": ["**/*"]
+      }
+    ],
+    "asar": true,
+    "asarUnpack": ["electron-resources/**"],
+    "directories": {
+      "buildResources": "electron-resources"
+    },
+    "win": {
+      "target": ["nsis"],
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false
+    }
+  }
+}
