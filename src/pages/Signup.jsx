@@ -1,8 +1,16 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import translations from "../translations";
 
-export default function Signup() {
-  const { signup, loading } = useAuth();
+
+export default function Signup({ language}) {
+  const { signup, login, loading } = useAuth();
+  const t = translations[language] || translations["fr"];
+  const navigate = useNavigate();
+
   const [form, setForm] = useState({
     username: "",
     email: "",
@@ -10,38 +18,62 @@ export default function Signup() {
     password: "",
   });
   const [show, setShow] = useState(false);
-  const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
 
-  const onChange = (e) => setForm((s) => ({ ...s, [e.target.name]: e.target.value }));
+  const onChange = (e) =>
+    setForm((s) => ({ ...s, [e.target.name]: e.target.value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setMsg("");
     setErr("");
 
-    // Force admin on the way out (UI has no dropdown now)
-    const res = await signup({
-      ...form,
-      role: ["admin"],
-    });
+    try {
+      // 1️⃣ Signup
+      const signupRes = await signup(form);
+      if (!signupRes.ok) {
+        setErr(signupRes.message || t.signupFailed || "Signup failed.");
+        return;
+      }
 
-    if (res.ok) setMsg("Signup successful! You can now log in.");
-    else setErr(res.message);
+      // 2️⃣ Auto-login
+      const loginRes = await login(form.phone, form.password);
+      if (!loginRes.ok) {
+        setErr(t.autoLoginFailed || "Auto-login failed after signup.");
+        return;
+      }
+
+      // 3️⃣ Show toast
+      toast.success(t.signupSuccess || "Signup successful! Welcome to your dashboard.", {
+        position: "top-right",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        onClose: () => navigate("/dashboard"), // navigate after toast closes
+      });
+
+    } catch (error) {
+      setErr(error?.message || t.somethingWentWrong || "Something went wrong");
+    }
   };
 
   return (
     <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-xl rounded-2xl bg-white p-8 shadow">
-        <h1 className="text-2xl font-bold text-gray-900">Create your account</h1>
-        <p className="mt-1 text-sm text-gray-500">Fill the fields below to sign up.</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t.createAccount || "Create your account"}</h1>
+        <p className="mt-1 text-sm text-gray-500">{t.fillFields || "Fill the fields below to sign up."}</p>
 
-        <form onSubmit={handleSubmit} className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <form
+          onSubmit={handleSubmit}
+          className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4"
+        >
           <div>
-            <label className="block text-sm font-medium text-gray-700">Username</label>
+            <label className="block text-sm font-medium text-gray-700">{t.username || "Username"}</label>
             <input
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:ring-2 focus:ring-indigo-500"
+              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:ring-2 focus:ring-indigo-500 text-gray-900"
               name="username"
+              placeholder={t.usernamePlaceholder || ""}
               value={form.username}
               onChange={onChange}
               required
@@ -49,10 +81,11 @@ export default function Signup() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Phone</label>
+            <label className="block text-sm font-medium text-gray-700">{t.phone || "Phone"}</label>
             <input
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:ring-2 focus:ring-indigo-500"
+              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:ring-2 focus:ring-indigo-500 text-gray-900"
               name="phone"
+              placeholder={t.phonePlaceholder || "+1234567890"}
               value={form.phone}
               onChange={onChange}
               required
@@ -60,10 +93,11 @@ export default function Signup() {
           </div>
 
           <div className="sm:col-span-2">
-            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <label className="block text-sm font-medium text-gray-700">{t.email || "Email"}</label>
             <input
               type="email"
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:ring-2 focus:ring-indigo-500"
+              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 focus:ring-2 focus:ring-indigo-500 text-gray-900"
+              placeholder={t.emailPlaceholder || ""}
               name="email"
               value={form.email}
               onChange={onChange}
@@ -72,14 +106,15 @@ export default function Signup() {
           </div>
 
           <div className="sm:col-span-2">
-            <label className="block text-sm font-medium text-gray-700">Password</label>
+            <label className="block text-sm font-medium text-gray-700">{t.password || "Password"}</label>
             <div className="mt-1 relative">
               <input
                 type={show ? "text" : "password"}
-                className="w-full rounded-xl border border-gray-200 px-3 py-2 pr-10 focus:ring-2 focus:ring-indigo-500"
+                className="w-full rounded-xl border border-gray-200 px-3 py-2 pr-10 focus:ring-2 focus:ring-indigo-500 text-gray-900"
                 name="password"
                 value={form.password}
                 onChange={onChange}
+                placeholder={t.passwordPlaceholder || "••••••••"}
                 required
               />
               <button
@@ -87,18 +122,11 @@ export default function Signup() {
                 onClick={() => setShow(!show)}
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
               >
-                {show ? "Hide" : "Show"}
+                {show ? t.hide || "Hide" : t.show || "Show"}
               </button>
             </div>
           </div>
 
-          {/* Removed the role selector entirely */}
-
-          {msg && (
-            <div className="sm:col-span-2 rounded-lg bg-green-50 p-3 text-sm text-green-700">
-              {msg}
-            </div>
-          )}
           {err && (
             <div className="sm:col-span-2 rounded-lg bg-red-50 p-3 text-sm text-red-700">
               {err}
@@ -111,11 +139,13 @@ export default function Signup() {
               disabled={loading}
               className="w-full rounded-xl bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
             >
-              {loading ? "Creating..." : "Create account"}
+              {loading ? t.creating || "Creating..." : t.createAccountButton || "Create account"}
             </button>
           </div>
         </form>
       </div>
+
+      <ToastContainer />
     </div>
   );
 }

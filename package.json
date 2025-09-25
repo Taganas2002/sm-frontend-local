@@ -26,6 +26,10 @@
     "@fullcalendar/interaction": "^6.1.19",
     "@fullcalendar/list": "^6.1.19",
     "@fullcalendar/react": "^6.1.19",
+    "@fullcalendar/resource": "^6.1.19",
+    "@fullcalendar/resource-daygrid": "^6.1.19",
+    "@fullcalendar/resource-timegrid": "^6.1.19",
+    "@fullcalendar/resource-timeline": "^6.1.19",
     "@fullcalendar/timegrid": "^6.1.19",
     "@mui/icons-material": "^7.3.1",
     "@mui/material": "^7.3.1",
@@ -47,13 +51,19 @@
     "dayjs": "^1.11.18",
     "formik": "^2.4.6",
     "jss-rtl": "^0.3.0",
+    "qrcode": "^1.5.4",
+    "qrcode.react": "^4.2.0",
     "react": "^19.1.1",
+    "react-country-flag": "^3.1.0",
     "react-dom": "^19.1.1",
+    "react-icons": "^5.5.0",
     "react-pro-sidebar": "^1.1.0",
     "react-router-dom": "^6.30.1",
+    "react-toastify": "^11.0.5",
     "stylis-plugin-rtl": "^2.1.1",
     "tailwindcss": "^4.1.12",
     "web-vitals": "^2.1.4",
+    "xlsx": "^0.18.5",
     "yup": "^1.7.0"
   },
   "devDependencies": {
@@ -85,16 +95,22 @@
       {
         "from": "electron-resources/",
         "to": "electron-resources",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "asar": true,
-    "asarUnpack": ["electron-resources/**"],
+    "asarUnpack": [
+      "electron-resources/**"
+    ],
     "directories": {
       "buildResources": "electron-resources"
     },
     "win": {
-      "target": ["nsis"],
+      "target": [
+        "nsis"
+      ],
       "artifactName": "${productName}-${version}-${arch}.${ext}"
     },
     "nsis": {

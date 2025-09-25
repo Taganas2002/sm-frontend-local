@@ -7,8 +7,6 @@ function pickBase() {
     const fromWindow =
       typeof window !== "undefined" && (window.__API_BASE__ || null);
     const fromEnv = import.meta?.env?.VITE_API_BASE_URL;
-
-    // Default base URL (no trailing /api here)
     const raw = fromStorage || fromWindow || fromEnv || "http://127.0.0.1:8080";
     return String(raw).replace(/\/+$/, "");
   } catch {
@@ -17,16 +15,15 @@ function pickBase() {
 }
 
 const api = axios.create({
-  baseURL: pickBase() + "/api",   // ✅ always append /api here
+  baseURL: pickBase() + "/api",
   timeout: 20000,
-  headers: { Accept: "application/json" },
+  headers: { Accept: "application/json" }
 });
 
 export function setApiBase(base) {
-  const clean = String(base || "http://127.0.0.1:18080").replace(/\/+$/, "");
-  api.defaults.baseURL = clean + "/api";  // ✅ ensure /api
-  if (typeof window !== "undefined")
-    localStorage.setItem("apiBase", clean);
+  const clean = String(base || "http://127.0.0.1:8080").replace(/\/+$/, "");
+  api.defaults.baseURL = clean + "/api";
+  if (typeof window !== "undefined") localStorage.setItem("apiBase", clean);
 }
 
 function readToken() {
@@ -52,12 +49,9 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err?.response?.status === 401) {
-      // optional redirect to login
-      // localStorage.removeItem("auth");
-      // window.location.hash = "#/login";
-    }
-    return Promise.reject(err?.response?.data ?? { message: err?.message });
+    const payload =
+      err?.response?.data || { message: err?.message || "Network error" };
+    return Promise.reject(payload);
   }
 );
 

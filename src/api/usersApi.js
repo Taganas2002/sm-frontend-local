@@ -1,9 +1,22 @@
 import api from "./client";
 
-// List/search staff accounts (server paging)
+// Auth
+export const loginApi = async (phone, password) => {
+  const { data } = await api.post("/auth/signin", { phone, password });
+  return data;
+};
+
+// Accounts
 export const searchAccounts = async ({ search = "", page = 0, size = 10 }) => {
-  const { data } = await api.get("/admin/accounts", { params: { search, page, size } });
-  return data; // { content, page, size, total }
+  const { data } = await api.get("/admin/accounts", {
+    params: { search, page, size }
+  });
+  // normalize name for grid usage (backend sends 'username')
+  const content = (data.content || []).map((r) => ({
+    ...r,
+    name: r.username ?? r.name
+  }));
+  return { ...data, content };
 };
 
 export const getAccount = async (id) => {
@@ -21,9 +34,9 @@ export const updateAccount = async (id, payload) => {
   return data;
 };
 
-// Roles & permissions
+// Roles & Permissions
 export const listRoles = async () => {
-  const { data } = await api.get("/roles");
+  const { data } = await api.get("/roles"); // your backend should expose this
   return data; // [{id,name}]
 };
 
@@ -34,7 +47,7 @@ export const listPermissionCodes = async (type = "MENU") => {
 
 export const getPermissionsSnapshot = async (userId, includeBaseline = true) => {
   const { data } = await api.get(`/admin/accounts/${userId}/permissions`, {
-    params: { includeBaseline },
+    params: { includeBaseline }
   });
   return data; // { userId, roleId, baseline, overrides, effective }
 };

@@ -30,9 +30,6 @@ import Invoices from "./scenes/invoices";
 import Calendar from "./scenes/calendar";
 import Faq from "./scenes/faq";
 import IncomeDialog from "./scenes/finances/IncomeDialog";
-// ⛔ removed old single-dialog screens for expenses/sales
-// import ExpenseDialog from "./scenes/finances/ExpenseDialog";
-// import SalesDialog from "./scenes/finances/SalesDialog";
 
 // Admin
 import UsersPage from "./scenes/admin/users/UsersPage";
@@ -43,6 +40,8 @@ import Finances from "./scenes/finances";
 import Subjects from "./scenes/subjects";
 import Specialities from "./scenes/specialties";
 import Schools from "./scenes/schools";
+import Enrollments from "./scenes/enrollment/Enrollments";
+import Attendance from "./scenes/attendance"
 
 // ✅ Student billing screens
 import StudentBillingSearch from "./scenes/finances/StudentBillingSearch";
@@ -86,10 +85,10 @@ export default function App() {
 
             <Routes>
               {/* Public */}
-              <Route path="/" element={<Home />} />
+              <Route path="/" element={<Home language={language}/>} />
               <Route element={<PublicOnlyRoute />}>
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<Signup />} />
+                <Route path="/login" element={<Login language={language} />} />
+                <Route path="/signup" element={<Signup language={language} />} />
               </Route>
 
               {/* Protected layout with AppShell */}
@@ -127,7 +126,9 @@ export default function App() {
                   <Route path="/levels" element={<Levels language={language} />} />
                   <Route path="/sections" element={<Sections language={language} />} />
                   <Route path="/schools" element={<Schools language={language} />} />
-
+                  <Route path="/enrollment" element={<Enrollments language={language} />} />
+                  <Route path="/attendance" element={<Attendance language={language} />} />
+                  
                   {/* Finances + existing billing flow */}
                   <Route path="/finances" element={<Finances language={language} />} />
                   <Route
@@ -136,26 +137,27 @@ export default function App() {
                   />
 
                   {/* 🔹 Expenses page */}
-                  <Route path="/finances/expenses" element={<Expenses />} />
+                  <Route path="/finances/expenses" element={<Expenses language={language}/>} />
 
                   {/* 🔹 Profit & Loss page */}
-                  <Route path="/finances/profit-loss" element={<ProfitLoss />} />
+                  <Route path="/finances/profit-loss" element={<ProfitLoss language={language} />} />
 
                   {/* 🔹 Student billing */}
-                  <Route path="/finances/billing" element={<StudentBillingSearch />} />
-                  <Route path="/finances/pay/:studentId" element={<StudentPayment />} />
-                  <Route path="/finances/history/:studentId" element={<StudentReceiptHistory />} />
+                  <Route path="/finances/billing" element={<StudentBillingSearch language={language} />} />
+                  <Route path="/finances/pay/:studentId" element={<StudentPayment  language={language}/>} />
+                  <Route path="/finances/history/:studentId" element={<StudentReceiptHistory language={language}/>} />
 
                   {/* 🔹 Teacher pay (list + detail) */}
-                  <Route path="/finances/teacher-pay" element={<TeacherPayList />} />
-                  <Route path="/finances/teacher-pay/:teacherId" element={<TeacherPay />} />
+                  <Route path="/finances/teacher-pay" element={<TeacherPayList language={language}/>} />
+                  <Route path="/finances/teacher-pay/:teacherId" element={<TeacherPay language={language}/>} />
 
                   <Route path="/Settings" element={<Settings language={language} />} />
 
+
                   {/* Open pages */}
-                  <Route path="/invoices" element={<Invoices />} />
+                  <Route path="/invoices" element={<Invoices  language={language}/>} />
                   <Route path="/specialities" element={<Specialities language={language} />} />
-                  <Route path="/calendar" element={<Calendar />} />
+                  <Route path="/calendar" element={<Calendar language={language} />} />
                   <Route path="/faq" element={<Faq language={language} />} />
 
                   {/* Admin / Users management – permission based */}
@@ -164,7 +166,7 @@ export default function App() {
                       <PermRoute anyOf={["API:ACCOUNTS_READ", "API:USER_PERMS_WRITE"]} />
                     }
                   >
-                    <Route path="/admin/users" element={<UsersPage />} />
+                    <Route path="/admin/users" element={<UsersPage language={language} />} />
                   </Route>
 
                   {/* Role based gate */}
