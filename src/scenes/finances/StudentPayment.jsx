@@ -43,6 +43,14 @@ const money = new Intl.NumberFormat(undefined, {
 });
 const STATUSES = ["ALL", "UNPAID", "PARTIAL", "PAID"];
 
+// Infer billing model from a cycle row
+const inferModel = (period, held, required) => {
+  const isDate = /^\d{4}-\d{2}-\d{2}$/.test(String(period || ""));
+  return isDate && Number(required) === 1 && Number(held) >= 0
+    ? "PER_SESSION"
+    : "MONTHLY";
+};
+
 export default function StudentPayment({ language = "fr" }) {
   const t = translations[language] || translations["fr"];
   const { studentId: studentIdStr } = useParams();
@@ -107,20 +115,26 @@ export default function StudentPayment({ language = "fr" }) {
   const [receipt, setReceipt] = useState(null);
 
   const rows = useMemo(() => {
-    return (data?.content ?? []).map((r, i) => ({
-      id: `${r.groupId}:${r.period}:${i}`,
-      studentFullName: r.studentFullName ?? r.fullName ?? "",
-      studentId: r.studentId,
-      groupId: r.groupId,
-      groupName: r.groupName,
-      periodLabel: r.period, // cycle key (YYYY-MM-DD or YYYY-MM)
-      held: r.held ?? r.heldSessions ?? 0,
-      required: r.required ?? r.sessionsPerCycle ?? 0,
-      due: Number(r.due || 0),
-      paid: Number(r.paid || 0),
-      balance: Number(r.balance || 0),
-      status: r.status,
-    }));
+    return (data?.content ?? []).map((r, i) => {
+      const held = r.held ?? r.heldSessions ?? 0;
+      const required = r.required ?? r.sessionsPerCycle ?? 0;
+      const model = inferModel(r.period, held, required);
+      return {
+        id: `${r.groupId}:${r.period}:${i}`,
+        studentFullName: r.studentFullName ?? r.fullName ?? "",
+        studentId: r.studentId,
+        groupId: r.groupId,
+        groupName: r.groupName,
+        periodLabel: r.period, // cycle key (YYYY-MM-DD or YYYY-MM-DD start / monthly label)
+        held,
+        required,
+        due: Number(r.due || 0),
+        paid: Number(r.paid || 0),
+        balance: Number(r.balance || 0),
+        status: r.status,
+        model, // <-- used when submitting payment
+      };
+    });
   }, [data]);
 
   const studentName = rows[0]?.studentFullName || `#${studentId}`;
@@ -130,14 +144,14 @@ export default function StudentPayment({ language = "fr" }) {
     setSelected({});
   }, [studentId, status, groupId]);
 
-  // Selected cycles → pay full balances
+  // Selected cycles → pay full balances (and pass correct model)
   const payItems = useMemo(() => {
     return rows
       .filter((r) => selected[r.id] && r.balance > 0)
       .map((r) => ({
         groupId: r.groupId,
-        model: "MONTHLY",
-        period: r.periodLabel, // exact cycle key
+        model: r.model, // "MONTHLY" | "PER_SESSION" (important!)
+        period: r.periodLabel, // exact cycle/session key
         amount: Number(Number(r.balance).toFixed(2)),
         _ui: { groupName: r.groupName, key: `${r.groupId}@${r.periodLabel}` },
       }));
@@ -165,7 +179,7 @@ export default function StudentPayment({ language = "fr" }) {
   const [plan, setPlan] = useState(null);
 
   // Build a preview that mirrors backend:
-  // 1) selected items pay exact cycles,
+  // 1) selected items pay exact cycles (preserve model),
   // 2) wallet-first + global FIFO across remaining unpaid rows (grid order).
   const buildPlan = () => {
     const selectedKeys = new Set(payItems.map((it) => it._ui.key));
@@ -198,6 +212,7 @@ export default function StudentPayment({ language = "fr" }) {
       groupName: it._ui.groupName,
       label: it.period,
       cash: it.amount,
+      note: it.model === "PER_SESSION" ? "per-session" : "monthly",
     }));
 
     const fifoLines = []; // {groupName, label, fromWallet, fromCash}
@@ -272,7 +287,7 @@ export default function StudentPayment({ language = "fr" }) {
         studentId,
         method: "CASH",
         reference: `FrontDesk-${Date.now()}`,
-        items: payItems, // selected cycles (full balances)
+        items: payItems, // each has correct .model and .period
       };
       const g = Number(globalAmount || 0);
       if (!Number.isNaN(g) && g > 0) payload.globalAmount = g;
@@ -311,6 +326,21 @@ export default function StudentPayment({ language = "fr" }) {
       width: 140,
       headerAlign: "center",
       align: "center",
+    },
+    {
+      field: "model",
+      headerName: t.model || "Model",
+      width: 130,
+      headerAlign: "center",
+      align: "center",
+      renderCell: (p) => (
+        <Chip
+          size="small"
+          label={p.value}
+          color={p.value === "PER_SESSION" ? "info" : "default"}
+          variant="outlined"
+        />
+      ),
     },
     {
       field: "progress",
@@ -609,7 +639,7 @@ export default function StudentPayment({ language = "fr" }) {
 
           <Button
             variant="contained"
-            disabled={paying || !(anySelection || (validGlobal && (globalNum > 0 || useWalletFirst)))}
+            disabled={paying || !( (payItems.length > 0) || (!Number.isNaN(Number(globalAmount||0)) && (Number(globalAmount||0) > 0 || useWalletFirst)) )}
             onClick={openConfirm}
           >
             {t.payAndPrint || "Pay & Print"}
@@ -628,16 +658,19 @@ export default function StudentPayment({ language = "fr" }) {
                   <Typography variant="subtitle2" gutterBottom>
                     Selected cycles
                   </Typography>
-                    <List dense sx={{ mb: 1 }}>
-                      {plan.itemLines.map((ln, idx) => (
-                        <ListItem key={`it-${idx}`} disableGutters>
-                          <ListItemText
-                            primary={`${ln.groupName} — ${ln.label}`}
-                            secondary={`CASH ${money.format(ln.cash)}`}
-                          />
-                        </ListItem>
-                      ))}
-                    </List>
+                  <List dense sx={{ mb: 1 }}>
+                    {plan.itemLines.map((ln, idx) => (
+                      <ListItem key={`it-${idx}`} disableGutters>
+                        <ListItemText
+                          primary={`${ln.groupName} — ${ln.label}`}
+                          secondary={[
+                            `CASH ${money.format(ln.cash)}`,
+                            ln.note ? `· ${ln.note}` : null,
+                          ].filter(Boolean).join(" ")}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
                 </>
               )}
 
@@ -703,7 +736,9 @@ export default function StudentPayment({ language = "fr" }) {
           <Button
             onClick={() => payCombined()}
             variant="contained"
-            disabled={paying || !(canSubmit && plan)}
+            disabled={paying || !plan || !(
+              (payItems.length > 0) || (!Number.isNaN(Number(globalAmount||0)) && (Number(globalAmount||0) > 0 || useWalletFirst))
+            )}
           >
             Confirm & Pay
           </Button>

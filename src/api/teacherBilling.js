@@ -63,3 +63,17 @@ export async function readTeacherPayout(payoutId) {
   const { data } = await api.get(`/billing/teacher/payouts/${payoutId}`);
   return data; // TeacherPayoutResponse
 }
+
+/**
+ * GET /billing/teacher/{teacherId}/fixed-attendance
+ * Query: groupId?, from?, to? (ISO-8601)
+ * Returns TeacherFixedAttendanceRow[]
+ */
+export async function getTeacherFixedAttendance(teacherId, { groupId, from, to } = {}) {
+  const params = {};
+  if (groupId) params.groupId = groupId;
+  if (from) params.from = from;
+  if (to) params.to = to;
+  const { data } = await api.get(`/billing/teacher/${teacherId}/fixed-attendance`, { params });
+  return data; // TeacherFixedAttendanceRow[]
+}

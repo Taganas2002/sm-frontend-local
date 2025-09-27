@@ -43,6 +43,14 @@ function MoneyChip({ value, kind }) {
   return <Chip size="small" label={moneyFmt.format(v)} color={color} />;
 }
 
+// Infer billing model from a cycle row
+const inferModel = (period, held, required) => {
+  const isDate = /^\d{4}-\d{2}-\d{2}$/.test(String(period || ""));
+  return isDate && Number(required) === 1 && Number(held) >= 0
+    ? "PER_SESSION"
+    : "MONTHLY";
+};
+
 export default function StudentBillingSearch({ language = "fr" }) {
   const navigate = useNavigate();
   const t = translations[language] || translations["fr"];
@@ -98,14 +106,20 @@ export default function StudentBillingSearch({ language = "fr" }) {
   };
 
   const rows =
-    (data?.content ?? []).map((r, i) => ({
-      id: `${r.studentId}-${r.groupId}-${r.period}-${i}`,
-      ...r,
-      studentFullName: r.studentFullName ?? r.fullName ?? "",
-      phone: r.phone ?? r.studentPhone ?? "",
-      held: r.held ?? r.heldSessions ?? 0,
-      required: r.required ?? r.sessionsPerCycle ?? 0,
-    })) ?? [];
+    (data?.content ?? []).map((r, i) => {
+      const held = r.held ?? r.heldSessions ?? 0;
+      const required = r.required ?? r.sessionsPerCycle ?? 0;
+      const model = inferModel(r.period, held, required);
+      return {
+        id: `${r.studentId}-${r.groupId}-${r.period}-${i}`,
+        ...r,
+        studentFullName: r.studentFullName ?? r.fullName ?? "",
+        phone: r.phone ?? r.studentPhone ?? "",
+        held,
+        required,
+        model,
+      };
+    }) ?? [];
 
   const columns = useMemo(
     () => [
@@ -140,6 +154,21 @@ export default function StudentBillingSearch({ language = "fr" }) {
         ),
       },
       { field: "period", headerName: t.period, width: 120, headerAlign: "center", align: "center" },
+      {
+        field: "model",
+        headerName: t.model || "Model",
+        width: 120,
+        headerAlign: "center",
+        align: "center",
+        renderCell: (p) => (
+          <Chip
+            size="small"
+            label={p.value}
+            color={p.value === "PER_SESSION" ? "info" : "default"}
+            variant="outlined"
+          />
+        ),
+      },
       {
         field: "progress",
         headerName: t.progress || "Progress",
