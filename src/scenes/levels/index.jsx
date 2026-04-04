@@ -194,6 +194,7 @@
         {/* Top Button */}
         <Box display="flex" justifyContent="flex-end" mb={2}>
             <Button
+            data-testid="levels-add"
             variant="contained"
             sx={{
                 backgroundColor:
@@ -252,7 +253,7 @@
         </Box>
 
         {/* Dialog */}
-        <Dialog open={openDialog} onClose={handleClose} fullWidth maxWidth="sm">
+        <Dialog open={openDialog} onClose={handleClose} fullWidth maxWidth="sm" data-testid="levels-dialog">
             <DialogTitle
             sx={{
                 backgroundColor:
@@ -281,6 +282,7 @@
                 <form onSubmit={handleSubmit}>
                 <DialogContent>
                     <TextField
+                    inputProps={{ "data-testid": "levels-name" }}
                     margin="dense"
                     placeholder={t.name || "Name"}
                     fullWidth
@@ -296,6 +298,7 @@
                 <DialogActions >
         {/* Cancel Button */}
         <Button
+            data-testid="levels-cancel"
             onClick={handleClose}
             variant="outlined"
             sx={{
@@ -316,6 +319,7 @@
 
         {/* Save / Update Button */}
         <Button
+            data-testid="levels-save"
             onClick={handleSubmit}
             type="submit"
             variant="contained"

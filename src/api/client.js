@@ -1,3 +1,4 @@
+// src/api/client.js
 import axios from "axios";
 
 function pickBase() {
@@ -5,9 +6,12 @@ function pickBase() {
     const fromStorage =
       typeof window !== "undefined" && localStorage.getItem("apiBase");
     const fromWindow =
-      typeof window !== "undefined" && (window.__API_BASE__ || null);
-    const fromEnv = import.meta?.env?.VITE_API_BASE_URL;
+      typeof window !== "undefined" && window.__API_BASE__;
+    const fromEnv = (import.meta && import.meta.env && import.meta.env.VITE_API_BASE_URL) || null;
+
     const raw = fromStorage || fromWindow || fromEnv || "http://127.0.0.1:8080";
+
+    // strip trailing slashes
     return String(raw).replace(/\/+$/, "");
   } catch {
     return "http://127.0.0.1:8080";
@@ -17,7 +21,7 @@ function pickBase() {
 const api = axios.create({
   baseURL: pickBase() + "/api",
   timeout: 20000,
-  headers: { Accept: "application/json" }
+  headers: { Accept: "application/json" },
 });
 
 export function setApiBase(base) {
@@ -28,10 +32,11 @@ export function setApiBase(base) {
 
 function readToken() {
   try {
+    if (typeof window === "undefined") return null;
     const raw = localStorage.getItem("auth");
     if (!raw) return null;
     const a = JSON.parse(raw);
-    return a?.accessToken || a?.token || a?.jwt || a?.access_token || null;
+    return a && (a.accessToken || a.token || a.jwt || a.access_token) || null;
   } catch {
     return null;
   }
@@ -49,9 +54,14 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    const payload =
-      err?.response?.data || { message: err?.message || "Network error" };
-    return Promise.reject(payload);
+    if (err && err.response && err.response.status === 401) {
+      // optional: clear & redirect
+      // localStorage.removeItem("auth");
+      // window.location.hash = "#/login";
+    }
+    return Promise.reject(
+      (err && err.response && err.response.data) || { message: err && err.message }
+    );
   }
 );
 

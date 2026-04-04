@@ -1,5 +1,5 @@
 {
-  "name": "schoolmanagement",
+  "name": "mms",
   "private": true,
   "version": "1.0.0",
   "description": "Offline School Management (Desktop)",
@@ -11,11 +11,17 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "e2e:smoke": "playwright test -c playwright.config.js",
+    "e2e:report": "playwright show-report",
+    "e2e:ui": "playwright test -c playwright.config.js --ui",
     "dev:electron": "wait-on http://localhost:5173 && electron .",
     "dev:desktop": "concurrently -k \"npm:dev\" \"npm:dev:electron\"",
     "build:web": "vite build",
     "dist": "npm run build:web && electron-builder",
-    "dist:portable": "npm run build:web && electron-builder --win portable"
+    "dist:portable": "npm run build:web && electron-builder --win portable",
+    "build:trial14": "node scripts/set-config.js TRIAL 14 && npm run dist",
+    "build:trial7": "node scripts/set-config.js TRIAL 7 && npm run dist",
+    "build:full": "node scripts/set-config.js FULL 0 && npm run dist"
   },
   "dependencies": {
     "@alloc/quick-lru": "5.2.0",
@@ -31,6 +37,7 @@
     "@fullcalendar/resource-timegrid": "^6.1.19",
     "@fullcalendar/resource-timeline": "^6.1.19",
     "@fullcalendar/timegrid": "^6.1.19",
+    "@heroicons/react": "^2.2.0",
     "@mui/icons-material": "^7.3.1",
     "@mui/material": "^7.3.1",
     "@mui/x-data-grid": "^8.10.0",
@@ -68,6 +75,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",
+    "@playwright/test": "^1.59.1",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
     "@vitejs/plugin-react": "^5.0.0",
@@ -83,9 +91,9 @@
     "wait-on": "^8.0.4"
   },
   "build": {
-    "appId": "com.school.local",
-    "productName": "SchoolManagement",
-    "executableName": "SchoolManagement",
+    "appId": "com.madrasti.mms",
+    "productName": "MMS",
+    "executableName": "MMS",
     "files": [
       "dist/**/*",
       "electron/**/*",
@@ -105,12 +113,13 @@
       "electron-resources/**"
     ],
     "directories": {
-      "buildResources": "electron-resources"
+      "buildResources": "build"
     },
     "win": {
       "target": [
         "nsis"
       ],
+      "icon": "build/icons/icon.ico",
       "artifactName": "${productName}-${version}-${arch}.${ext}"
     },
     "nsis": {

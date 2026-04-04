@@ -22,7 +22,7 @@ import * as yup from "yup";
 
 import { tokens } from "../../theme";
 import Header from "../../components/Header";
-import translations from "../../translations/index";
+import { getTranslations, translateBillingModel } from "../../translations";
 
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
@@ -42,17 +42,16 @@ import {
   searchGroups,
   createGroup,
   updateGroup,
-  getGroup,
   deleteGroup,
 } from "../../api/groupsApi";
 
 const DEBOUNCE_MS = 350;
 
 /* ---------- helpers (format + compute preview) ---------- */
-const fmtDA = (n, lang = "ar") =>
+const fmtDA = (n, lang = "fr") =>
   n == null
     ? ""
-    : new Intl.NumberFormat(lang === "ar" ? "ar-DZ" : "fr-DZ", {
+    : new Intl.NumberFormat(lang === "ar" ? "ar-DZ" : lang === "en" ? "en-DZ" : "fr-DZ", {
         style: "currency",
         currency: "DZD",
         maximumFractionDigits: 2,
@@ -116,10 +115,26 @@ const currencyVF = (lang) => (params) => {
   return v == null ? "" : fmtDA(v, lang);
 };
 
-const Groups = ({ language = "ar" }) => {
+const Groups = ({ language = "fr" }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const t = translations[language] || translations["fr"];
+  const t = getTranslations(language);
+  const isArabic = language === "ar";
+  const searchNameLabel = t.searchByName || "Search by name";
+  const searchNamePlaceholder = t.typeGroupName || "Type group name...";
+  const academicYearPlaceholder = language === "en" ? "e.g. 2024-2025" : language === "ar" ? "????: 2024-2025" : "ex. 2024-2025";
+  const statusFilterLabel = t.status || "Status";
+  const allLabel = t.all || "All";
+  const activeLabel = t.activeStatus || t.active || "Active";
+  const inactiveLabel = t.inactiveStatus || t.inactive || "Inactive";
+  const privateLabel = t.privateStatus || t.privateGroup;
+  const revisionLabel = t.revisionStatus || t.revisionGroup;
+  const yesLabel = t.yes || "Yes";
+  const noLabel = t.no || "No";
+  const selectOptionLabel = t.selectOption || "-- Select --";
+  const shareSessionHeader = t.sharePerSession || "Share/Session";
+  const shareHourHeader = t.sharePerHour || "Share/Hour";
+  const shareMonthHeader = t.sharePerMonth || "Share/Month";
 
   // style to force required asterisk red
   const requiredAsteriskSx = { "& .MuiFormLabel-asterisk": { color: theme.palette.error.main } };
@@ -229,8 +244,10 @@ const Groups = ({ language = "ar" }) => {
         privateGroup: parseTri(privateFilter),
         revisionGroup: parseTri(revisionFilter),
         page: 0,
+        // Keep payload reasonable; very large pages can make unfiltered requests fail/timeout.
         size: 50,
-        sort: "name,asc",
+        // Show newest first so a freshly created group remains visible after refresh/navigation.
+        sort: "id,desc",
       });
       const raw = res?.content ? res.content : res ?? [];
       const enriched = raw.map((g) => {
@@ -329,10 +346,7 @@ const Groups = ({ language = "ar" }) => {
         message.includes("Cannot delete or update a parent row") ||
         message.includes("Full authentication is required")
       ) {
-        message =
-          language === "ar"
-            ? "لا يمكن حذف هذا الفوج لأنه مرتبط بسجلات أخرى."
-            : "Impossible de supprimer ce groupe car il est encore lié à d'autres enregistrements.";
+        message = t.groupDeleteBlocked || message;
       }
 
       setDeleteError(message);
@@ -347,25 +361,25 @@ const Groups = ({ language = "ar" }) => {
     { field: "subjectName", headerName: t.subject, flex: 0.9 },
     { field: "levelName", headerName: t.level, flex: 0.8 },
     { field: "sectionName", headerName: t.section, flex: 0.8 },
-    { field: "billingModel", headerName: t.billingModel, width: 130 },
+    { field: "billingModel", headerName: t.billingModel, width: 130, valueFormatter: (value) => translateBillingModel(value, t) },
 
     {
       field: "teacherSharePerSession",
-      headerName: language === "ar" ? "نصيب/حصة" : "Share/Session",
+      headerName: shareSessionHeader,
       width: 130,
       valueFormatter: currencyVF(language),
       sortComparator: (a, b) => (a ?? 0) - (b ?? 0),
     },
     {
       field: "teacherSharePerHour",
-      headerName: language === "ar" ? "نصيب/ساعة" : "Share/Hour",
+      headerName: shareHourHeader,
       width: 120,
       valueFormatter: currencyVF(language),
       sortComparator: (a, b) => (a ?? 0) - (b ?? 0),
     },
     {
       field: "teacherSharePerMonth",
-      headerName: language === "ar" ? "نصيب/شهر" : "Share/Month",
+      headerName: shareMonthHeader,
       width: 130,
       valueFormatter: currencyVF(language),
       sortComparator: (a, b) => (a ?? 0) - (b ?? 0),
@@ -415,68 +429,31 @@ const Groups = ({ language = "ar" }) => {
     },
   ];
 
+  const [columnVisibilityModel, setColumnVisibilityModel] = useState({
+    notes: false,
+    id: false,
+  });
+
   /* ---------- validation ---------- */
   const groupSchema = yup.object().shape({
-    name: yup.string().required("مطلوب"),
-    academicYear: yup.string().required("مطلوب"),
-    teacherId: yup.number().typeError("اختر أستاذ").required("مطلوب"),
-    subjectId: yup.number().typeError("اختر مادة").required("مطلوب"),
-    levelId: yup.number().typeError("اختر مستوى").required("مطلوب"),
-    sectionId: yup.number().typeError("اختر شعبة").required("مطلوب"),
+    name: yup.string().required(t.requiredGroupName || "Required"),
+    academicYear: yup.string().required(t.requiredAcademicYear || "Required"),
+    teacherId: yup.number().typeError(t.requiredTeacher || "Teacher is required").required(t.requiredTeacher || "Teacher is required"),
+    subjectId: yup.number().typeError(t.requiredSubject || "Subject is required").required(t.requiredSubject || "Subject is required"),
+    levelId: yup.number().typeError(t.requiredLevel || "Level is required").required(t.requiredLevel || "Level is required"),
+    sectionId: yup.number().typeError(t.requiredSection || "Section is required").required(t.requiredSection || "Section is required"),
     privateGroup: yup.boolean(),
     revisionGroup: yup.boolean(),
     active: yup.boolean(),
-    capacity: yup
-      .number()
-      .transform((val, orig) => (orig === "" ? null : val))
-      .nullable()
-      .positive("يجب أن يكون أكبر من 0")
-      .required("مطلوب"),
-    billingModel: yup.string().required("مطلوب"),
-
-    monthlyFee: yup
-      .number()
-      .transform((v, o) => (o === "" ? null : v))
-      .nullable()
-      .when("billingModel", { is: "MONTHLY", then: (s) => s.required("مطلوب") }),
-
-    sessionsPerMonth: yup
-      .number()
-      .transform((v, o) => (o === "" ? null : v))
-      .nullable()
-      .when(["billingModel", "teacherShareType"], {
-        is: (bm, ts) => bm === "MONTHLY" && ts === "FIXED",
-        then: (s) => s.min(1, "أدخل عدد الحصص").required("مطلوب"),
-      }),
-
-    sessionCost: yup
-      .number()
-      .transform((v, o) => (o === "" ? null : v))
-      .nullable()
-      .when("billingModel", { is: "PER_SESSION", then: (s) => s.required("مطلوب") }),
-
-    hourlyCost: yup
-      .number()
-      .transform((v, o) => (o === "" ? null : v))
-      .nullable()
-      .when("billingModel", { is: "PER_HOUR", then: (s) => s.required("مطلوب") }),
-
-    sessionDurationMin: yup
-      .number()
-      .transform((v, o) => (o === "" ? null : v))
-      .nullable()
-      .when("billingModel", { is: "PER_HOUR", then: (s) => s.min(1).required("مطلوب") }),
-
-    teacherShareType: yup.string().oneOf(["PERCENT", "FIXED"]).required("مطلوب"),
-    teacherShareValue: yup
-      .number()
-      .transform((v, o) => (o === "" ? null : v))
-      .nullable()
-      .required("مطلوب")
-      .when("teacherShareType", {
-        is: "PERCENT",
-        then: (s) => s.min(0, "0%").max(100, "100%").typeError("٪"),
-      }),
+    capacity: yup.number().transform((val, orig) => (orig === "" ? null : val)).nullable().positive(t.min1 || "Value must be >= 1").required(t.requiredCapacity || "Capacity is required"),
+    billingModel: yup.string().required(t.requiredBillingModel || "Billing model is required"),
+    monthlyFee: yup.number().transform((v, o) => (o === "" ? null : v)).nullable().when("billingModel", { is: "MONTHLY", then: (schema) => schema.required(t.requiredMonthlyFee || "Monthly fee is required") }),
+    sessionsPerMonth: yup.number().transform((v, o) => (o === "" ? null : v)).nullable().when(["billingModel", "teacherShareType"], { is: (bm, ts) => bm === "MONTHLY" && ts === "FIXED", then: (schema) => schema.min(1, t.min1 || "Value must be >= 1").required(t.sessionsPerMonth || "Sessions per month") }),
+    sessionCost: yup.number().transform((v, o) => (o === "" ? null : v)).nullable().when("billingModel", { is: "PER_SESSION", then: (schema) => schema.required(t.requiredSessionCost || "Session price is required") }),
+    hourlyCost: yup.number().transform((v, o) => (o === "" ? null : v)).nullable().when("billingModel", { is: "PER_HOUR", then: (schema) => schema.required(t.requiredHourlyCost || "Hourly price is required") }),
+    sessionDurationMin: yup.number().transform((v, o) => (o === "" ? null : v)).nullable().when("billingModel", { is: "PER_HOUR", then: (schema) => schema.min(1, t.min1 || "Value must be >= 1").required(t.requiredSessionDuration || "Session duration is required") }),
+    teacherShareType: yup.string().oneOf(["PERCENT", "FIXED"]).required(t.requiredTeacherShareType || "Teacher share type is required"),
+    teacherShareValue: yup.number().transform((v, o) => (o === "" ? null : v)).nullable().required(t.requiredTeacherShareValue || "Teacher share value is required").when("teacherShareType", { is: "PERCENT", then: (schema) => schema.min(0, t.min0 || "Value must be >= 0").max(100, t.max100 || "Value must be <= 100") }),
   });
 
   const initialValues = {
@@ -544,36 +521,13 @@ const Groups = ({ language = "ar" }) => {
       };
 
       if (editingGroup?.id) {
-        const updated = await updateGroup(editingGroup.id, payload);
-        const fresh = await getGroup(updated.id);
-        const preview = calcShare(fresh);
-        const enriched = {
-          ...fresh,
-          teacherName: teachers.find((x) => x.id === fresh.teacherId)?.fullName || "",
-          subjectName: subjects.find((x) => x.id === fresh.subjectId)?.name || "",
-          levelName: levels.find((x) => x.id === fresh.levelId)?.name || "",
-          sectionName: sections.find((x) => x.id === fresh.sectionId)?.name || "",
-          teacherSharePerSession: fresh.teacherSharePerSession ?? preview.perSession ?? null,
-          teacherSharePerHour: fresh.teacherSharePerHour ?? preview.perHour ?? null,
-          teacherSharePerMonth: fresh.teacherSharePerMonth ?? preview.perMonth ?? null,
-        };
-        setGroups((prev) => prev.map((g) => (g.id === enriched.id ? enriched : g)));
+        await updateGroup(editingGroup.id, payload);
       } else {
-        const created = await createGroup(payload);
-        const fresh = await getGroup(created.id);
-        const preview = calcShare(fresh);
-        const enriched = {
-          ...fresh,
-          teacherName: teachers.find((x) => x.id === fresh.teacherId)?.fullName || "",
-          subjectName: subjects.find((x) => x.id === fresh.subjectId)?.name || "",
-          levelName: levels.find((x) => x.id === fresh.levelId)?.name || "",
-          sectionName: sections.find((x) => x.id === fresh.sectionId)?.name || "",
-          teacherSharePerSession: fresh.teacherSharePerSession ?? preview.perSession ?? null,
-          teacherSharePerHour: fresh.teacherSharePerHour ?? preview.perHour ?? null,
-          teacherSharePerMonth: fresh.teacherSharePerMonth ?? preview.perMonth ?? null,
-        };
-        setGroups((prev) => [...prev, enriched]);
+        await createGroup(payload);
       }
+
+      // Always refresh from server so the grid stays consistent with active filters/sort.
+      await loadGroups();
 
       setOpenDialog(false);
       setEditingGroup(null);
@@ -601,8 +555,8 @@ const Groups = ({ language = "ar" }) => {
         <TextField
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          label={language === "ar" ? "بحث بالإسم" : "Search by name"}
-          placeholder={language === "ar" ? "اكتب اسم الفوج..." : "Type group name..."}
+          label={searchNameLabel}
+          placeholder={searchNamePlaceholder}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -623,8 +577,8 @@ const Groups = ({ language = "ar" }) => {
         <TextField
           value={academicYear}
           onChange={(e) => setAcademicYear(e.target.value)}
-          label={language === "ar" ? "السنة الدراسية" : "Academic Year"}
-          placeholder={language === "ar" ? "مثال: 2024-2025" : "e.g. 2024-2025"}
+          label={t.academicYear}
+          placeholder={academicYearPlaceholder}
           InputProps={{
             endAdornment: academicYear ? (
               <InputAdornment position="end">
@@ -641,16 +595,16 @@ const Groups = ({ language = "ar" }) => {
           select
           value={activeFilter}
           onChange={(e) => setActiveFilter(e.target.value)}
-          label={language === "ar" ? "الحالة" : "Status"}
+          label={statusFilterLabel}
         >
-          <MenuItem value="">{language === "ar" ? "الكل" : "All"}</MenuItem>
-          <MenuItem value="true">{language === "ar" ? "مفعل" : "Active"}</MenuItem>
-          <MenuItem value="false">{language === "ar" ? "غير مفعل" : "Inactive"}</MenuItem>
+          <MenuItem value="">{allLabel}</MenuItem>
+          <MenuItem value="true">{activeLabel}</MenuItem>
+          <MenuItem value="false">{inactiveLabel}</MenuItem>
         </TextField>
 
         {/* Teacher */}
         <TextField select value={teacherFilter} onChange={(e) => setTeacherFilter(e.target.value)} label={t.teacher}>
-          <MenuItem value="">{language === "ar" ? "الكل" : "All"}</MenuItem>
+          <MenuItem value="">{allLabel}</MenuItem>
           {teachers.map((x) => (
             <MenuItem key={x.id} value={x.id}>
               {x.fullName}
@@ -660,7 +614,7 @@ const Groups = ({ language = "ar" }) => {
 
         {/* Subject */}
         <TextField select value={subjectFilter} onChange={(e) => setSubjectFilter(e.target.value)} label={t.subject}>
-          <MenuItem value="">{language === "ar" ? "الكل" : "All"}</MenuItem>
+          <MenuItem value="">{allLabel}</MenuItem>
           {subjects.map((x) => (
             <MenuItem key={x.id} value={x.id}>
               {x.name}
@@ -670,7 +624,7 @@ const Groups = ({ language = "ar" }) => {
 
         {/* Level */}
         <TextField select value={levelFilter} onChange={(e) => handleChangeLevelFilter(e.target.value)} label={t.level}>
-          <MenuItem value="">{language === "ar" ? "الكل" : "All"}</MenuItem>
+          <MenuItem value="">{allLabel}</MenuItem>
           {levels.map((x) => (
             <MenuItem key={x.id} value={x.id}>
               {x.name}
@@ -686,7 +640,7 @@ const Groups = ({ language = "ar" }) => {
           label={t.section}
           disabled={!levelFilter}
         >
-          <MenuItem value="">{language === "ar" ? "الكل" : "All"}</MenuItem>
+          <MenuItem value="">{allLabel}</MenuItem>
           {sections.map((x) => (
             <MenuItem key={x.id} value={x.id}>
               {x.name}
@@ -699,11 +653,11 @@ const Groups = ({ language = "ar" }) => {
           select
           value={privateFilter}
           onChange={(e) => setPrivateFilter(e.target.value)}
-          label={language === "ar" ? "خاصة" : "Private"}
+          label={t.privateGroup}
         >
-          <MenuItem value="">{language === "ar" ? "الكل" : "All"}</MenuItem>
-          <MenuItem value="true">{language === "ar" ? "نعم" : "Yes"}</MenuItem>
-          <MenuItem value="false">{language === "ar" ? "لا" : "No"}</MenuItem>
+          <MenuItem value="">{allLabel}</MenuItem>
+          <MenuItem value="true">{yesLabel}</MenuItem>
+          <MenuItem value="false">{noLabel}</MenuItem>
         </TextField>
 
         {/* Revision */}
@@ -711,16 +665,17 @@ const Groups = ({ language = "ar" }) => {
           select
           value={revisionFilter}
           onChange={(e) => setRevisionFilter(e.target.value)}
-          label={language === "ar" ? "مراجعة" : "Revision"}
+          label={t.revisionGroup}
         >
-          <MenuItem value="">{language === "ar" ? "الكل" : "All"}</MenuItem>
-          <MenuItem value="true">{language === "ar" ? "نعم" : "Yes"}</MenuItem>
-          <MenuItem value="false">{language === "ar" ? "لا" : "No"}</MenuItem>
+          <MenuItem value="">{allLabel}</MenuItem>
+          <MenuItem value="true">{yesLabel}</MenuItem>
+          <MenuItem value="false">{noLabel}</MenuItem>
         </TextField>
 
         {/* Add Group */}
         <Box display="flex" justifyContent="flex-end">
           <Button
+            data-testid="groups-add"
             variant="contained"
             sx={{
               backgroundColor:
@@ -767,11 +722,18 @@ const Groups = ({ language = "ar" }) => {
           loading={loading}
           getRowId={(row) => row.id}
           disableRowSelectionOnClick
+          columnVisibilityModel={columnVisibilityModel}
+          onColumnVisibilityModelChange={setColumnVisibilityModel}
+          density="compact"
+          pageSizeOptions={[25, 50, 100]}
+          initialState={{
+            pagination: { paginationModel: { pageSize: 25, page: 0 } },
+          }}
         />
       </Box>
 
       {/* Create / Edit Dialog */}
-      <Dialog open={openDialog} onClose={handleClose} fullWidth maxWidth="md">
+      <Dialog open={openDialog} onClose={handleClose} fullWidth maxWidth="md" data-testid="groups-dialog">
         <DialogTitle
           sx={{
             backgroundColor: theme.palette.mode === "light" ? "#0d47a1" : "#4274c7",
@@ -800,14 +762,14 @@ const Groups = ({ language = "ar" }) => {
           }) => {
             const preview = calcShare(values);
             const isPercent = values.teacherShareType === "PERCENT";
-            let shareLabel = "قيمة نصيب الأستاذ";
+            let shareLabel = t.teacherShareValue || "Teacher share value";
             if (isPercent) {
-              shareLabel = "نسبة نصيب الأستاذ (%)";
+              shareLabel = t.teacherSharePercentLabel || "Teacher share percentage (%)";
             } else {
               shareLabel =
                 values.billingModel === "PER_HOUR"
-                  ? "نصيب الأستاذ لكل ساعة (دج)"
-                  : "نصيب الأستاذ لكل حصة (دج)";
+                  ? t.teacherShareHourAmountLabel || "Teacher share per hour (DZD)"
+                  : t.teacherShareSessionAmountLabel || "Teacher share per session (DZD)";
             }
 
             const clampPercent = (e) => {
@@ -822,10 +784,10 @@ const Groups = ({ language = "ar" }) => {
               <form onSubmit={handleSubmit}>
                 <DialogContent>
                   <Box display="grid" gridTemplateColumns="1fr 1fr" gap={2}>
-                    {/* Group Name */}
                     <TextField
+                      inputProps={{ "data-testid": "groups-name" }}
                       name="name"
-                      label="إسم الفوج *"
+                      label={(t.groupName || "") + " *"}
                       value={values.name}
                       onChange={handleChange}
                       onBlur={handleBlur}
@@ -835,10 +797,10 @@ const Groups = ({ language = "ar" }) => {
                       sx={requiredAsteriskSx}
                     />
 
-                    {/* Academic Year */}
                     <TextField
+                      inputProps={{ "data-testid": "groups-academicYear" }}
                       name="academicYear"
-                      label="السنة الدراسية *"
+                      label={(t.academicYear || "") + " *"}
                       value={values.academicYear}
                       onChange={handleChange}
                       onBlur={handleBlur}
@@ -848,17 +810,19 @@ const Groups = ({ language = "ar" }) => {
                       sx={requiredAsteriskSx}
                     />
 
-                    {/* Teacher */}
                     <TextField
+                      inputProps={{ "data-testid": "groups-teacherId" }}
                       select
                       name="teacherId"
-                      label="الأستاذ *"
+                      label={(t.teacher || "") + " *"}
                       value={values.teacherId || ""}
                       onChange={handleChange}
+                      error={touched.teacherId && Boolean(errors.teacherId)}
+                      helperText={touched.teacherId && errors.teacherId}
                       required
                       sx={requiredAsteriskSx}
                     >
-                      <MenuItem value="">-- اختر --</MenuItem>
+                      <MenuItem value="">{selectOptionLabel}</MenuItem>
                       {teachers.map((tc) => (
                         <MenuItem key={tc.id} value={tc.id}>
                           {tc.fullName}
@@ -866,35 +830,39 @@ const Groups = ({ language = "ar" }) => {
                       ))}
                     </TextField>
 
-                    {/* Subject */}
                     <TextField
+                      inputProps={{ "data-testid": "groups-subjectId" }}
                       select
                       name="subjectId"
-                      label="المادة *"
+                      label={(t.subject || "") + " *"}
                       value={values.subjectId || ""}
                       onChange={handleChange}
+                      error={touched.subjectId && Boolean(errors.subjectId)}
+                      helperText={touched.subjectId && errors.subjectId}
                       required
                       sx={requiredAsteriskSx}
                     >
-                      <MenuItem value="">-- اختر --</MenuItem>
-                      {subjects.map((s) => (
-                        <MenuItem key={s.id} value={s.id}>
-                          {s.name}
+                      <MenuItem value="">{selectOptionLabel}</MenuItem>
+                      {subjects.map((subject) => (
+                        <MenuItem key={subject.id} value={subject.id}>
+                          {subject.name}
                         </MenuItem>
                       ))}
                     </TextField>
 
-                    {/* Level */}
                     <TextField
+                      inputProps={{ "data-testid": "groups-levelId" }}
                       select
                       name="levelId"
-                      label="المستوى *"
+                      label={(t.level || "") + " *"}
                       value={values.levelId || ""}
                       onChange={(e) => fetchSectionsForLevel(e.target.value, setFieldValue)}
+                      error={touched.levelId && Boolean(errors.levelId)}
+                      helperText={touched.levelId && errors.levelId}
                       required
                       sx={requiredAsteriskSx}
                     >
-                      <MenuItem value="">-- اختر --</MenuItem>
+                      <MenuItem value="">{selectOptionLabel}</MenuItem>
                       {levels.map((lvl) => (
                         <MenuItem key={lvl.id} value={lvl.id}>
                           {lvl.name}
@@ -902,18 +870,20 @@ const Groups = ({ language = "ar" }) => {
                       ))}
                     </TextField>
 
-                    {/* Section */}
                     <TextField
+                      inputProps={{ "data-testid": "groups-sectionId" }}
                       select
                       name="sectionId"
-                      label="الشعبة *"
+                      label={(t.section || "") + " *"}
                       value={values.sectionId || ""}
                       onChange={handleChange}
+                      error={touched.sectionId && Boolean(errors.sectionId)}
+                      helperText={touched.sectionId && errors.sectionId}
                       disabled={!values.levelId}
                       required
                       sx={requiredAsteriskSx}
                     >
-                      <MenuItem value="">-- اختر --</MenuItem>
+                      <MenuItem value="">{selectOptionLabel}</MenuItem>
                       {sections.map((sec) => (
                         <MenuItem key={sec.id} value={sec.id}>
                           {sec.name}
@@ -921,125 +891,128 @@ const Groups = ({ language = "ar" }) => {
                       ))}
                     </TextField>
 
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={Boolean(values.privateGroup)}
-                          onChange={(e) => setFieldValue("privateGroup", e.target.checked)}
-                        />
-                      }
-                      label="مجموعة خاصة"
-                    />
+                    <FormControlLabel control={<Checkbox checked={Boolean(values.privateGroup)} onChange={(e) => setFieldValue("privateGroup", e.target.checked)} />} label={t.privateGroup} />
+                    <FormControlLabel control={<Checkbox checked={Boolean(values.revisionGroup)} onChange={(e) => setFieldValue("revisionGroup", e.target.checked)} />} label={t.revisionGroup} />
 
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={Boolean(values.revisionGroup)}
-                          onChange={(e) => setFieldValue("revisionGroup", e.target.checked)}
-                        />
-                      }
-                      label="مجموعة مراجعة"
-                    />
-
-                    {/* Capacity */}
                     <TextField
+                      inputProps={{ "data-testid": "groups-capacity" }}
                       type="number"
                       name="capacity"
-                      label="سعة الفوج *"
+                      label={(t.capacity || "") + " *"}
                       value={values.capacity}
                       onChange={handleChange}
+                      onBlur={handleBlur}
+                      error={touched.capacity && Boolean(errors.capacity)}
+                      helperText={touched.capacity && errors.capacity}
                       required
                       sx={requiredAsteriskSx}
                     />
 
-                    {/* Billing Model */}
                     <TextField
+                      inputProps={{ "data-testid": "groups-billingModel" }}
                       select
                       name="billingModel"
-                      label="نموذج الفوترة *"
+                      label={(t.billingModel || "") + " *"}
                       value={values.billingModel}
                       onChange={handleChange}
                       required
                       sx={requiredAsteriskSx}
                     >
-                      <MenuItem value="MONTHLY">شهري</MenuItem>
-                      <MenuItem value="PER_SESSION">لكل حصة</MenuItem>
-                      <MenuItem value="PER_HOUR">لكل ساعة</MenuItem>
+                      <MenuItem value="MONTHLY">{t.monthly}</MenuItem>
+                      <MenuItem value="PER_SESSION">{t.perSession}</MenuItem>
+                      <MenuItem value="PER_HOUR">{t.perHour}</MenuItem>
                     </TextField>
 
-                    {/* Billing conditional */}
                     {values.billingModel === "MONTHLY" && (
                       <>
                         <TextField
+                          inputProps={{ "data-testid": "groups-monthlyFee" }}
                           type="number"
                           name="monthlyFee"
-                          label="الإشتراك الشهري *"
+                          label={(t.monthlyFee || "") + " *"}
                           value={values.monthlyFee}
                           onChange={handleChange}
+                          onBlur={handleBlur}
+                          error={touched.monthlyFee && Boolean(errors.monthlyFee)}
+                          helperText={touched.monthlyFee && errors.monthlyFee}
                           required
                           sx={requiredAsteriskSx}
                         />
                         <TextField
+                          inputProps={{ "data-testid": "groups-sessionsPerMonth" }}
                           type="number"
                           name="sessionsPerMonth"
-                          label={
-                            values.teacherShareType === "FIXED"
-                              ? "عدد الحصص في الشهر *"
-                              : "عدد الحصص في الشهر"
-                          }
+                          label={values.teacherShareType === "FIXED" ? (t.sessionsPerMonth || "") + " *" : t.sessionsPerMonth}
                           value={values.sessionsPerMonth}
                           onChange={handleChange}
+                          onBlur={handleBlur}
+                          error={touched.sessionsPerMonth && Boolean(errors.sessionsPerMonth)}
+                          helperText={touched.sessionsPerMonth && errors.sessionsPerMonth}
                           required={values.teacherShareType === "FIXED"}
                           sx={values.teacherShareType === "FIXED" ? requiredAsteriskSx : undefined}
                         />
                       </>
                     )}
+
                     {values.billingModel === "PER_SESSION" && (
                       <TextField
+                        inputProps={{ "data-testid": "groups-sessionCost" }}
                         type="number"
                         name="sessionCost"
-                        label="سعر الحصة *"
+                        label={(t.sessionCost || "") + " *"}
                         value={values.sessionCost}
                         onChange={handleChange}
+                        onBlur={handleBlur}
+                        error={touched.sessionCost && Boolean(errors.sessionCost)}
+                        helperText={touched.sessionCost && errors.sessionCost}
                         required
                         sx={requiredAsteriskSx}
                       />
                     )}
+
                     {values.billingModel === "PER_HOUR" && (
                       <>
                         <TextField
+                          inputProps={{ "data-testid": "groups-hourlyCost" }}
                           type="number"
                           name="hourlyCost"
-                          label="سعر الساعة *"
+                          label={(t.hourlyCost || "") + " *"}
                           value={values.hourlyCost}
                           onChange={handleChange}
+                          onBlur={handleBlur}
+                          error={touched.hourlyCost && Boolean(errors.hourlyCost)}
+                          helperText={touched.hourlyCost && errors.hourlyCost}
                           required
                           sx={requiredAsteriskSx}
                         />
                         <TextField
+                          inputProps={{ "data-testid": "groups-sessionDurationMin" }}
                           type="number"
                           name="sessionDurationMin"
-                          label="مدة الحصة بالدقائق *"
+                          label={(t.sessionDurationMin || "") + " *"}
                           value={values.sessionDurationMin}
                           onChange={handleChange}
+                          onBlur={handleBlur}
+                          error={touched.sessionDurationMin && Boolean(errors.sessionDurationMin)}
+                          helperText={touched.sessionDurationMin && errors.sessionDurationMin}
                           required
                           sx={requiredAsteriskSx}
                         />
                       </>
                     )}
 
-                    {/* Teacher Share */}
                     <TextField
+                      inputProps={{ "data-testid": "groups-teacherShareType" }}
                       select
                       name="teacherShareType"
-                      label="نوع نصيب الأستاذ *"
+                      label={(t.teacherShareType || "") + " *"}
                       value={values.teacherShareType}
                       onChange={handleChange}
                       required
                       sx={requiredAsteriskSx}
                     >
-                      <MenuItem value="PERCENT">٪ نسبة</MenuItem>
-                      <MenuItem value="FIXED">مبلغ ثابت</MenuItem>
+                      <MenuItem value="PERCENT">{t.percentOption || "% percentage"}</MenuItem>
+                      <MenuItem value="FIXED">{t.fixedAmount || "Fixed amount"}</MenuItem>
                     </TextField>
 
                     <TextField
@@ -1050,104 +1023,46 @@ const Groups = ({ language = "ar" }) => {
                       onChange={handleChange}
                       onBlur={clampPercent}
                       error={touched.teacherShareValue && Boolean(errors.teacherShareValue)}
-                      helperText={
-                        (touched.teacherShareValue && errors.teacherShareValue) ||
-                        (isPercent
-                          ? language === "ar"
-                            ? "يُحسب كنسبة من السعر (شهري/حصة/ساعة حسب النموذج)"
-                            : "Calculated as % of price (monthly/session/hour)."
-                          : values.billingModel === "PER_HOUR"
-                          ? language === "ar"
-                            ? "مبلغ ثابت لكل ساعة"
-                            : "Flat amount per hour"
-                          : language === "ar"
-                          ? "مبلغ ثابت لكل حصة"
-                          : "Flat amount per session")
-                      }
+                      helperText={(touched.teacherShareValue && errors.teacherShareValue) || (isPercent ? t.teacherShareCalculatedHint || "Calculated as a percentage of the price (monthly/session/hour)." : values.billingModel === "PER_HOUR" ? t.flatAmountPerHour || "Flat amount per hour" : t.flatAmountPerSession || "Flat amount per session")}
                       required
                       sx={requiredAsteriskSx}
                       InputProps={{
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            {isPercent ? "%" : language === "ar" ? "دج" : "DA"}
-                          </InputAdornment>
-                        ),
-                        inputProps: isPercent ? { min: 0, max: 100, step: "any" } : { step: "any" },
+                        endAdornment: <InputAdornment position="end">{isPercent ? "%" : "DZD"}</InputAdornment>,
+                        inputProps: {
+                          "data-testid": "groups-teacherShareValue",
+                          ...(isPercent ? { min: 0, max: 100, step: "any" } : { step: "any" }),
+                        },
                       }}
                     />
 
-                    {/* Preview (live) — MONTHLY: per session + per month; PER_SESSION: per session only; PER_HOUR: per hour only */}
-                    <Box
-                      gridColumn="1 / span 2"
-                      sx={{ mt: 1, p: 1.5, borderRadius: 1, background: "rgba(255,255,255,0.05)" }}
-                    >
-                      <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
-                        {language === "ar" ? "معاينة نصيب الأستاذ" : "Teacher Share Preview"}
-                      </Typography>
-
+                    <Box gridColumn="1 / span 2" sx={{ mt: 1, p: 1.5, borderRadius: 1, background: "rgba(255,255,255,0.05)" }}>
+                      <Typography variant="subtitle2" sx={{ mb: 0.5 }}>{t.teacherSharePreview || "Teacher share preview"}</Typography>
                       {values.billingModel === "MONTHLY" && (
                         <Box display="flex" gap={3} flexWrap="wrap">
-                          <Typography variant="body2">
-                            {language === "ar" ? "لكل حصة:" : "Per session:"}{" "}
-                            <b>
-                              {preview.perSession != null ? fmtDA(preview.perSession, language) : "-"}
-                            </b>
-                          </Typography>
-                          <Typography variant="body2">
-                            {language === "ar" ? "شهرياً:" : "Per month:"}{" "}
-                            <b>
-                              {preview.perMonth != null ? fmtDA(preview.perMonth, language) : "-"}
-                            </b>
-                          </Typography>
+                          <Typography variant="body2">{(t.perSessionLabel || "Per session") + ":"} <b>{preview.perSession != null ? fmtDA(preview.perSession, language) : "-"}</b></Typography>
+                          <Typography variant="body2">{(t.perMonthLabel || "Per month") + ":"} <b>{preview.perMonth != null ? fmtDA(preview.perMonth, language) : "-"}</b></Typography>
                         </Box>
                       )}
-
                       {values.billingModel === "PER_SESSION" && (
                         <Box display="flex" gap={3} flexWrap="wrap">
-                          <Typography variant="body2">
-                            {language === "ar" ? "لكل حصة:" : "Per session:"}{" "}
-                            <b>
-                              {preview.perSession != null ? fmtDA(preview.perSession, language) : "-"}
-                            </b>
-                          </Typography>
+                          <Typography variant="body2">{(t.perSessionLabel || "Per session") + ":"} <b>{preview.perSession != null ? fmtDA(preview.perSession, language) : "-"}</b></Typography>
                         </Box>
                       )}
-
                       {values.billingModel === "PER_HOUR" && (
                         <Box display="flex" gap={3} flexWrap="wrap">
-                          <Typography variant="body2">
-                            {language === "ar" ? "لكل ساعة:" : "Per hour:"}{" "}
-                            <b>
-                              {preview.perHour != null ? fmtDA(preview.perHour, language) : "-"}
-                            </b>
-                          </Typography>
+                          <Typography variant="body2">{(t.perHourLabel || "Per hour") + ":"} <b>{preview.perHour != null ? fmtDA(preview.perHour, language) : "-"}</b></Typography>
                         </Box>
                       )}
                     </Box>
 
-                    {/* Start Date */}
-                    <TextField
-                      type="date"
-                      name="startDate"
-                      label="تاريخ البداية"
-                      value={values.startDate || ""}
-                      onChange={handleChange}
-                      InputLabelProps={{ shrink: true }}
-                    />
-
-                    {/* Notes */}
-                    <TextField
-                      name="notes"
-                      label="ملاحظات"
-                      multiline
-                      value={values.notes}
-                      onChange={handleChange}
-                    />
+                    <TextField type="date" name="startDate" label={t.startDate} value={values.startDate || ""} onChange={handleChange} InputLabelProps={{ shrink: true }} />
+                    <TextField name="notes" label={t.notes} multiline value={values.notes} onChange={handleChange} />
                   </Box>
                 </DialogContent>
 
                 <DialogActions sx={{ gap: 2 }}>
                   <Button
+                    data-testid="groups-cancel"
                     onClick={handleClose}
                     variant="outlined"
                     sx={{
@@ -1166,6 +1081,7 @@ const Groups = ({ language = "ar" }) => {
                   </Button>
 
                   <Button
+                    data-testid="groups-save"
                     type="submit"
                     variant="contained"
                     disabled={isSubmitting}
@@ -1241,3 +1157,6 @@ const Groups = ({ language = "ar" }) => {
 };
 
 export default Groups;
+
+
+

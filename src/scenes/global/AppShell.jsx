@@ -10,8 +10,11 @@ export default function AppShell({ language, setLanguage }) {
     <div className="app">
       <MySidebar isSidebar={isSidebar} language={language} />
       <main className="content">
-        {/* ✅ Topbar can switch language */}
-        <Topbar setIsSidebar={setIsSidebar} setLanguage={setLanguage} />
+        <Topbar
+          setIsSidebar={setIsSidebar}
+          setLanguage={setLanguage}
+          language={language}
+        />
         <Outlet />
       </main>
     </div>

@@ -1,4 +1,3 @@
-// src/scenes/teachers/TeacherDialog.jsx
 import {
   Dialog,
   DialogTitle,
@@ -15,15 +14,8 @@ import UpdateIcon from "@mui/icons-material/Update";
 import CloseIcon from "@mui/icons-material/Close";
 
 import { tokens } from "../../theme";
-import translations from "../../translations";
+import { getTranslations } from "../../translations";
 import { createTeacher, updateTeacher } from "../../api/teachersApi";
-
-// Only the fields we keep (you asked to remove gender, employmentDate, notes)
-const teacherSchema = yup.object().shape({
-  fullName: yup.string().required("Full Name is required"),
-  phone: yup.string().required("Phone is required"),
-  email: yup.string().nullable().email("Invalid email"),
-});
 
 const initialValues = {
   fullName: "",
@@ -34,7 +26,13 @@ const initialValues = {
 const TeacherDialog = ({ open, onClose, onSaved, language, teacher }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const t = translations[language] || translations["fr"];
+  const t = getTranslations(language);
+
+  const teacherSchema = yup.object().shape({
+    fullName: yup.string().required(t.requiredFullName || "Full name is required"),
+    phone: yup.string().required(t.requiredPhone || "Phone is required"),
+    email: yup.string().nullable().email(t.invalidEmail || "Invalid email"),
+  });
 
   const formik = useFormik({
     initialValues: teacher
@@ -64,20 +62,19 @@ const TeacherDialog = ({ open, onClose, onSaved, language, teacher }) => {
   });
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle
-        sx={{ backgroundColor: colors.blueAccent[800], color: "#fff" }}
-      >
-        {teacher ? t.editTeacher || "Edit Teacher" : t.addTeacher || "Add Teacher"}
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" data-testid="teachers-dialog">
+      <DialogTitle sx={{ backgroundColor: colors.blueAccent[800], color: "#fff" }}>
+        {teacher ? t.editTeacher || "Edit teacher" : t.addTeacher || "Add teacher"}
       </DialogTitle>
 
       <form onSubmit={formik.handleSubmit}>
         <DialogContent>
           <TextField
+            inputProps={{ "data-testid": "teachers-fullName" }}
             margin="dense"
             fullWidth
             name="fullName"
-            placeholder={t.fullName || "Full Name"}
+            placeholder={t.fullName || "Full name"}
             value={formik.values.fullName}
             onChange={formik.handleChange}
             error={formik.touched.fullName && Boolean(formik.errors.fullName)}
@@ -85,6 +82,7 @@ const TeacherDialog = ({ open, onClose, onSaved, language, teacher }) => {
           />
 
           <TextField
+            inputProps={{ "data-testid": "teachers-phone" }}
             margin="dense"
             fullWidth
             name="phone"
@@ -96,6 +94,7 @@ const TeacherDialog = ({ open, onClose, onSaved, language, teacher }) => {
           />
 
           <TextField
+            inputProps={{ "data-testid": "teachers-email" }}
             margin="dense"
             fullWidth
             name="email"
@@ -109,6 +108,7 @@ const TeacherDialog = ({ open, onClose, onSaved, language, teacher }) => {
 
         <DialogActions sx={{ gap: 2 }}>
           <Button
+            data-testid="teachers-cancel"
             onClick={onClose}
             variant="outlined"
             sx={{
@@ -126,6 +126,7 @@ const TeacherDialog = ({ open, onClose, onSaved, language, teacher }) => {
           </Button>
 
           <Button
+            data-testid="teachers-save"
             type="submit"
             variant="contained"
             sx={{

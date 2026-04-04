@@ -13,23 +13,20 @@ import ClearIcon from "@mui/icons-material/Clear";
 
 import Header from "../../components/Header";
 import { tokens } from "../../theme";
-import translations from "../../translations";
+import { getTranslations } from "../../translations";
 import { searchTeachers, deleteTeacher } from "../../api/teachersApi";
 import TeacherDialog from "./TeacherDialog";
 
 const Teachers = ({ language }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const t = translations[language] || translations["fr"];
+  const t = getTranslations(language);
 
-  // filters + paging
   const [searchText, setSearchText] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const [rowCount, setRowCount] = useState(0);
-
-  // data + dialogs
   const [deleteError, setDeleteError] = useState("");
   const [teachers, setTeachers] = useState([]);
   const [open, setOpen] = useState(false);
@@ -37,13 +34,11 @@ const Teachers = ({ language }) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
 
-  // debounce search (400ms)
   useEffect(() => {
     const h = setTimeout(() => setDebouncedSearch(searchText.trim()), 400);
     return () => clearTimeout(h);
   }, [searchText]);
 
-  // load page
   const loadTeachers = async () => {
     try {
       const res = await searchTeachers({ search: debouncedSearch, page, size: pageSize });
@@ -62,16 +57,15 @@ const Teachers = ({ language }) => {
     }
   };
 
-  // reload when filters/paging change
   useEffect(() => {
     loadTeachers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch, page, pageSize]);
 
   const handleEdit = (teacher) => {
     setEditingTeacher(teacher);
     setOpen(true);
   };
+
   const handleOpen = () => {
     setEditingTeacher(null);
     setOpen(true);
@@ -86,7 +80,6 @@ const Teachers = ({ language }) => {
   const handleConfirmDelete = async () => {
     try {
       await deleteTeacher(deleteId);
-      // after delete, reload current page
       await loadTeachers();
       setDeleteError("");
       setDeleteDialogOpen(false);
@@ -95,13 +88,11 @@ const Teachers = ({ language }) => {
       let message =
         err.response?.data?.message ||
         err.message ||
+        t.deleteFailed ||
         "Delete failed. Please try again later.";
 
       if (message.includes("Cannot delete or update a parent row")) {
-        message =
-          language === "ar"
-            ? "لا يمكن حذف هذا الأستاذ لأنه مازال مرتبطًا بفصل دراسي."
-            : "Impossible de supprimer cet enseignant car il est encore affecté à une classe.";
+        message = t.teacherDeleteBlocked || message;
       }
       setDeleteError(message);
     }
@@ -109,8 +100,8 @@ const Teachers = ({ language }) => {
 
   const columns = useMemo(() => ([
     { field: "id", headerName: "ID", width: 80 },
-    { field: "fullName", headerName: t.fullName || "Nom complet", flex: 1, minWidth: 200 },
-    { field: "phone", headerName: t.phone || "Téléphone", width: 160 },
+    { field: "fullName", headerName: t.fullName || "Full name", flex: 1, minWidth: 200 },
+    { field: "phone", headerName: t.phone || "Phone", width: 160 },
     { field: "email", headerName: t.email || "Email", width: 220 },
     {
       field: "actions",
@@ -159,17 +150,12 @@ const Teachers = ({ language }) => {
         </Box>
       ),
     },
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   ]), [t, theme.palette.mode, colors.blueAccent]);
 
   return (
     <Box m="20px">
-      <Header
-        title={t.teachers || "Enseignants"}
-        subtitle={t.dataManagement || "Gestion des données"}
-      />
+      <Header title={t.teachers || "Teachers"} subtitle={t.dataManagement || "Data management"} />
 
-      {/* Top bar: Search + Add */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} gap={2}>
         <TextField
           size="small"
@@ -199,6 +185,7 @@ const Teachers = ({ language }) => {
         />
 
         <Button
+          data-testid="teachers-add"
           variant="contained"
           sx={{
             backgroundColor:
@@ -219,11 +206,10 @@ const Teachers = ({ language }) => {
           startIcon={<AddIcon />}
           onClick={handleOpen}
         >
-          {t.addTeacher || "AJOUTER ENSEIGNANT"}
+          {t.addTeacher || "Add teacher"}
         </Button>
       </Box>
 
-      {/* DataGrid */}
       <Box
         height="80vh"
         dir={language === "ar" ? "rtl" : "ltr"}
@@ -269,7 +255,6 @@ const Teachers = ({ language }) => {
         />
       </Box>
 
-      {/* Add/Edit Dialog */}
       <TeacherDialog
         open={open}
         onClose={() => setOpen(false)}
@@ -279,7 +264,6 @@ const Teachers = ({ language }) => {
         reloadTeachers={loadTeachers}
       />
 
-      {/* Delete Dialog */}
       <Dialog
         open={deleteDialogOpen}
         onClose={handleCancelDelete}
@@ -332,7 +316,7 @@ const Teachers = ({ language }) => {
               "&:hover": { backgroundColor: "rgba(255,255,255,0.8)" },
             }}
           >
-            {t.confirm || "Yes, Delete it!"}
+            {t.confirm || "Yes, delete"}
           </Button>
         </DialogActions>
       </Dialog>

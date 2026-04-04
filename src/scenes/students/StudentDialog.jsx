@@ -16,31 +16,10 @@ import * as yup from "yup";
 import { useEffect, useState } from "react";
 
 import { tokens } from "../../theme";
-import translations from "../../translations";
+import { getTranslations } from "../../translations";
 import { createStudent, updateStudent } from "../../api/studentsApi";
 import { listLevels } from "../../api/levelsApi";
 import { listSections } from "../../api/sectionsApi";
-
-// only these are required
-const studentSchema = yup.object().shape({
-  fullName: yup.string().required("Full Name is required"),
-  levelId: yup
-    .number()
-    .typeError("Level is required")
-    .required("Level is required"),
-  sectionId: yup
-    .number()
-    .typeError("Section is required")
-    .required("Section is required"),
-  // everything else optional
-  dob: yup.mixed().nullable(),
-  gender: yup.mixed().nullable(),
-  address: yup.mixed().nullable(),
-  phone: yup.mixed().nullable(),
-  guardianName: yup.mixed().nullable(),
-  guardianPhone: yup.mixed().nullable(),
-  // enrollmentDate, cardUid, medicalNotes are not in the form
-});
 
 const initialValues = {
   fullName: "",
@@ -54,16 +33,13 @@ const initialValues = {
   sectionId: "",
 };
 
-// helper: today YYYY-MM-DD from PC local time
 const todayYMD = () => new Date().toLocaleDateString("en-CA");
-
-const normalizeList = (list = []) =>
-  (list || []).map((x) => ({ ...x, id: Number(x.id) }));
+const normalizeList = (list = []) => (list || []).map((x) => ({ ...x, id: Number(x.id) }));
 
 const StudentDialog = ({ open, onClose, language, student, reloadStudents }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const t = translations[language] || translations["fr"];
+  const t = getTranslations(language);
 
   const [levels, setLevels] = useState([]);
   const [sections, setSections] = useState([]);
@@ -75,9 +51,7 @@ const StudentDialog = ({ open, onClose, language, student, reloadStudents }) => 
         setLevels(levelsData);
 
         if (student?.levelId) {
-          const sectionsData = normalizeList(
-            (await listSections(student.levelId)) || []
-          );
+          const sectionsData = normalizeList((await listSections(student.levelId)) || []);
           setSections(sectionsData);
         } else {
           setSections([]);
@@ -87,6 +61,18 @@ const StudentDialog = ({ open, onClose, language, student, reloadStudents }) => 
       }
     })();
   }, [student]);
+
+  const studentSchema = yup.object().shape({
+    fullName: yup.string().required(t.requiredFullName || "Full name is required"),
+    levelId: yup.number().typeError(t.requiredLevelSelection || "Level is required").required(t.requiredLevelSelection || "Level is required"),
+    sectionId: yup.number().typeError(t.requiredSectionSelection || "Section is required").required(t.requiredSectionSelection || "Section is required"),
+    dob: yup.mixed().nullable(),
+    gender: yup.mixed().nullable(),
+    address: yup.mixed().nullable(),
+    phone: yup.mixed().nullable(),
+    guardianName: yup.mixed().nullable(),
+    guardianPhone: yup.mixed().nullable(),
+  });
 
   const formik = useFormik({
     initialValues: student
@@ -112,12 +98,10 @@ const StudentDialog = ({ open, onClose, language, student, reloadStudents }) => 
           sectionId: values.sectionId ? Number(values.sectionId) : null,
         };
 
-        // set enrollmentDate automatically on CREATE only
         if (!student) {
           payload.enrollmentDate = todayYMD();
         }
 
-        // ensure we don't accidentally send fields you removed
         delete payload.cardUid;
         delete payload.medicalNotes;
 
@@ -152,13 +136,12 @@ const StudentDialog = ({ open, onClose, language, student, reloadStudents }) => 
     }
   };
 
-  // make the required asterisk red
   const requiredAsteriskSx = {
     "& .MuiFormLabel-asterisk": { color: theme.palette.error.main },
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth data-testid="students-dialog">
       <DialogTitle
         sx={{
           backgroundColor:
@@ -174,8 +157,8 @@ const StudentDialog = ({ open, onClose, language, student, reloadStudents }) => 
 
       <form onSubmit={formik.handleSubmit}>
         <DialogContent>
-          {/* Full Name (required) */}
           <TextField
+            inputProps={{ "data-testid": "students-fullName" }}
             margin="dense"
             fullWidth
             required
@@ -188,7 +171,6 @@ const StudentDialog = ({ open, onClose, language, student, reloadStudents }) => 
             sx={requiredAsteriskSx}
           />
 
-          {/* Optional fields below */}
           <TextField
             margin="dense"
             fullWidth
@@ -214,44 +196,13 @@ const StudentDialog = ({ open, onClose, language, student, reloadStudents }) => 
             <MenuItem value="F">{t.female || "Female"}</MenuItem>
           </TextField>
 
-          <TextField
-            margin="dense"
-            fullWidth
-            label={t.address}
-            name="address"
-            value={formik.values.address || ""}
-            onChange={formik.handleChange}
-          />
+          <TextField margin="dense" fullWidth label={t.address} name="address" value={formik.values.address || ""} onChange={formik.handleChange} />
+          <TextField margin="dense" fullWidth label={t.phone} name="phone" value={formik.values.phone || ""} onChange={formik.handleChange} />
+          <TextField margin="dense" fullWidth label={t.guardianName} name="guardianName" value={formik.values.guardianName || ""} onChange={formik.handleChange} />
+          <TextField margin="dense" fullWidth label={t.guardianPhone} name="guardianPhone" value={formik.values.guardianPhone || ""} onChange={formik.handleChange} />
 
           <TextField
-            margin="dense"
-            fullWidth
-            label={t.phone}
-            name="phone"
-            value={formik.values.phone || ""}
-            onChange={formik.handleChange}
-          />
-
-          <TextField
-            margin="dense"
-            fullWidth
-            label={t.guardianName}
-            name="guardianName"
-            value={formik.values.guardianName || ""}
-            onChange={formik.handleChange}
-          />
-
-          <TextField
-            margin="dense"
-            fullWidth
-            label={t.guardianPhone}
-            name="guardianPhone"
-            value={formik.values.guardianPhone || ""}
-            onChange={formik.handleChange}
-          />
-
-          {/* Level (required) */}
-          <TextField
+            inputProps={{ "data-testid": "students-levelId" }}
             select
             required
             margin="dense"
@@ -272,8 +223,8 @@ const StudentDialog = ({ open, onClose, language, student, reloadStudents }) => 
             ))}
           </TextField>
 
-          {/* Section (required) */}
           <TextField
+            inputProps={{ "data-testid": "students-sectionId" }}
             select
             required
             margin="dense"
@@ -298,6 +249,7 @@ const StudentDialog = ({ open, onClose, language, student, reloadStudents }) => 
 
         <DialogActions sx={{ gap: 2 }}>
           <Button
+            data-testid="students-cancel"
             onClick={onClose}
             variant="outlined"
             sx={{
@@ -315,6 +267,7 @@ const StudentDialog = ({ open, onClose, language, student, reloadStudents }) => 
           </Button>
 
           <Button
+            data-testid="students-save"
             type="submit"
             variant="contained"
             sx={{

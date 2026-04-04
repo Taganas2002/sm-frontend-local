@@ -13,7 +13,7 @@ export const searchGroups = async ({
   revisionGroup,
   page = 0,
   size = 50,
-  sort = "name,asc",
+  sort = "id,desc",
 } = {}) => {
   const params = {
     q,

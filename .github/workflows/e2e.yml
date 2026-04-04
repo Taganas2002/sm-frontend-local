@@ -1,0 +1,91 @@
+# End-to-end: Spring Boot (e2e profile) + Vite + Playwright.
+#
+# Setup for two separate Git repos:
+#   - This workflow lives in the frontend repo (school-desktop).
+#   - Set repository variable or secret BACKEND_REPO to "your-org/sm-backend-locally" (or fork path).
+#   - Default below expects the backend repo name as a variable; replace if yours differs.
+#
+# Required on Linux CI: Playwright browsers (`npx playwright install --with-deps chromium`).
+
+name: E2E
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+env:
+  CI: true
+  JAVA_VERSION: "21"
+  NODE_VERSION: "20"
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout frontend
+        uses: actions/checkout@v4
+        with:
+          path: frontend
+
+      # Secret BACKEND_REPOSITORY = "owner/sm-backend-locally" (see README-E2E.md).
+      # Private second repo: ensure Actions can read it (same org + permissions) or use a PAT in `token:` below.
+      - name: Checkout backend
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.BACKEND_REPOSITORY }}
+          token: ${{ github.token }}
+          path: backend
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build backend JAR
+        working-directory: backend
+        run: mvn -B -q -DskipTests package
+
+      - name: Start backend (e2e profile)
+        working-directory: backend
+        env:
+          SPRING_PROFILES_ACTIVE: e2e
+        run: |
+          java -jar target/demo-0.0.1-SNAPSHOT.jar &
+          for i in $(seq 1 60); do
+            curl -fsS http://127.0.0.1:8080/api/actuator/health >/dev/null 2>&1 && exit 0
+            sleep 2
+          done
+          echo "Backend did not become healthy"; exit 1
+
+      - name: Install frontend + Playwright Chromium
+        working-directory: frontend
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Run Playwright
+        working-directory: frontend
+        env:
+          E2E_BASE_URL: http://127.0.0.1:5173
+        run: npx playwright test -c playwright.config.js
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report
+          retention-days: 7

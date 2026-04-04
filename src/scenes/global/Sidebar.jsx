@@ -17,6 +17,7 @@ import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
 import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import AccountBalanceOutlinedIcon from "@mui/icons-material/AccountBalanceOutlined";
+import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import DoorFrontOutlinedIcon from "@mui/icons-material/DoorFrontOutlined";
 import MenuBookTwoToneIcon from "@mui/icons-material/MenuBookTwoTone";
@@ -148,7 +149,7 @@ const handleLogoChange = (e) => {
         collapsed={isCollapsed}
         style={{
           backgroundColor: theme.palette.mode === "dark" ? "#334155" : "#cbd5e1",
-          height: "130vh",
+          height: "470vh",
         }}
       >
         <Menu iconShape="square">
@@ -286,30 +287,7 @@ const handleLogoChange = (e) => {
               />
             )}
 <hr className="my-1 border-gray-300" />
-
-{can(CAN.ATTENDANCE) && (
-              <Item
-                title={t.presence}
-                to="/attendance"
-                icon={<CalendarTodayOutlinedIcon />}
-                active={isActive("/attendance")}
-                onClick={() => setSelected("Attendance")}
-              />
-            )}
-            <hr className="my-1 border-gray-300" />
-
-            {can(CAN.ENROLLMENTS) && (
-              <Item
-                title={t.enrollment}
-                to="/enrollment"
-                icon={<PeopleOutlinedIcon />}
-                active={isActive("/enrollment")}
-                onClick={() => setSelected("Enrollments")}
-              />
-            )}
-<hr className="my-1 border-gray-300" />
-
-
+        
             {can(CAN.CLASSES) && (
               <Item
                 title={t.classes}
@@ -334,7 +312,7 @@ const handleLogoChange = (e) => {
 
             {can(CAN.LEVELS) && (
               <Item
-                title={t.levels}
+                title={t.level}
                 to="/levels"
                 icon={<LayersOutlinedIcon />}
                 active={isActive("/levels")}
@@ -364,6 +342,26 @@ const handleLogoChange = (e) => {
               />
             )}
 <hr className="my-1 border-gray-300" />
+{can(CAN.ENROLLMENTS) && (
+              <Item
+                title={t.enrollment}
+                to="/enrollment"
+                icon={<PeopleOutlinedIcon />}
+                active={isActive("/enrollment")}
+                onClick={() => setSelected("Enrollments")}
+              />
+            )}
+<hr className="my-1 border-gray-300" />
+{can(CAN.ATTENDANCE) && (
+              <Item
+                title={t.presence}
+                to="/attendance"
+                icon={<CalendarTodayOutlinedIcon />}
+                active={isActive("/attendance")}
+                onClick={() => setSelected("Attendance")}
+              />
+            )}
+            <hr className="my-1 border-gray-300" />
 
             {/* {can(CAN.SPECIALTIES) && (
               <Item
@@ -448,6 +446,23 @@ const handleLogoChange = (e) => {
                   >
                     {t.teacherPay}
                   </Typography>
+                </MenuItem>
+
+                {/* Financial audit log */}
+                <MenuItem component={<Link to="/finances/audit-log" />}>
+                  <Box display="flex" alignItems="center" gap={1} justifyContent="center" width="100%">
+                    <FactCheckOutlinedIcon sx={{ fontSize: "1.15rem", color: "#1e293b" }} />
+                    <Typography
+                      sx={{
+                        fontSize: "1.20rem",
+                        fontWeight: "bold",
+                        textAlign: "center",
+                        color: "#1e293b !important",
+                      }}
+                    >
+                      {t.paymentAuditLog}
+                    </Typography>
+                  </Box>
                 </MenuItem>
               </SubMenu>
             )}

@@ -14,11 +14,10 @@ import PermRoute from "./components/guards/PermRoute";
 import RouteTracker from "./components/guards/RouteTracker";
 import Levels from "./scenes/levels";
 import Sections from "./scenes/sections";
+import Expired from "./pages/Expired";
 
-// Layout
 import AppShell from "./scenes/global/AppShell";
 
-// Pages
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -31,7 +30,6 @@ import Calendar from "./scenes/calendar";
 import Faq from "./scenes/faq";
 import IncomeDialog from "./scenes/finances/IncomeDialog";
 
-// Admin
 import UsersPage from "./scenes/admin/users/UsersPage";
 import Students from "./scenes/students";
 import Groups from "./scenes/groups";
@@ -41,38 +39,32 @@ import Subjects from "./scenes/subjects";
 import Specialities from "./scenes/specialties";
 import Schools from "./scenes/schools";
 import Enrollments from "./scenes/enrollment/Enrollments";
-import Attendance from "./scenes/attendance"
+import Attendance from "./scenes/attendance";
 
-// ✅ Student billing screens
 import StudentBillingSearch from "./scenes/finances/StudentBillingSearch";
 import StudentPayment from "./scenes/finances/StudentPayment";
 import StudentReceiptHistory from "./scenes/finances/StudentReceiptHistory";
 
-// ✅ Teacher pay screens (list + detail)
 import TeacherPayList from "./scenes/finances/TeacherPayList";
 import TeacherPay from "./scenes/finances/TeacherPay";
+import PaymentAuditLog from "./scenes/finances/PaymentAuditLog";
 
-// ✅ NEW: Expenses page (list + create/edit dialog inside)
 import Expenses from "./scenes/finances/Expenses";
-
-// ✅ NEW: Profit & Loss page
 import ProfitLoss from "./scenes/finances/ProfitLoss";
 
-// ✅ React Query
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-// Create a client once for the whole app
 const queryClient = new QueryClient();
+const LANGUAGE_LS_KEY = "app:language";
 
 export default function App() {
-  const [theme, colorMode] = useMode();
+  const [language, setLanguage] = useState(() => localStorage.getItem(LANGUAGE_LS_KEY) || "fr");
+  const [theme, colorMode] = useMode(language);
 
-  // ✅ Language state
-  const [language, setLanguage] = useState("fr");
-
-  // ✅ Update page direction on language change
   useEffect(() => {
+    localStorage.setItem(LANGUAGE_LS_KEY, language);
     document.dir = language === "ar" ? "rtl" : "ltr";
+    document.documentElement.lang = language;
   }, [language]);
 
   return (
@@ -84,40 +76,26 @@ export default function App() {
             <RouteTracker />
 
             <Routes>
-              {/* Public */}
-              <Route path="/" element={<Home language={language}/>} />
+              <Route path="/" element={<Home language={language} />} />
               <Route element={<PublicOnlyRoute />}>
                 <Route path="/login" element={<Login language={language} />} />
                 <Route path="/signup" element={<Signup language={language} />} />
               </Route>
 
-              {/* Protected layout with AppShell */}
+              <Route path="/expired" element={<Expired />} />
+
               <Route element={<ProtectedRoute />}>
-                <Route
-                  element={
-                    <AppShell setLanguage={setLanguage} language={language} />
-                  }
-                >
-                  {/* Example permission gates */}
+                <Route element={<AppShell setLanguage={setLanguage} language={language} />}>
                   <Route element={<PermRoute anyOf={["MENU:HOME_VIEW"]} />}>
-                    <Route
-                      path="/dashboard"
-                      element={<Dashboard language={language} />}
-                    />
+                    <Route path="/dashboard" element={<Dashboard language={language} />} />
                   </Route>
 
                   <Route element={<PermRoute anyOf={["MENU:TEACHERS_VIEW"]} />}>
-                    <Route
-                      path="/teachers"
-                      element={<Teachers language={language} />}
-                    />
+                    <Route path="/teachers" element={<Teachers language={language} />} />
                   </Route>
 
                   <Route element={<PermRoute anyOf={["MENU:STUDENTS_VIEW"]} />}>
-                    <Route
-                      path="/students"
-                      element={<Students language={language} />}
-                    />
+                    <Route path="/students" element={<Students language={language} />} />
                   </Route>
 
                   <Route path="/groups" element={<Groups language={language} />} />
@@ -128,55 +106,35 @@ export default function App() {
                   <Route path="/schools" element={<Schools language={language} />} />
                   <Route path="/enrollment" element={<Enrollments language={language} />} />
                   <Route path="/attendance" element={<Attendance language={language} />} />
-                  
-                  {/* Finances + existing billing flow */}
+
                   <Route path="/finances" element={<Finances language={language} />} />
-                  <Route
-                    path="/finances/IncomeDialog"
-                    element={<IncomeDialog language={language} />}
-                  />
-
-                  {/* 🔹 Expenses page */}
-                  <Route path="/finances/expenses" element={<Expenses language={language}/>} />
-
-                  {/* 🔹 Profit & Loss page */}
+                  <Route path="/finances/IncomeDialog" element={<IncomeDialog language={language} />} />
+                  <Route path="/finances/expenses" element={<Expenses language={language} />} />
                   <Route path="/finances/profit-loss" element={<ProfitLoss language={language} />} />
-
-                  {/* 🔹 Student billing */}
                   <Route path="/finances/billing" element={<StudentBillingSearch language={language} />} />
-                  <Route path="/finances/pay/:studentId" element={<StudentPayment  language={language}/>} />
-                  <Route path="/finances/history/:studentId" element={<StudentReceiptHistory language={language}/>} />
-
-                  {/* 🔹 Teacher pay (list + detail) */}
-                  <Route path="/finances/teacher-pay" element={<TeacherPayList language={language}/>} />
-                  <Route path="/finances/teacher-pay/:teacherId" element={<TeacherPay language={language}/>} />
+                  <Route path="/finances/pay/:studentId" element={<StudentPayment language={language} />} />
+                  <Route path="/finances/history/:studentId" element={<StudentReceiptHistory language={language} />} />
+                  <Route path="/finances/teacher-pay" element={<TeacherPayList language={language} />} />
+                  <Route path="/finances/teacher-pay/:teacherId" element={<TeacherPay language={language} />} />
+                  <Route path="/finances/audit-log" element={<PaymentAuditLog language={language} />} />
 
                   <Route path="/Settings" element={<Settings language={language} />} />
 
-
-                  {/* Open pages */}
-                  <Route path="/invoices" element={<Invoices  language={language}/>} />
+                  <Route path="/invoices" element={<Invoices language={language} />} />
                   <Route path="/specialities" element={<Specialities language={language} />} />
                   <Route path="/calendar" element={<Calendar language={language} />} />
                   <Route path="/faq" element={<Faq language={language} />} />
 
-                  {/* Admin / Users management – permission based */}
-                  <Route
-                    element={
-                      <PermRoute anyOf={["API:ACCOUNTS_READ", "API:USER_PERMS_WRITE"]} />
-                    }
-                  >
+                  <Route element={<PermRoute anyOf={["API:ACCOUNTS_READ", "API:USER_PERMS_WRITE"]} />}>
                     <Route path="/admin/users" element={<UsersPage language={language} />} />
                   </Route>
 
-                  {/* Role based gate */}
                   <Route element={<RoleRoute roles={["ROLE_ADMIN", "ROLE_PRINCIPAL"]} />}>
                     <Route path="/admin" element={<div className="p-6">Admin Panel</div>} />
                   </Route>
                 </Route>
               </Route>
 
-              {/* Fallbacks */}
               <Route path="/forbidden" element={<div className="p-8">403 Forbidden</div>} />
               <Route path="*" element={<div className="p-8">Not Found</div>} />
             </Routes>

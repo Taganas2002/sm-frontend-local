@@ -16,11 +16,19 @@ export const studentReceipts = async (studentId) => {
   return data;
 };
 
+/** Fresh key per collect so retries / double-submit do not duplicate receipts on the server. */
+export const newCollectIdempotencyKey = () => {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+  return `collect-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+};
+
 /** Collect a payment (partial or prepay is handled by backend) */
-export const collectPayment = async (payload, cashierUserId) => {
-  const { data } = await api.post(`/billing/collect`, payload, {
-    headers: { "X-Cashier-UserId": cashierUserId ?? "" },
-  });
+export const collectPayment = async (payload, cashierUserId, idempotencyKey = newCollectIdempotencyKey()) => {
+  const headers = {
+    "X-Cashier-UserId": cashierUserId ?? "",
+    "Idempotency-Key": idempotencyKey,
+  };
+  const { data } = await api.post(`/billing/collect`, payload, { headers });
   return data;
 };
 
@@ -101,6 +109,7 @@ export const studentSummaryAll = async (studentId, groupId) => {
 export default {
   unpaidMonthlyGroups,
   studentReceipts,
+  newCollectIdempotencyKey,
   collectPayment,
   searchCycleRange,
   searchMonthlyRange,

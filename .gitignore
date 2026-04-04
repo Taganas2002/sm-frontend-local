@@ -11,6 +11,14 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
+.env.*
+!.env.example
+
+# Playwright / build artifacts
+playwright-report/
+test-results/
+build/
 
 # Editor directories and files
 .vscode/*

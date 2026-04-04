@@ -1,7 +1,7 @@
         import { useState } from "react";
         import { Box, useTheme, Typography, Paper } from "@mui/material";
         import { tokens } from "../../theme";
-        import translations from "../../translations";
+        import { getTranslations } from "../../translations";
         import Header from "../../components/Header";
 
         import AddIcon from "@mui/icons-material/Add";
@@ -18,7 +18,7 @@
         const Dashboard = ({ language }) => {
         const theme = useTheme();
         const colors = tokens(theme.palette.mode);
-        const t = translations[language] || translations["ar"];
+        const t = getTranslations(language);
 
         // ✅ State for Teacher & Student dialogs
         const [teacherDialogOpen, setTeacherDialogOpen] = useState(false);

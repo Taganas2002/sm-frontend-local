@@ -2,13 +2,13 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Box, Button, TextField, Typography ,useTheme} from "@mui/material";
+import { Box, Button, Chip, Paper, Stack, TextField, Typography, useTheme } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import HistoryIcon from "@mui/icons-material/History";
 import PaymentIcon from "@mui/icons-material/Payment";
 import { tokens } from "../../theme";
 
-import { listTeachers } from "../../api/teachers";
+import { searchTeachers } from "../../api/teachersApi";
 import TeacherPayoutHistoryDialog from "./components/TeacherPayoutHistoryDialog";
 
 export default function TeacherPayList({ language }) {
@@ -27,7 +27,7 @@ export default function TeacherPayList({ language }) {
 
   const { data, isFetching, refetch } = useQuery({
     queryKey: ["teacherList", q, page, size, sort],
-    queryFn: () => listTeachers({ q, page, size, sort }),
+    queryFn: () => searchTeachers({ search: q, page, size, sort }),
     keepPreviousData: true,
   });
 
@@ -74,18 +74,19 @@ export default function TeacherPayList({ language }) {
     {
       field: "actions",
       headerName: "Actions",
-      width: 220,
+      width: 240,
       headerAlign: "center",
       align: "center",
       sortable: false,
       filterable: false,
       renderCell: (p) => (
-        <Box display="flex" gap={1}>
+        <Stack direction="row" gap={1}>
           <Button
             size="small"
             variant="contained"
             startIcon={<PaymentIcon />}
             onClick={() => navigate(`/finances/teacher-pay/${p.row.id}`)}
+            sx={{ textTransform: "none", borderRadius: 2 }}
           >
             Pay
           </Button>
@@ -94,21 +95,20 @@ export default function TeacherPayList({ language }) {
             variant="outlined"
             startIcon={<HistoryIcon />}
             onClick={() => openHistory(p.row)}
+            sx={{ textTransform: "none", borderRadius: 2 }}
           >
             History
           </Button>
-        </Box>
+        </Stack>
       ),
     },
   ];
 
   return (
     <Box p={2}>
-      <Typography variant="h4" mb={2}>
-        Teacher Pay
-      </Typography>
+      <Typography variant="h4" mb={2}>Teacher Pay</Typography>
 
-      <Box display="flex" gap={1} mb={1}>
+      <Box display="flex" gap={1} mb={1.5} flexWrap="wrap">
         <TextField
           label="Search (name/phone/email)"
           size="small"
@@ -126,9 +126,11 @@ export default function TeacherPayList({ language }) {
         >
           Search
         </Button>
+        <Chip label={`Teachers: ${data?.totalElements ?? 0}`} variant="outlined" />
       </Box>
 
-<Box
+      <Paper elevation={0} sx={{ border: `1px solid ${colors.primary[300]}`, borderRadius: 2, overflow: "hidden" }}>
+      <Box
             height="80vh"
             dir={language === "ar" ? "rtl" : "ltr"}
             sx={{
@@ -155,7 +157,7 @@ export default function TeacherPayList({ language }) {
                     : colors.blueAccent[400],
             },
             }}
-        >        
+        >
         <DataGrid
           rows={rows}
           columns={columns}
@@ -169,13 +171,9 @@ export default function TeacherPayList({ language }) {
           }}
           pageSizeOptions={[10, 20, 50]}
           disableRowSelectionOnClick
-          sx={{
-            "& .MuiDataGrid-cell, & .MuiDataGrid-columnHeader": {
-              justifyContent: "center",
-            },
-          }}
         />
       </Box>
+      </Paper>
 
       {/* history dialog */}
       {historyOpen && historyTeacher.id != null && (
@@ -184,6 +182,7 @@ export default function TeacherPayList({ language }) {
           onClose={() => setHistoryOpen(false)}
           teacherId={historyTeacher.id}
           teacherName={historyTeacher.name}
+          language={language}
         />
       )}
     </Box>

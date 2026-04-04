@@ -4,17 +4,24 @@ import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import resourceTimeGridPlugin from "@fullcalendar/resource-timegrid";
+import frLocale from "@fullcalendar/core/locales/fr";
+import arLocale from "@fullcalendar/core/locales/ar";
 import AddIcon from "@mui/icons-material/Add";
 import { Menu, MenuItem } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 
 import {
+  Autocomplete,
   Box,
   Button,
+  Chip,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
+  Stack,
   TextField,
+  Typography,
   useTheme,
   Snackbar,
   Alert,
@@ -25,7 +32,7 @@ import * as yup from "yup";
 import Header from "../../components/Header";
 import { tokens } from "../../theme";
 import { searchClassrooms } from "../../api/classroomsApi";
-import { lookupGroups } from "../../api/groupsApi";
+import { listGroups } from "../../api/groupsApi";
 import {
   getWeekSchedules,
   checkClassroomAvailability,
@@ -42,12 +49,18 @@ const Calendar = ({ language }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const t = translations[language] || translations["fr"];
+  const calendarLocale =
+    language === "ar" ? arLocale : language === "fr" ? frLocale : "en";
 
   const calendarRef = useRef(null);
 
   // Core state
   const [classrooms, setClassrooms] = useState([]);
   const [groups, setGroups] = useState([]);
+  const [selectedRoomIds, setSelectedRoomIds] = useState([]);
+  const [resourcePage, setResourcePage] = useState(0);
+  const [maxVisibleRooms, setMaxVisibleRooms] = useState(3);
+  const [currentView, setCurrentView] = useState("resourceTimeGridDay");
 
   // CRUD dialogs / context
   const [openDialog, setOpenDialog] = useState(false);
@@ -89,6 +102,15 @@ const Calendar = ({ language }) => {
     return monday;
   };
 
+  // Backend /calendar/week expects a Monday anchor.
+  // Use visible range midpoint so Sunday-first week views map to the correct Monday.
+  const mondayOfVisibleRange = (startLike, endLike) => {
+    const s = new Date(startLike).getTime();
+    const e = new Date(endLike).getTime();
+    const mid = new Date(Math.floor((s + e) / 2));
+    return mondayOfStr(mid);
+  };
+
   const isGroupPerSession = (groupId) => {
     const g = groups.find((x) => String(x.id) === String(groupId));
     if (!g) return false;
@@ -111,10 +133,9 @@ const Calendar = ({ language }) => {
       } catch {
         setClassrooms([]);
       }
-
       try {
-        const g = await lookupGroups({ page: 0, size: 200 });
-        setGroups(Array.isArray(g.content) ? g.content : g || []);
+        const g = await listGroups();
+        setGroups(Array.isArray(g) ? g : []);
       } catch {
         setGroups([]);
       }
@@ -132,9 +153,13 @@ const Calendar = ({ language }) => {
   useEffect(() => {
     (async () => {
       try {
+        const tokenRaw =
+          typeof window !== "undefined" ? localStorage.getItem("auth") : null;
+        // Avoid noisy 401 requests when session is missing/expired.
+        if (!tokenRaw) return;
         const { today } = await getServerDate(); // { today: 'YYYY-MM-DD' }
-        const serverMonday = mondayOfDate(new Date(`${today}T00:00:00`));
-        calendarRef.current?.getApi()?.gotoDate(serverMonday);
+        const serverWeekStart = new Date(`${today}T00:00:00`);
+        calendarRef.current?.getApi()?.gotoDate(serverWeekStart);
       } catch {
         // ignore; use client date
       }
@@ -155,7 +180,7 @@ const Calendar = ({ language }) => {
           key,
           scheduleId: evObj.id,
           date,
-          // ✅ show the pure group name in the dock
+          // show the pure group name in the dock
           title: evObj.extendedProps?.groupName || evObj.title || "",
           groupId: evObj.extendedProps.groupId,
         },
@@ -233,40 +258,46 @@ const Calendar = ({ language }) => {
 
   // ---------- Map backend week events → FullCalendar (local times) ----------
   const mapWeekEventsToCalendar = (list) =>
-    (list || []).map((e, index) => {
-      const start = `${e.date}T${e.startTime}`;
-      const end = `${e.date}T${e.endTime}`;
-      const color = sessionColors[index % sessionColors.length];
+    (list || [])
+      .filter((event) => {
+        const group = groups.find((entry) => String(entry.id) === String(event.groupId));
+        const groupStartDate = String(group?.startDate || "").slice(0, 10);
+        const eventDate = String(event?.date || "").slice(0, 10);
+        if (!groupStartDate || !eventDate) return true;
+        return eventDate >= groupStartDate;
+      })
+      .map((e, index) => {
+        const start = `${e.date}T${e.startTime}`;
+        const end = `${e.date}T${e.endTime}`;
+        const color = sessionColors[index % sessionColors.length];
 
-      // link event to the resource column (room)
-      const match = classrooms.find(
-        (c) => (c.roomName || c.name) && (c.roomName || c.name) === e.classroomName
-      );
-      const resourceId = match ? String(match.id) : undefined;
+        const match = classrooms.find(
+          (c) => (c.roomName || c.name) && (c.roomName || c.name) === e.classroomName
+        );
+        const resourceId = match ? String(match.id) : undefined;
 
-      return {
-        id: e.scheduleId,
-        // ✅ title now ONLY the group name
-        title: e.groupName || "Group",
-        start,
-        end,
-        resourceId,
-        backgroundColor: color,
-        borderColor: color,
-        textColor: "#fff",
-        extendedProps: {
-          groupId: e.groupId,
-          groupName: e.groupName,
-          classroomId: match ? match.id : null,
-          classroomName: e.classroomName,
-          dayOfWeek: e.dayOfWeek || null,
-          date: e.date,
-          startTime: e.startTime,
-          endTime: e.endTime,
-          oneTime: !!e.oneTime,
-        },
-      };
-    });
+        return {
+          id: e.scheduleId,
+          title: e.groupName || "Group",
+          start,
+          end,
+          resourceId,
+          backgroundColor: color,
+          borderColor: color,
+          textColor: "#fff",
+          extendedProps: {
+            groupId: e.groupId,
+            groupName: e.groupName,
+            classroomId: match ? match.id : null,
+            classroomName: e.classroomName,
+            dayOfWeek: e.dayOfWeek || null,
+            date: e.date,
+            startTime: e.startTime,
+            endTime: e.endTime,
+            oneTime: !!e.oneTime,
+          },
+        };
+      });
 
   // Build & store candidates safely (no loops)
   const setCandidatesSafely = (mapped) => {
@@ -276,6 +307,29 @@ const Calendar = ({ language }) => {
       setWeekEvents(mapped);
     }
   };
+
+  const filteredClassrooms =
+    selectedRoomIds.length === 0
+      ? classrooms
+      : classrooms.filter((c) => selectedRoomIds.includes(String(c.id)));
+
+  const totalResourcePages = Math.max(
+    1,
+    Math.ceil(filteredClassrooms.length / Math.max(1, maxVisibleRooms))
+  );
+  const safeResourcePage = Math.min(resourcePage, totalResourcePages - 1);
+  const visibleClassrooms = filteredClassrooms.slice(
+    safeResourcePage * maxVisibleRooms,
+    safeResourcePage * maxVisibleRooms + maxVisibleRooms
+  );
+
+  useEffect(() => {
+    setResourcePage(0);
+  }, [selectedRoomIds, maxVisibleRooms]);
+
+  useEffect(() => {
+    if (resourcePage !== safeResourcePage) setResourcePage(safeResourcePage);
+  }, [resourcePage, safeResourcePage]);
 
   return (
     <Box m="15px">
@@ -297,8 +351,109 @@ const Calendar = ({ language }) => {
           }}
           onClick={() => setOpenDialog(true)}
         >
-          {t.addClass}
+          {t.addSession}
         </Button>
+      </Box>
+
+      {/* Calendar controls */}
+      <Box
+        mb={1.5}
+        display="flex"
+        gap={1}
+        flexWrap="wrap"
+        alignItems="flex-start"
+        justifyContent="space-between"
+      >
+        <Box display="flex" gap={1} flexWrap="wrap" alignItems="center">
+          <Autocomplete
+            multiple
+            size="small"
+            options={classrooms}
+            value={classrooms.filter((c) => selectedRoomIds.includes(String(c.id)))}
+            onChange={(_, selected) => {
+              setSelectedRoomIds(selected.map((c) => String(c.id)));
+            }}
+            disableCloseOnSelect
+            limitTags={2}
+            getOptionLabel={(c) => c.roomName || c.name || `Room ${c.id}`}
+            isOptionEqualToValue={(a, b) => String(a.id) === String(b.id)}
+            sx={{ minWidth: 280 }}
+            renderTags={(value, getTagProps) =>
+              value.map((option, index) => (
+                <Chip
+                  {...getTagProps({ index })}
+                  key={option.id}
+                  size="small"
+                  label={option.roomName || option.name || `Room ${option.id}`}
+                  deleteIcon={<CloseIcon />}
+                />
+              ))
+            }
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label={t.classroom || "Classroom"}
+                size="small"
+                sx={{ "& .MuiInputBase-root": { minHeight: 40 } }}
+                helperText={
+                  selectedRoomIds.length === 0
+                    ? (t.allClassrooms || "All classrooms")
+                    : `${selectedRoomIds.length} ${(t.selected || "selected")}`
+                }
+              />
+            )}
+          />
+
+          <TextField
+            select
+            size="small"
+            label={t.visibleRooms || "Visible rooms"}
+            value={String(maxVisibleRooms)}
+            onChange={(e) => setMaxVisibleRooms(Number(e.target.value))}
+            sx={{ minWidth: 160, "& .MuiInputBase-root": { minHeight: 40 } }}
+            helperText=" "
+          >
+            {[3, 4, 5, 6, 8, 10].map((n) => (
+              <MenuItem key={n} value={String(n)}>
+                {n}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Box>
+
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Button
+            size="small"
+            variant="contained"
+            onClick={() => setResourcePage((p) => Math.max(0, p - 1))}
+            disabled={safeResourcePage <= 0}
+            sx={{
+              minWidth: 90,
+              textTransform: "none",
+              opacity: safeResourcePage <= 0 ? 0.55 : 1,
+            }}
+          >
+            {t.previous || "Previous"}
+          </Button>
+          <Typography variant="body2" sx={{ opacity: 0.9 }}>
+            {(t.page || "Page")} {safeResourcePage + 1}/{totalResourcePages}
+          </Typography>
+          <Button
+            size="small"
+            variant="contained"
+            onClick={() =>
+              setResourcePage((p) => Math.min(totalResourcePages - 1, p + 1))
+            }
+            disabled={safeResourcePage >= totalResourcePages - 1}
+            sx={{
+              minWidth: 90,
+              textTransform: "none",
+              opacity: safeResourcePage >= totalResourcePages - 1 ? 0.55 : 1,
+            }}
+          >
+            {t.next || "Next"}
+          </Button>
+        </Stack>
       </Box>
 
       {/* Add Class Dialog */}
@@ -392,13 +547,13 @@ const Calendar = ({ language }) => {
                       helperText={touched.day && errors.day}
                     >
                       {[
+                        "SUNDAY",
                         "MONDAY",
                         "TUESDAY",
                         "WEDNESDAY",
                         "THURSDAY",
                         "FRIDAY",
                         "SATURDAY",
-                        "SUNDAY",
                       ].map((d) => (
                         <MenuItem key={d} value={d}>
                           {t.days[d]}
@@ -463,30 +618,31 @@ const Calendar = ({ language }) => {
 
       {/* Calendar */}
       <Box sx={{ overflowX: "auto", width: "100%" }}>
-        <Box sx={{ minWidth: `${Math.max(classrooms.length, 1) * 700}px` }}>
+        <Box sx={{ minWidth: `${Math.max(classrooms.length, 1) * 260}px` }}>
           <FullCalendar
             ref={calendarRef}
             timeZone="local"
-            firstDay={1}
-            height="80vh"
+            firstDay={0}
+            locale={calendarLocale}
+            height="calc(100vh - 220px)"
             plugins={[timeGridPlugin, interactionPlugin, resourceTimeGridPlugin]}
-            initialView="resourceTimeGridWeek"
+            initialView="resourceTimeGridDay"
             headerToolbar={{
               left: "prev,next today",
               center: "title",
-              right: "resourceTimeGridWeek,resourceTimeGridDay",
+              right: "resourceTimeGridDay,resourceTimeGridWeek",
             }}
-            resources={classrooms.map((c) => ({
+            resources={visibleClassrooms.map((c) => ({
               id: String(c.id),
               title: c.roomName || c.name || `Room ${c.id}`,
             }))}
             events={async (fetchInfo, success, failure) => {
               try {
-                if (!classrooms.length) {
+                if (!visibleClassrooms.length) {
                   success([]);
                   return;
                 }
-                const weekStart = mondayOfStr(fetchInfo.start);
+                const weekStart = mondayOfVisibleRange(fetchInfo.start, fetchInfo.end);
                 const data = await getWeekSchedules(weekStart, tzOffsetMinutes());
                 const mapped = mapWeekEventsToCalendar(data);
                 setCandidatesSafely(mapped);
@@ -498,12 +654,21 @@ const Calendar = ({ language }) => {
             }}
             editable={false}
             selectable={false}
-            resourceAreaWidth="200px"
-            slotMinTime="07:00:00"
+            resourceAreaWidth="140px"
+            slotMinTime="00:00:00"
             slotMaxTime="24:00:00"
+            scrollTime="07:00:00"
+            slotDuration={
+              currentView === "resourceTimeGridDay" ? "00:30:00" : "01:00:00"
+            }
+            slotLabelInterval={
+              currentView === "resourceTimeGridDay" ? "00:30:00" : "01:00:00"
+            }
+            nowIndicator
+            datesSet={(arg) => setCurrentView(arg.view.type)}
             eventClick={openPanelForEvent}
             eventDidMount={(info) => {
-              // Right-click context menu + open dock panel
+              // Right-click context menu ONLY (do NOT open attendance panel here)
               info.el.addEventListener("contextmenu", (e) => {
                 e.preventDefault();
                 const event = info.event;
@@ -525,7 +690,7 @@ const Calendar = ({ language }) => {
                 setDeleteId(event.id);
                 setContextMenu({ mouseX: e.clientX + 2, mouseY: e.clientY - 6 });
 
-                openPanelFromEventObj(event);
+                // ❌ removed: openPanelFromEventObj(event);
               });
             }}
           />
@@ -624,6 +789,10 @@ const Calendar = ({ language }) => {
                 }
 
                 await updateSchedule(values.id, payload);
+
+                // ✅ Close any open attendance panels for this schedule to avoid stale list
+                setDockPanels((prev) => prev.filter((p) => p.scheduleId !== values.id));
+
                 setSnackbar({ open: true, message: t.successMsg, severity: "success" });
                 setOpenEditDialog(false);
                 calendarRef.current?.getApi().refetchEvents();
@@ -649,13 +818,13 @@ const Calendar = ({ language }) => {
                       helperText={touched.day && errors.day}
                     >
                       {[
+                        "SUNDAY",
                         "MONDAY",
                         "TUESDAY",
                         "WEDNESDAY",
                         "THURSDAY",
                         "FRIDAY",
                         "SATURDAY",
-                        "SUNDAY",
                       ].map((d) => (
                         <MenuItem key={d} value={d}>
                           {t.days[d]}
@@ -757,6 +926,10 @@ const Calendar = ({ language }) => {
             onClick={async () => {
               try {
                 await deleteSchedule(deleteId);
+
+                // ✅ Also remove any open panels for the deleted schedule
+                setDockPanels((prev) => prev.filter((p) => p.scheduleId !== deleteId));
+
                 setSnackbar({
                   open: true,
                   message: t.deleted || "🗑️ Session deleted successfully!",

@@ -1,72 +1,107 @@
-    import { Box, useTheme, Accordion, AccordionSummary, AccordionDetails, Typography, Paper } from "@mui/material";
-    import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-    import Header from "../../components/Header";
-    import translations from "../../translations";
+import { Box, Typography, Paper } from "@mui/material";
+import Header from "../../components/Header";
+import translations from "../../translations";
+import { useTheme } from "@mui/material/styles";
 
-    const FAQ = ({ language }) => {
-    const theme = useTheme();
-    const t = translations[language] || translations["fr"];
+// ✅ Import images from src/assets/screenshots
+import classroomImg from "../../assets/screenshots/classroom.jpg";
+import teacherImg from "../../assets/screenshots/teacher.jpg";
+import matiereImg from "../../assets/screenshots/matiere.jpg";
+import levelImg from "../../assets/screenshots/level.jpg";
+import sectionImg from "../../assets/screenshots/section.jpg";
+import groupImg from "../../assets/screenshots/group.jpg";
+import studentImg from "../../assets/screenshots/student.jpg";
+import enrollmentImg from "../../assets/screenshots/enrollment.jpg";
+import calendarImg from "../../assets/screenshots/calendar.jpg";
 
-    const questionColor = theme.palette.mode === "light" ? "#0A4F9F" : "#65ce30";
-    const answerColor = theme.palette.mode === "light" ? theme.palette.grey[800] : theme.palette.grey[300];
-    const bgColor = theme.palette.mode === "light" ? "#ffffff" : theme.palette.background.paper;
+const Guide = ({ language }) => {
+  const t = translations[language] || translations["fr"];
+  const theme = useTheme();
 
-    const faqItems = [
-        { q: t?.faq?.q1, a: t?.faq?.a1 },
-        { q: t?.faq?.q2, a: t?.faq?.a2 },
-        { q: t?.faq?.q3, a: t?.faq?.a3 },
-        { q: t?.faq?.q4, a: t?.faq?.a4 },
-        { q: t?.faq?.q5, a: t?.faq?.a5 },
-        { q: t?.faq?.q6, a: t?.faq?.a6 },
-    ];
+  const steps = [
+    { title: t.title1, description: t.desc1, screenshot: classroomImg },
+    { title: t.title2, description: t.desc2, screenshot: teacherImg },
+    { title: t.title3, description: t.desc3, screenshot: matiereImg },
+    { title: t.title4, description: t.desc4, screenshot: levelImg },
+    { title: t.title5, description: t.desc5, screenshot: sectionImg },
+    { title: t.title6, description: t.desc6, screenshot: groupImg },
+    { title: t.title7, description: t.desc7, screenshot: studentImg },
+    { title: t.title8, description: t.desc8, screenshot: enrollmentImg },
+    { title: t.title9, description: t.desc9, screenshot: calendarImg },
+  ];
 
-    return (
-        <Box m={3}>
-        <Header title={t?.faqTitle || "FAQ"} subtitle={t?.faqSubtitle} />
+  return (
+    <Box m={3}>
+      <Header
+        title={t?.guideTitle || "Guide d’utilisation"}
+        subtitle={
+          t?.guideSubtitle ||
+          "Suivez ces étapes pour bien démarrer avec le logiciel"
+        }
+      />
 
-        <Box mt={2} display="flex" flexDirection="column" gap={2}>
-            {faqItems.map((item, idx) =>
-            item?.q ? (
-                <Paper
-                key={idx}
-                elevation={3}
-                sx={{
-                    borderRadius: 2,
-                    overflow: "hidden",
-                    "&:hover": { boxShadow: 6 },
-                    transition: "box-shadow 0.3s ease",
-                    backgroundColor: bgColor,
-                }}
+      <Box mt={2} display="flex" flexDirection="column" gap={3}>
+        {steps.map((step, idx) => (
+          <Paper
+            key={idx}
+            elevation={3}
+            sx={{
+              borderRadius: 2,
+              p: 3,
+              backgroundColor:
+                theme.palette.mode === "light" ? "#eaf3ff" : "#2f3f5a",
+              "&:hover": {
+                boxShadow: "0px 4px 12px rgba(5, 126, 255, 0.5)", // custom blue shadow
+              },
+              transition: "box-shadow 0.3s ease",
+            }}
+          >
+            {/* Flex container for text (left) and image (right) */}
+            <Box
+              display="flex"
+              flexDirection={{ xs: "column", md: "row" }}
+              alignItems="center"
+              gap={3}
+            >
+              {/* Text */}
+              <Box flex={1}>
+                <Typography
+                  variant="h4"
+                  fontWeight={600}
+                  mb={1}
+                  sx={{
+                    color:
+                      theme.palette.mode === "light" ? "#1e3a8a" : "#57a5fa",
+                  }}
                 >
-                <Accordion disableGutters elevation={0}>
-                    <AccordionSummary
-                    expandIcon={<ExpandMoreIcon sx={{ color: questionColor }} />}
-                    sx={{
-                        px: 2,
-                        py: 1.5,
-                        "&:hover": { backgroundColor: theme.palette.action.hover },
-                    }}
-                    >
-                    <Typography
-                        variant="h6"
-                        fontWeight={600}
-                        color={questionColor}
-                    >
-                        {item.q}
-                    </Typography>
-                    </AccordionSummary>
-                    <AccordionDetails sx={{ px: 3, py: 2 }}>
-                    <Typography variant="body1" color={answerColor} lineHeight={1.7}>
-                        {item.a}
-                    </Typography>
-                    </AccordionDetails>
-                </Accordion>
-                </Paper>
-            ) : null
-            )}
-        </Box>
-        </Box>
-    );
-    };
+                  {step.title}
+                </Typography>
+                <Typography variant="h5" mb={2}>
+                  {step.description}
+                </Typography>
+              </Box>
 
-    export default FAQ;
+              {/* Image */}
+              {step.screenshot && (
+                <Box
+                  component="img"
+                  src={step.screenshot}
+                  alt={step.title}
+                  sx={{
+                    flex: 1,
+                    width: "100%",
+                    maxWidth: 650,
+                    borderRadius: 2,
+                    objectFit: "contain",
+                  }}
+                />
+              )}
+            </Box>
+          </Paper>
+        ))}
+      </Box>
+    </Box>
+  );
+};
+
+export default Guide;

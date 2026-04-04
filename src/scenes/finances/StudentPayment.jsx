@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams, useNavigate } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import Header from "../../components/Header";
 import {
@@ -14,6 +14,7 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
+  FormControlLabel,
   Grid,
   List,
   ListItem,
@@ -24,43 +25,55 @@ import {
   TextField,
   Typography,
   useTheme,
+  useMediaQuery,
+  IconButton,                 // <-- added
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import {
   collectPayment,
-  searchCycleAll,
+  searchCycleRange,
   studentReceipts,
   studentSummaryAll,
 } from "../../api/billing";
 import { lookupGroups } from "../../api/groups";
 import ReceiptDialog from "./components/ReceiptDialog";
 import { tokens } from "../../theme";
-import translations from "../../translations";
+import { getTranslations, translateBillingModel, translateBillingStatus } from "../../translations";
+import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew"; // <-- added
+import { getPaymentErrorMessage } from "../../utils/paymentErrors";
 
 const money = new Intl.NumberFormat(undefined, {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
-const STATUSES = ["ALL", "UNPAID", "PARTIAL", "PAID"];
+const STATUSES = ["OPEN", "ALL", "UNPAID", "PARTIAL", "PAID"];
+const OPEN_STATUSES = new Set(["UNPAID", "PARTIAL"]);
 
 // Infer billing model from a cycle row
 const inferModel = (period, held, required) => {
   const isDate = /^\d{4}-\d{2}-\d{2}$/.test(String(period || ""));
+  if (isDate && Number(held) === 1 && Number(required) === 0) return "PER_HOUR";
   return isDate && Number(required) === 1 && Number(held) >= 0
     ? "PER_SESSION"
     : "MONTHLY";
 };
 
 export default function StudentPayment({ language = "fr" }) {
-  const t = translations[language] || translations["fr"];
+  const t = getTranslations(language);
   const { studentId: studentIdStr } = useParams();
+  const location = useLocation();
   const studentId = Number(studentIdStr);
 
   const theme = useTheme();
+  const isCompactScreen = useMediaQuery(theme.breakpoints.down("lg"));
   const colors = tokens(theme.palette.mode);
+  const navigate = useNavigate(); // <-- added
+  const query = new URLSearchParams(location.search);
+  const studentNameFromQuery = query.get("name") || "";
+  const periodFromQuery = query.get("period") || "";
 
   // Filters
-  const [status, setStatus] = useState("ALL");
+  const [status, setStatus] = useState("OPEN");
   const [groupValue, setGroupValue] = useState(null);
   const [groupInput, setGroupInput] = useState("");
   const [groupOptions, setGroupOptions] = useState([]);
@@ -84,11 +97,19 @@ export default function StudentPayment({ language = "fr" }) {
   // Selection state
   const [selected, setSelected] = useState({});
 
-  // All-time cycles for this student
+  // Student cycles: cashier view shows all matching open cycles for the student
   const { data, isFetching, refetch } = useQuery({
-    queryKey: ["cycles-all-student", studentId, status, groupId],
+    queryKey: ["cycles-student", studentId, groupId],
     queryFn: () =>
-      searchCycleAll({ studentId, status, groupId, page: 0, size: 1000 }),
+      searchCycleRange({
+        start: "1900-01",
+        end: "2999-12",
+        status: "ALL",
+        groupId,
+        studentId,
+        page: 0,
+        size: 1000,
+      }),
     enabled: !!studentId,
     keepPreviousData: true,
   });
@@ -118,7 +139,8 @@ export default function StudentPayment({ language = "fr" }) {
     return (data?.content ?? []).map((r, i) => {
       const held = r.held ?? r.heldSessions ?? 0;
       const required = r.required ?? r.sessionsPerCycle ?? 0;
-      const model = inferModel(r.period, held, required);
+      const requiredDisplay = Number(required) > 0 ? Number(required) : 1;
+      const model = r.billingModel || inferModel(r.period, held, required);
       return {
         id: `${r.groupId}:${r.period}:${i}`,
         studentFullName: r.studentFullName ?? r.fullName ?? "",
@@ -128,6 +150,7 @@ export default function StudentPayment({ language = "fr" }) {
         periodLabel: r.period, // cycle key (YYYY-MM-DD or YYYY-MM-DD start / monthly label)
         held,
         required,
+        requiredDisplay,
         due: Number(r.due || 0),
         paid: Number(r.paid || 0),
         balance: Number(r.balance || 0),
@@ -137,7 +160,30 @@ export default function StudentPayment({ language = "fr" }) {
     });
   }, [data]);
 
-  const studentName = rows[0]?.studentFullName || `#${studentId}`;
+  const studentName = rows[0]?.studentFullName || studentNameFromQuery || `#${studentId}`;
+  const statusLabel = (value) =>
+    value === "OPEN" ? t.unpaidPartial || "Unpaid + Partial" : t[value.toLowerCase()] || value;
+
+  const visibleRows = useMemo(() => {
+    return rows.filter((row) => {
+      const rowStatus = String(row.status || "").toUpperCase();
+      if (status === "ALL") return true;
+      if (status === "OPEN") return OPEN_STATUSES.has(rowStatus);
+      return rowStatus === status;
+    });
+  }, [rows, status]);
+
+  const rowSummary = useMemo(() => {
+    return visibleRows.reduce(
+      (acc, row) => ({
+        cycles: acc.cycles + 1,
+        due: acc.due + Number(row.due || 0),
+        paid: acc.paid + Number(row.paid || 0),
+        balance: acc.balance + Number(row.balance || 0),
+      }),
+      { cycles: 0, due: 0, paid: 0, balance: 0 }
+    );
+  }, [visibleRows]);
 
   // Reset selection if filters change
   useEffect(() => {
@@ -146,133 +192,225 @@ export default function StudentPayment({ language = "fr" }) {
 
   // Selected cycles → pay full balances (and pass correct model)
   const payItems = useMemo(() => {
-    return rows
+    return visibleRows
       .filter((r) => selected[r.id] && r.balance > 0)
       .map((r) => ({
         groupId: r.groupId,
         model: r.model, // "MONTHLY" | "PER_SESSION" (important!)
         period: r.periodLabel, // exact cycle/session key
+        hours: r.model === "PER_HOUR" ? Number(r.held || 1) : undefined,
         amount: Number(Number(r.balance).toFixed(2)),
         _ui: { groupName: r.groupName, key: `${r.groupId}@${r.periodLabel}` },
       }));
-  }, [rows, selected]);
+  }, [visibleRows, selected]);
+
+  /** Oldest cycle first so wallet/cash allocation matches backend FIFO intent. */
+  const payItemsFifo = useMemo(() => {
+    return [...payItems].sort((a, b) => {
+      const pa = String(a.period || "");
+      const pb = String(b.period || "");
+      if (pa !== pb) return pa.localeCompare(pb);
+      return Number(a.groupId || 0) - Number(b.groupId || 0);
+    });
+  }, [payItems]);
 
   const selectedTotal = useMemo(
     () => payItems.reduce((sum, it) => sum + (it.amount || 0), 0),
     [payItems]
   );
 
-  // Global amount & wallet toggle
-  const [globalAmount, setGlobalAmount] = useState("");
-  const [useWalletFirst, setUseWalletFirst] = useState(false);
+  // Wallet credit — applied when "use credit first" is on (see toggle).
   const credit = Number(summary?.totalCredit || 0);
 
-  // Needs to pay from open balances
-  const netPayable = Number(
-    (summary?.totalBalance ?? summary?.netPayable ?? 0)
-  );
-  const totalDue = Number(summary?.totalDue || 0);
-  const totalPaid = Number(summary?.totalPaid || 0);
+  const [useWalletFirst, setUseWalletFirst] = useState(true);
+  const [globalAmount, setGlobalAmount] = useState("");
+  const [submitMode, setSubmitMode] = useState("items"); // "items" | "global"
+
+  // Keep the summary aligned with the rows currently shown on screen.
+  const totalDue = rowSummary.due;
+  const totalPaid = rowSummary.paid;
+  const totalBalance = rowSummary.balance;
+
+  const globalAmountNumber = useMemo(() => {
+    const n = Number(globalAmount);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  }, [globalAmount]);
+
+  /** Cash still needed for the current operation (selection FIFO or global amount). */
+  const cashToCollectSelection = useMemo(() => {
+    if (payItemsFifo.length > 0) {
+      if (!useWalletFirst || credit <= 0) {
+        return payItemsFifo.reduce((s, it) => s + (it.amount || 0), 0);
+      }
+      let walletAvail = Math.max(credit, 0);
+      let cash = 0;
+      for (const it of payItemsFifo) {
+        let need = Number(it.amount || 0);
+        if (walletAvail > 0 && need > 0) {
+          const fromW = Math.min(walletAvail, need);
+          walletAvail -= fromW;
+          need -= fromW;
+        }
+        cash += need;
+      }
+      return cash;
+    }
+
+    // Global FIFO mode: the cashier collects the entered amount as cash.
+    return globalAmountNumber;
+  }, [payItemsFifo, credit, useWalletFirst, globalAmountNumber]);
 
   // -------- Confirm Plan (with FIFO lines) --------
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [plan, setPlan] = useState(null);
 
-  // Build a preview that mirrors backend:
-  // 1) selected items pay exact cycles (preserve model),
-  // 2) wallet-first + global FIFO across remaining unpaid rows (grid order).
-  const buildPlan = () => {
-    const selectedKeys = new Set(payItems.map((it) => it._ui.key));
+  // Build a preview that mirrors backend; mode is derived at click time to avoid stale state.
+  const buildPlan = (mode) => {
+    const hasItemSelection = mode === "items" && payItemsFifo.length > 0;
+    const useGlobal = mode === "global" && !hasItemSelection && globalAmountNumber > 0;
 
-    const fifoCycles = rows
-      .filter(
-        (r) => r.balance > 0 && !selectedKeys.has(`${r.groupId}@${r.periodLabel}`)
-      )
-      .slice()
-      .sort((a, b) => {
-        const pa = String(a.periodLabel);
-        const pb = String(b.periodLabel);
-        if (pa < pb) return -1;
-        if (pa > pb) return 1;
-        return String(a.groupName).localeCompare(String(b.groupName));
-      })
-      .map((r) => ({
-        key: `${r.groupId}@${r.periodLabel}`,
-        groupId: r.groupId,
-        groupName: r.groupName,
-        label: r.periodLabel,
-        balance: Number(r.balance || 0),
-      }));
+    const currentOpenBalance = rows.reduce(
+      (sum, row) => sum + Number(row.balance || 0),
+      0
+    );
 
-    const cashFromItems = payItems.reduce((s, it) => s + (it.amount || 0), 0);
-    let walletAvail = useWalletFirst ? Math.max(credit, 0) : 0;
-    let cashGlobal = Number(globalAmount || 0) > 0 ? Number(globalAmount) : 0;
+    // Itemised selection mode (per-cycle items)
+    if (hasItemSelection) {
+      const shouldUseWalletFirst = useWalletFirst && credit > 0;
+      let walletAvail = shouldUseWalletFirst ? Math.max(credit, 0) : 0;
 
-    const itemLines = payItems.map((it) => ({
-      groupName: it._ui.groupName,
-      label: it.period,
-      cash: it.amount,
-      note: it.model === "PER_SESSION" ? "per-session" : "monthly",
-    }));
-
-    const fifoLines = []; // {groupName, label, fromWallet, fromCash}
-
-    for (const c of fifoCycles) {
-      if (walletAvail <= 0 && cashGlobal <= 0) break;
-
-      let need = c.balance;
-      let fromWallet = 0;
-      let fromCash = 0;
-
-      if (walletAvail > 0 && need > 0) {
-        fromWallet = Math.min(walletAvail, need);
-        walletAvail -= fromWallet;
-        need -= fromWallet;
-      }
-      if (cashGlobal > 0 && need > 0) {
-        fromCash = Math.min(cashGlobal, need);
-        cashGlobal -= fromCash;
-        need -= fromCash;
-      }
-
-      if (fromWallet > 0 || fromCash > 0) {
-        fifoLines.push({
-          groupName: c.groupName,
-          label: c.label,
+      let cashFromItems = 0;
+      let walletUsedOnItems = 0;
+      const itemLines = payItemsFifo.map((it) => {
+        let need = Number(it.amount || 0);
+        let fromWallet = 0;
+        let fromCash = 0;
+        if (walletAvail > 0 && need > 0) {
+          fromWallet = Math.min(walletAvail, need);
+          walletAvail -= fromWallet;
+          need -= fromWallet;
+          walletUsedOnItems += fromWallet;
+        }
+        if (need > 0) {
+          fromCash = need;
+          cashFromItems += fromCash;
+        }
+        return {
+          groupName: it._ui.groupName,
+          label: it.period,
+          cash: fromCash,
           fromWallet,
-          fromCash,
-        });
-      }
+          note:
+            it.model === "PER_SESSION"
+              ? "per-session"
+              : it.model === "PER_HOUR"
+              ? `per-hour (${it.hours || 1}h)`
+              : "monthly",
+        };
+      });
+
+      const stillUnpaidAfter = Math.max(
+        currentOpenBalance - (cashFromItems + walletUsedOnItems),
+        0
+      );
+
+      const walletRemainingAfter = Math.max(credit - walletUsedOnItems, 0);
+
+      return {
+        studentName,
+        itemLines,
+        totals: {
+          cashReceived: cashFromItems,
+          cashAppliedToDues: cashFromItems,
+          walletUsed: walletUsedOnItems,
+          leftoverToWallet: walletRemainingAfter,
+          stillUnpaidAfter,
+        },
+      };
     }
 
-    const cashFromGlobalApplied = fifoLines.reduce((s, l) => s + l.fromCash, 0);
-    const walletUsed = fifoLines.reduce((s, l) => s + l.fromWallet, 0);
-    const leftoverToWallet = Math.max(
-      (Number(globalAmount || 0) || 0) - cashFromGlobalApplied,
-      0
-    );
+    // Global FIFO amount mode (matches allocateGlobal behaviour)
+    if (useGlobal) {
+      const amount = globalAmountNumber;
+      let walletAvail = useWalletFirst ? Math.max(credit, 0) : 0;
+      let remainingCash = amount;
+      let walletUsed = 0;
+      let cashApplied = 0;
 
-    const stillUnpaidAfter = Math.max(
-      netPayable - (cashFromItems + cashFromGlobalApplied + walletUsed),
-      0
-    );
+      const fifoRows = [...rows]
+        .filter((r) => Number(r.balance || 0) > 0)
+        .sort((a, b) => {
+          const pa = String(a.periodLabel || "");
+          const pb = String(b.periodLabel || "");
+          if (pa !== pb) return pa.localeCompare(pb);
+          return Number(a.groupId || 0) - Number(b.groupId || 0);
+        });
 
-    return {
-      studentName,
-      itemLines,
-      fifoLines,
-      totals: {
-        cashReceived: cashFromItems + (Number(globalAmount || 0) || 0),
-        cashAppliedToDues: cashFromItems + cashFromGlobalApplied,
-        walletUsed,
-        leftoverToWallet,
-        stillUnpaidAfter,
-      },
-    };
+      const itemLines = [];
+
+      for (const r of fifoRows) {
+        if (walletAvail <= 0 && remainingCash <= 0) break;
+        let need = Number(r.balance || 0);
+        if (need <= 0) continue;
+
+        let fromWallet = 0;
+        let fromCash = 0;
+
+        if (walletAvail > 0 && need > 0) {
+          fromWallet = Math.min(walletAvail, need);
+          walletAvail -= fromWallet;
+          need -= fromWallet;
+          walletUsed += fromWallet;
+        }
+
+        if (remainingCash > 0 && need > 0) {
+          fromCash = Math.min(remainingCash, need);
+          remainingCash -= fromCash;
+          need -= fromCash;
+          cashApplied += fromCash;
+        }
+
+        if (fromWallet > 0 || fromCash > 0) {
+          itemLines.push({
+            groupName: r.groupName,
+            label: r.periodLabel,
+            cash: fromCash,
+            fromWallet,
+            note: translateBillingModel(r.model, t),
+          });
+        }
+      }
+
+      const stillUnpaidAfter = Math.max(
+        currentOpenBalance - (cashApplied + walletUsed),
+        0
+      );
+
+      const leftoverToWallet = Math.max(remainingCash, 0);
+
+      return {
+        studentName,
+        itemLines,
+        totals: {
+          cashReceived: amount,
+          cashAppliedToDues: cashApplied,
+          walletUsed,
+          leftoverToWallet,
+          stillUnpaidAfter,
+        },
+      };
+    }
+
+    // No selection and no global amount → no-op plan
+    return null;
   };
 
   const openConfirm = () => {
-    const p = buildPlan();
+    const mode = payItemsFifo.length > 0 ? "items" : "global";
+    if (mode === "global" && globalAmountNumber <= 0) return;
+
+    setSubmitMode(mode);
+    const p = buildPlan(mode);
     setPlan(p);
     setConfirmOpen(true);
   };
@@ -283,28 +421,43 @@ export default function StudentPayment({ language = "fr" }) {
 
   const { mutate: payCombined, isLoading: paying } = useMutation({
     mutationFn: () => {
-      const payload = {
+      const base = {
         studentId,
         method: "CASH",
         reference: `FrontDesk-${Date.now()}`,
-        items: payItems, // each has correct .model and .period
       };
-      const g = Number(globalAmount || 0);
-      if (!Number.isNaN(g) && g > 0) payload.globalAmount = g;
-      if (useWalletFirst) payload.useWalletFirst = true;
 
+      if (submitMode === "items") {
+        const items = payItemsFifo.map(({ _ui, ...rest }) => rest);
+        const payload = { ...base, items };
+        if (items.length === 0) {
+          throw new Error("No items selected for payment.");
+        }
+        if (useWalletFirst && credit > 0) {
+          payload.useWalletFirst = true;
+        }
+        return collectPayment(payload, cashierUserId);
+      }
+
+      // Global FIFO payment / wallet top-up
+      const amount = globalAmountNumber;
+      const payload = {
+        ...base,
+        globalAmount: amount > 0 ? amount : undefined,
+      };
+      if (useWalletFirst && credit > 0) {
+        payload.useWalletFirst = true;
+      }
       return collectPayment(payload, cashierUserId);
     },
     onSuccess: (rec) => {
       setReceipt(rec);
       setSelected({});
-      setGlobalAmount("");
       setConfirmOpen(false);
       refetch();
       refetchSummary();
     },
-    onError: (e) =>
-      alert(e?.message || (t && t.paymentFailed) || "Payment failed"),
+    onError: (e) => alert(getPaymentErrorMessage(e, t)),
   });
 
   // ---------- GRID ----------
@@ -312,52 +465,52 @@ export default function StudentPayment({ language = "fr" }) {
     {
       field: "groupName",
       headerName: t.group,
-      flex: 1.5,
-      minWidth: 220,
+      flex: 1.2,
+      minWidth: 150,
       headerAlign: "center",
       align: "center",
       renderCell: (p) => (
-        <Chip size="small" variant="outlined" label={p?.value || "(no group)"} />
+        <Chip size="small" variant="outlined" label={p?.value || t.noGroup || "(no group)"} />
       ),
     },
     {
       field: "periodLabel",
       headerName: t.periodLabel || "Period",
-      width: 140,
+      width: 120,
       headerAlign: "center",
       align: "center",
     },
     {
       field: "model",
       headerName: t.model || "Model",
-      width: 130,
+      width: 110,
       headerAlign: "center",
       align: "center",
       renderCell: (p) => (
         <Chip
           size="small"
-          label={p.value}
-          color={p.value === "PER_SESSION" ? "info" : "default"}
+          label={translateBillingModel(p.value, t)}
+          color={p.value === "PER_SESSION" ? "info" : p.value === "PER_HOUR" ? "secondary" : "default"}
           variant="outlined"
         />
       ),
     },
     {
       field: "progress",
-      headerName: t.progress || "Progress",
-      width: 130,
+      headerName: t.heldRequired || t.progress || "Held / Required",
+      width: 110,
       headerAlign: "center",
       align: "center",
       valueGetter: (params) =>
-        `${params?.row?.held ?? 0}/${params?.row?.required ?? 0}`,
+        `${params?.row?.held ?? 0}/${params?.row?.requiredDisplay ?? 1}`,
       renderCell: (p) => {
         const held = p?.row?.held ?? 0;
-        const req = p?.row?.required ?? 0;
+        const req = p?.row?.requiredDisplay ?? 1;
         return (
           <Chip
             size="small"
             label={`${held}/${req}`}
-            color={held >= req && req > 0 ? "success" : "default"}
+            color={held >= req ? "success" : "default"}
             variant="outlined"
           />
         );
@@ -366,7 +519,7 @@ export default function StudentPayment({ language = "fr" }) {
     {
       field: "due",
       headerName: t.due,
-      width: 120,
+      width: 105,
       headerAlign: "center",
       align: "center",
       renderCell: (p) => (
@@ -376,7 +529,7 @@ export default function StudentPayment({ language = "fr" }) {
     {
       field: "paid",
       headerName: t.paid,
-      width: 120,
+      width: 105,
       headerAlign: "center",
       align: "center",
       renderCell: (p) => (
@@ -386,7 +539,7 @@ export default function StudentPayment({ language = "fr" }) {
     {
       field: "balance",
       headerName: t.balance,
-      width: 130,
+      width: 110,
       headerAlign: "center",
       align: "center",
       renderCell: (p) => {
@@ -403,13 +556,13 @@ export default function StudentPayment({ language = "fr" }) {
     {
       field: "status",
       headerName: t.status,
-      width: 120,
+      width: 100,
       headerAlign: "center",
       align: "center",
       renderCell: (p) => (
         <Chip
           size="small"
-          label={p?.value}
+          label={translateBillingStatus(p?.value, t)}
           color={
             p?.value === "PAID"
               ? "success"
@@ -424,7 +577,7 @@ export default function StudentPayment({ language = "fr" }) {
     {
       field: "select",
       headerName: t.pay,
-      width: 140,
+      width: 115,
       headerAlign: "center",
       align: "center",
       sortable: false,
@@ -439,10 +592,6 @@ export default function StudentPayment({ language = "fr" }) {
             variant={checked ? "contained" : "outlined"}
             disabled={!canPay}
             onClick={() => {
-              // 👉 Selecting any row clears the global amount (mutually exclusive)
-              if (globalAmount && Number(globalAmount) > 0) {
-                setGlobalAmount("");
-              }
               setSelected((s) => ({
                 ...s,
                 [key]: !s[key],
@@ -457,14 +606,19 @@ export default function StudentPayment({ language = "fr" }) {
     },
   ];
 
-  const anySelection = payItems.length > 0;
-  const globalNum = Number(globalAmount || 0);
-  const validGlobal = !Number.isNaN(globalNum) && globalNum >= 0;
-  const canSubmit =
-    anySelection || (validGlobal && (globalNum > 0 || useWalletFirst));
-
   return (
     <Box m={2}>
+      {/* NEW: back arrow to Finances → Billing */}
+      <Box mb={1}>
+        <IconButton
+          onClick={() => navigate("/finances/billing")}
+          title={t.backToBilling || "Back to billing"}
+          size="small"
+        >
+          <ArrowBackIosNewIcon fontSize="small" />
+        </IconButton>
+      </Box>
+
       <Box display="flex" alignItems="center" gap={2}>
         <Header title={`${t.pay} — ${studentName}`} />
       </Box>
@@ -483,12 +637,12 @@ export default function StudentPayment({ language = "fr" }) {
           >
             {STATUSES.map((s) => (
               <MenuItem key={s} value={s}>
-                {t[s.toLowerCase()] || s}
+                {statusLabel(s)}
               </MenuItem>
             ))}
           </TextField>
         </Grid>
-        <Grid item xs={12} sm={5}>
+        <Grid item xs={12} sm={4}>
           <Autocomplete
             size="small"
             fullWidth
@@ -507,6 +661,20 @@ export default function StudentPayment({ language = "fr" }) {
                 InputLabelProps={{ shrink: true }}
               />
             )}
+            renderOption={(props, option) => (
+              <Box
+                component="li"
+                {...props}
+                title={option?.name ?? ""}
+                sx={{ maxWidth: 320, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+              >
+                {option?.name ?? ""}
+              </Box>
+            )}
+            sx={{
+              "& .MuiAutocomplete-input": { overflow: "hidden", textOverflow: "ellipsis" },
+              "& .MuiInputBase-input": { overflow: "hidden", textOverflow: "ellipsis" },
+            }}
             clearOnBlur={false}
           />
         </Grid>
@@ -543,7 +711,7 @@ export default function StudentPayment({ language = "fr" }) {
       <Card sx={{ mb: 2 }}>
         <CardContent>
           <Typography variant="h6" mb={1}>
-            {t.summary || "Summary"} — {summary?.cycles ?? 0}{" "}
+            {t.summary || "Summary"} - {rowSummary.cycles}{" "}
             {t.cycles || "cycles"}
           </Typography>
           <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center" useFlexGap>
@@ -557,8 +725,9 @@ export default function StudentPayment({ language = "fr" }) {
             />
             <Chip
               size="small"
-              label={`${t.needsToPay || "Needs to pay"}: ${money.format(netPayable)}`}
-              color={netPayable > 0 ? "error" : "success"}
+              label={`${t.openBalance || "Open balance"}: ${money.format(totalBalance)}`}
+              color={totalBalance > 0 ? "error" : "success"}
+              variant="outlined"
             />
           </Stack>
         </CardContent>
@@ -568,16 +737,22 @@ export default function StudentPayment({ language = "fr" }) {
       <Card sx={{ mb: 2 }}>
         <CardContent>
           <Typography variant="h6" mb={1}>
-            {t.unpaidGroups} — {(data?.content ?? []).length}{" "}
-            {(data?.content ?? []).length === 1 ? "row" : "rows"}
+            {(t.openCycles || t.unpaidGroups)} - {visibleRows.length}{" "}
+            {visibleRows.length === 1 ? "row" : "rows"}
           </Typography>
-          <div style={{ height: 460, width: "100%" }}>
+          <div style={{ height: "min(58vh, 520px)", minHeight: 360, width: "100%" }}>
             <DataGrid
-              rows={rows}
+              rows={visibleRows}
               columns={columns}
-              hideFooter
               loading={isFetching}
               disableRowSelectionOnClick
+              density="compact"
+              pageSize={isCompactScreen ? 8 : 10}
+              rowsPerPageOptions={isCompactScreen ? [8, 12, 20] : [10, 20, 30]}
+              columnVisibilityModel={{
+                paid: !isCompactScreen,
+                status: !isCompactScreen,
+              }}
               sx={{
                 "& .MuiDataGrid-root": { border: "none" },
                 "& .MuiDataGrid-columnHeaders": {
@@ -603,43 +778,63 @@ export default function StudentPayment({ language = "fr" }) {
       </Card>
 
       {/* Bottom bar */}
-      <Box mt={2} display="flex" flexWrap="wrap" alignItems="center" gap={2} justifyContent="space-between">
-        <Typography variant="h6" sx={{ minWidth: 260 }}>
-          {t.totalSelected || "Selected total"}: {money.format(selectedTotal)}
-        </Typography>
+      <Box mt={2} display="flex" flexWrap="wrap" alignItems="center" gap={2} justifyContent="space-between" sx={{ position: "sticky", bottom: 12, zIndex: 5, p: 2, borderRadius: 2, bgcolor: colors.primary[400], border: `1px solid ${colors.primary[300]}` }}>
+        <Stack spacing={0.5} sx={{ minWidth: 260 }}>
+          <Typography variant="h6">
+            {t.totalSelected || "Selected total"}: {money.format(selectedTotal)}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {t.cashToCollect || "Cash to collect"}: {money.format(cashToCollectSelection)}
+          </Typography>
+        </Stack>
 
-        <Stack direction="row" alignItems="center" spacing={2} sx={{ flex: 1 }}>
+        <Stack direction="row" alignItems="center" spacing={2} flexWrap="wrap" sx={{ flex: 1, justifyContent: "flex-end" }}>
           <TextField
-            size="small"
             type="number"
-            label={t.globalAmount || "Amount (optional)"}
+            size="small"
+            label={t.amountGlobal || "Amount (global)"}
+            helperText={
+              t.amountGlobalHint ||
+              (payItemsFifo.length > 0
+                ? "Global amount is disabled while rows are selected."
+                : "If rows are selected: pays only those rows. If none are selected: pays oldest dues first; extra cash goes to wallet.")
+            }
             value={globalAmount}
-            onChange={(e) => {
-              const val = e.target.value;
-              // 👉 Typing any amount clears selection (mutual exclusivity)
-              if (val !== "" && !Number.isNaN(Number(val))) {
-                if (Object.keys(selected).length > 0) setSelected({});
-              }
-              setGlobalAmount(val);
-            }}
+            onChange={(e) => setGlobalAmount(e.target.value)}
             inputProps={{ min: 0, step: "0.01" }}
-            sx={{ width: 220 }}
-            helperText={t.fifoHint || "FIFO: oldest unpaid cycles first. Extra goes to credit."}
+            sx={{ maxWidth: 260 }}
+            disabled={payItemsFifo.length > 0}
           />
-
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <Typography variant="body2">{t.useWalletFirst || "Use credit first"}</Typography>
-            <Switch
-              checked={useWalletFirst}
-              onChange={(e) => setUseWalletFirst(e.target.checked)}
-              size="small"
-              disabled={credit <= 0}
-            />
-          </Stack>
-
+          <FormControlLabel
+            control={
+              <Switch
+                checked={useWalletFirst}
+                onChange={(_, v) => setUseWalletFirst(v)}
+                disabled={credit <= 0}
+                color="primary"
+              />
+            }
+            label={t.useCreditFirst || "Use credit first"}
+          />
           <Button
+            variant="outlined"
+            disabled={
+              paying ||
+              globalAmountNumber <= 0 ||
+              totalBalance > 0 ||
+              payItemsFifo.length > 0
+            }
+            onClick={openConfirm}
+          >
+            {t.addToWalletOnly || "Add to wallet only"}
+          </Button>
+          <Button
+            data-testid="payment-pay-print"
             variant="contained"
-            disabled={paying || !( (payItems.length > 0) || (!Number.isNaN(Number(globalAmount||0)) && (Number(globalAmount||0) > 0 || useWalletFirst)) )}
+            disabled={
+              paying ||
+              (payItemsFifo.length === 0 && globalAmountNumber <= 0)
+            }
             onClick={openConfirm}
           >
             {t.payAndPrint || "Pay & Print"}
@@ -648,7 +843,7 @@ export default function StudentPayment({ language = "fr" }) {
       </Box>
 
       {/* Confirm dialog (with FIFO cycle details) */}
-      <Dialog open={confirmOpen} onClose={closeConfirm} maxWidth="sm" fullWidth>
+      <Dialog open={confirmOpen} onClose={closeConfirm} maxWidth="sm" fullWidth data-testid="payment-confirm-dialog">
         <DialogTitle>{`Confirm payment — ${studentName}`}</DialogTitle>
         <DialogContent dividers>
           {plan && (
@@ -664,33 +859,10 @@ export default function StudentPayment({ language = "fr" }) {
                         <ListItemText
                           primary={`${ln.groupName} — ${ln.label}`}
                           secondary={[
-                            `CASH ${money.format(ln.cash)}`,
+                            ln.fromWallet > 0 ? `WALLET ${money.format(ln.fromWallet)}` : null,
+                            ln.cash > 0 ? `CASH ${money.format(ln.cash)}` : null,
                             ln.note ? `· ${ln.note}` : null,
                           ].filter(Boolean).join(" ")}
-                        />
-                      </ListItem>
-                    ))}
-                  </List>
-                </>
-              )}
-
-              {plan.fifoLines.length > 0 && (
-                <>
-                  <Divider sx={{ my: 1 }} />
-                  <Typography variant="subtitle2" gutterBottom>
-                    FIFO allocation (remaining unpaid)
-                  </Typography>
-                  <List dense sx={{ mb: 1 }}>
-                    {plan.fifoLines.map((ln, idx) => (
-                      <ListItem key={`fifo-${idx}`} disableGutters>
-                        <ListItemText
-                          primary={`${ln.groupName} — ${ln.label}`}
-                          secondary={[
-                            ln.fromWallet > 0 ? `WALLET ${money.format(ln.fromWallet)}` : null,
-                            ln.fromCash > 0 ? `CASH ${money.format(ln.fromCash)}` : null,
-                          ]
-                            .filter(Boolean)
-                            .join("  ·  ")}
                         />
                       </ListItem>
                     ))}
@@ -723,9 +895,14 @@ export default function StudentPayment({ language = "fr" }) {
                 </ListItem>
               </List>
 
-              {plan.totals.cashReceived === 0 && (
+              {plan.totals.cashReceived === 0 && plan.totals.walletUsed > 0 && (
+                <Typography color="success.main" sx={{ mt: 1 }}>
+                  {t.walletOnlySettlement || "Open balances will be settled from credit/wallet (no cash)."}
+                </Typography>
+              )}
+              {plan.itemLines.length === 0 && (
                 <Typography color="text.secondary" sx={{ mt: 1 }}>
-                  Nothing will be paid. Select cycles or enter an amount.
+                  {t.selectCyclesToPay || "Select cycles with a balance to continue."}
                 </Typography>
               )}
             </>
@@ -734,18 +911,33 @@ export default function StudentPayment({ language = "fr" }) {
         <DialogActions>
           <Button onClick={closeConfirm} color="inherit">Cancel</Button>
           <Button
+            data-testid="payment-confirm-submit"
             onClick={() => payCombined()}
             variant="contained"
-            disabled={paying || !plan || !(
-              (payItems.length > 0) || (!Number.isNaN(Number(globalAmount||0)) && (Number(globalAmount||0) > 0 || useWalletFirst))
-            )}
+            disabled={paying || !plan}
           >
             Confirm & Pay
           </Button>
         </DialogActions>
       </Dialog>
 
-      {receipt && <ReceiptDialog receipt={receipt} onClose={() => setReceipt(null)} />}
+      {receipt && <ReceiptDialog receipt={receipt} onClose={() => setReceipt(null)} language={language} />}
     </Box>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

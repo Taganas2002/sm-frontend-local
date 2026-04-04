@@ -346,6 +346,20 @@ const Attendance = ({ language = "fr" }) => {
 
     return (
       <Box m="20px">
+        {/* NEW: Small arrow to go back to groups table */}
+        <Box mb={1}>
+          <IconButton
+            onClick={() => {
+              setView("LIST");
+              setSelectedGroup(null);
+            }}
+            title={language === "ar" ? "رجوع إلى قائمة الأفواج" : "Back to groups"}
+            size="small"
+          >
+            <ArrowBackIosNewIcon fontSize="small" />
+          </IconButton>
+        </Box>
+
         <Header
           title={language === "ar" ? "الحضور والغياب" : "Présence & Absence"}
           subtitle={selectedGroup?.name ? String(selectedGroup.name) : ""}

@@ -97,17 +97,31 @@ export default function TeacherPayoutDialog({ payout, onClose }) {
                   justifyContent="space-between"
                   sx={{ borderBottom: "1px dashed #ccc", py: 0.5 }}
                 >
-                  <Typography variant="body1" fontWeight="bold">
-                    {l.groupName || "(بدون مجموعة)"}
-                    {l.earnedAt
-                      ? ` — ${new Date(l.earnedAt).toLocaleDateString("ar-EG", {
-                          numberingSystem: "latn",
-                        })}`
-                      : ""}
-                  </Typography>
-                  <Typography variant="body1" fontWeight="bold">
-                    {fmtMoney.format(Number(l.amountNet || 0))}
-                  </Typography>
+                  <Box>
+                    <Typography variant="body1" fontWeight="bold">
+                      {l.groupName || "(بدون مجموعة)"}
+                      {l.earnedAt
+                        ? ` — ${new Date(l.earnedAt).toLocaleDateString("ar-EG", {
+                            numberingSystem: "latn",
+                          })}`
+                        : ""}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {l.studentName
+                        ? `الطالب: ${l.studentName} · نوع الدفع: ${l.paymentType || "—"}${l.periodKey ? ` · الفترة: ${l.periodKey}` : ""}`
+                        : `المصدر: ${l.paymentType || "ATTENDANCE_FIXED"}`}
+                    </Typography>
+                  </Box>
+                  <Box textAlign="left">
+                    <Typography variant="body1" fontWeight="bold">
+                      {fmtMoney.format(Number(l.amountNet || 0))}
+                    </Typography>
+                    {l.studentPaymentId ? (
+                      <Typography variant="caption" color="text.secondary">
+                        Payment #{l.studentPaymentId}
+                      </Typography>
+                    ) : null}
+                  </Box>
                 </Box>
               ))
             )}

@@ -204,6 +204,7 @@
         {/* Top Button */}
         <Box display="flex" justifyContent="flex-end" mb={2}>
             <Button
+            data-testid="subjects-add"
             variant="contained"
             sx={{
                 backgroundColor:
@@ -261,7 +262,7 @@
         </Box>
 
         {/* Add/Edit Dialog */}
-        <Dialog open={openDialog} onClose={handleClose} fullWidth maxWidth="sm">
+        <Dialog open={openDialog} onClose={handleClose} fullWidth maxWidth="sm" data-testid="subjects-dialog">
             <DialogTitle
             sx={{
                 backgroundColor:
@@ -291,6 +292,7 @@
                 <form onSubmit={handleSubmit}>
                 <DialogContent>
                     <TextField
+                    inputProps={{ "data-testid": "subjects-name" }}
                     margin="dense"
                     placeholder={t.subjectName}
                     fullWidth
@@ -303,6 +305,7 @@
                     />
 
                     <TextField
+                    inputProps={{ "data-testid": "subjects-code" }}
                     margin="dense"
                     placeholder={t.subjectCode}
                     fullWidth
@@ -317,6 +320,7 @@
 
                 <DialogActions sx={{ gap: 2 }}>
                     <Button
+                    data-testid="subjects-cancel"
                     onClick={handleClose}
                     variant="outlined"
                     sx={{
@@ -335,6 +339,7 @@
                     </Button>
 
                     <Button
+                    data-testid="subjects-save"
                     type="submit"
                     variant="contained"
                     disabled={isSubmitting}
