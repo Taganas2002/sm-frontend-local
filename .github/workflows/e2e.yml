@@ -24,20 +24,25 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
     steps:
       - name: Checkout frontend
         uses: actions/checkout@v4
         with:
           path: frontend
 
-      # Secret BACKEND_REPOSITORY = "owner/sm-backend-locally" (see README-E2E.md).
-      # Private second repo: ensure Actions can read it (same org + permissions) or use a PAT in `token:` below.
+      # If BACKEND_REPOSITORY secret is unset, clone default (public) backend so backend/pom.xml exists for Maven cache + build.
+      # Override in repo Settings → Secrets: BACKEND_REPOSITORY = owner/repo (for forks or private backend).
       - name: Checkout backend
         uses: actions/checkout@v4
         with:
-          repository: ${{ secrets.BACKEND_REPOSITORY }}
+          repository: ${{ secrets.BACKEND_REPOSITORY || 'Taganas2002/MMS_Backend' }}
           token: ${{ github.token }}
           path: backend
+
+      - name: Verify backend is a Maven project
+        run: test -f backend/pom.xml || (echo "::error::backend/pom.xml missing — check BACKEND_REPOSITORY secret points to the Spring Boot repo" && ls -la backend && exit 1)
 
       - name: Set up JDK
         uses: actions/setup-java@v4
@@ -46,6 +51,9 @@ jobs:
           distribution: temurin
           cache: maven
           cache-dependency-path: backend/pom.xml
+
+      - name: Verify frontend lockfile (required for npm cache + ci)
+        run: test -f frontend/package-lock.json || (echo "::error::frontend/package-lock.json missing — commit package-lock.json in the frontend repo" && ls -la frontend && exit 1)
 
       - name: Set up Node
         uses: actions/setup-node@v4
