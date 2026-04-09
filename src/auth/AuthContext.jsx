@@ -85,7 +85,10 @@ export function AuthProvider({ children }) {
   const authorities = auth?.authorities || [];
 
   // super roles: see everything
-  const isAdminLike = roles.includes("ROLE_ADMIN") || roles.includes("ROLE_PRINCIPAL");
+  const isAdminLike =
+    roles.includes("ROLE_ADMIN") ||
+    roles.includes("ROLE_PRINCIPAL") ||
+    roles.includes("ROLE_SUPER_ADMIN");
 
   const hasRole = (r) => roles.includes(r);
   const can = (code) => isAdminLike || authorities.includes(code);

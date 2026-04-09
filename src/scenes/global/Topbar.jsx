@@ -25,7 +25,7 @@ const Topbar = ({ setLanguage, language = "fr" }) => {
   const colors = tokens(theme.palette.mode);
   const colorMode = useContext(ColorModeContext);
   const navigate = useNavigate();
-  const { isLogged, user, logout } = useAuth();
+  const { isLogged, user, logout, hasRole } = useAuth();
   const t = getTranslations(language);
 
   const [langAnchor, setLangAnchor] = useState(null);
@@ -50,6 +50,10 @@ const Topbar = ({ setLanguage, language = "fr" }) => {
   const [license, setLicense] = useState(null);
 
   useEffect(() => {
+    if (hasRole("ROLE_SUPER_ADMIN")) {
+      return;
+    }
+
     let mounted = true;
 
     const fetchStatus = async () => {
@@ -70,7 +74,7 @@ const Topbar = ({ setLanguage, language = "fr" }) => {
       mounted = false;
       clearInterval(id);
     };
-  }, [navigate]);
+  }, [navigate, hasRole]);
 
   const trialBanner = (t.trialBanner || "Trial version: {days} day(s) remaining.").replace(
     "{days}",
@@ -162,7 +166,15 @@ const Topbar = ({ setLanguage, language = "fr" }) => {
               boxShadow: "0px 3px 6px rgba(0,0,0,0.1)",
             }}
           >
-            <Typography variant="body1">{t.expiredBanner || "Your trial period has expired. Contact the administrator to activate the license."}</Typography>
+            <Typography variant="body1" sx={{ fontWeight: 700 }}>
+              {t.expiredBanner ||
+                "Your school account is no longer active. Contact support to renew."}
+            </Typography>
+            {t.expiredPageSubtitle && (
+              <Typography variant="body2" sx={{ mt: 1, fontWeight: 500, maxWidth: 900, mx: "auto" }}>
+                {t.expiredPageSubtitle}
+              </Typography>
+            )}
           </Box>
         </Box>
       )}

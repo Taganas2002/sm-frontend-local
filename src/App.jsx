@@ -1,6 +1,6 @@
 // src/App.jsx
 import React, { useState, useEffect } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { CssBaseline, ThemeProvider } from "@mui/material";
 import { ColorModeContext, useMode } from "./theme";
 import Settings from "./scenes/settings/Settings";
@@ -12,15 +12,19 @@ import PublicOnlyRoute from "./components/guards/PublicOnlyRoute";
 import RoleRoute from "./components/guards/RoleRoute";
 import PermRoute from "./components/guards/PermRoute";
 import RouteTracker from "./components/guards/RouteTracker";
+import SuperAdminRoute from "./components/guards/SuperAdminRoute";
 import Levels from "./scenes/levels";
 import Sections from "./scenes/sections";
 import Expired from "./pages/Expired";
+import PublicForbidden from "./pages/PublicForbidden";
+import PublicNotFound from "./pages/PublicNotFound";
 
 import AppShell from "./scenes/global/AppShell";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import SuperAdminLogin from "./pages/SuperAdminLogin";
 
 import Dashboard from "./scenes/dashboard";
 import Teachers from "./scenes/teachers";
@@ -31,6 +35,8 @@ import Faq from "./scenes/faq";
 import IncomeDialog from "./scenes/finances/IncomeDialog";
 
 import UsersPage from "./scenes/admin/users/UsersPage";
+import SuperAdminLicensesPage from "./scenes/admin/licenses/SuperAdminLicensesPage";
+import SuperAdminShell from "./scenes/admin/SuperAdminShell";
 import Students from "./scenes/students";
 import Groups from "./scenes/groups";
 import Classes from "./scenes/classes";
@@ -76,13 +82,14 @@ export default function App() {
             <RouteTracker />
 
             <Routes>
-              <Route path="/" element={<Home language={language} />} />
+              <Route path="/" element={<Home language={language} setLanguage={setLanguage} />} />
               <Route element={<PublicOnlyRoute />}>
                 <Route path="/login" element={<Login language={language} />} />
                 <Route path="/signup" element={<Signup language={language} />} />
               </Route>
+              <Route path="/super-admin/login" element={<SuperAdminLogin language={language} />} />
 
-              <Route path="/expired" element={<Expired />} />
+              <Route path="/expired" element={<Expired language={language} />} />
 
               <Route element={<ProtectedRoute />}>
                 <Route element={<AppShell setLanguage={setLanguage} language={language} />}>
@@ -132,11 +139,19 @@ export default function App() {
                   <Route element={<RoleRoute roles={["ROLE_ADMIN", "ROLE_PRINCIPAL"]} />}>
                     <Route path="/admin" element={<div className="p-6">Admin Panel</div>} />
                   </Route>
+
                 </Route>
               </Route>
 
-              <Route path="/forbidden" element={<div className="p-8">403 Forbidden</div>} />
-              <Route path="*" element={<div className="p-8">Not Found</div>} />
+              <Route element={<SuperAdminRoute />}>
+                <Route path="/super-admin" element={<SuperAdminShell setLanguage={setLanguage} language={language} />}>
+                  <Route index element={<Navigate to="/super-admin/licenses" replace />} />
+                  <Route path="licenses" element={<SuperAdminLicensesPage />} />
+                </Route>
+              </Route>
+
+              <Route path="/forbidden" element={<PublicForbidden language={language} />} />
+              <Route path="*" element={<PublicNotFound language={language} />} />
             </Routes>
           </ThemeProvider>
         </ColorModeContext.Provider>

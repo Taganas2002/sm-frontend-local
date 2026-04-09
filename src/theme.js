@@ -143,8 +143,12 @@ export const tokens = (mode) => ({
       }),
 });
 
-export const themeSettings = (mode) => {
+export const themeSettings = (mode, language = "fr") => {
   const colors = tokens(mode);
+  const fontStack =
+    language === "ar"
+      ? ["Noto Sans Arabic", "Cairo", "Segoe UI", "Tahoma", "sans-serif"].join(",")
+      : ["Source Sans Pro", "sans-serif"].join(",");
   return {
     palette: {
       mode,
@@ -183,30 +187,30 @@ export const themeSettings = (mode) => {
           }),
     },
     typography: {
-      fontFamily: ["Source Sans Pro", "sans-serif"].join(","),
+      fontFamily: fontStack,
       fontSize: 12,
       h1: {
-        fontFamily: ["Source Sans Pro", "sans-serif"].join(","),
+        fontFamily: fontStack,
         fontSize: 40,
       },
       h2: {
-        fontFamily: ["Source Sans Pro", "sans-serif"].join(","),
+        fontFamily: fontStack,
         fontSize: 32,
       },
       h3: {
-        fontFamily: ["Source Sans Pro", "sans-serif"].join(","),
+        fontFamily: fontStack,
         fontSize: 24,
       },
       h4: {
-        fontFamily: ["Source Sans Pro", "sans-serif"].join(","),
+        fontFamily: fontStack,
         fontSize: 20,
       },
       h5: {
-        fontFamily: ["Source Sans Pro", "sans-serif"].join(","),
+        fontFamily: fontStack,
         fontSize: 16,
       },
       h6: {
-        fontFamily: ["Source Sans Pro", "sans-serif"].join(","),
+        fontFamily: fontStack,
         fontSize: 14,
       },
     },
@@ -262,8 +266,8 @@ export const useMode = (language = "fr") => {
 
   const localeBundle = localeMap[language] || localeMap.fr;
   const theme = useMemo(
-    () => createTheme(themeSettings(mode), ...localeBundle),
-    [mode, localeBundle]
+    () => createTheme(themeSettings(mode, language), ...localeBundle),
+    [mode, localeBundle, language]
   );
 
   return [theme, colorMode];

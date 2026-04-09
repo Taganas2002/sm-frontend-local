@@ -755,7 +755,189 @@ payTitle: "دفع —",
     "desc8": "من قسم 'التسجيلات'، اربط التلميذ بفوج للسنة الدراسية.",
 
     "title9": "٩. تقويم مدرسي",
-    "desc9": "أضف الأحداث و فترات الدراسة  في التقويم المدرسي."
+    "desc9": "أضف الأحداث و فترات الدراسة  في التقويم المدرسي.",
+
+  landingBrand: "برنامج Madrasti لإدارة المدارس",
+  navbarToggleMenu: "فتح القائمة",
+  languageFr: "FR",
+  languageEn: "EN",
+  languageAr: "ع",
+
+  landingHeroBadge: "إدارة مدرسية متكاملة — عبر الإنترنت ومحلي",
+  landingHeroTitle: "أدار مؤسستك بمنصة حديثة وآمنة",
+  landingHeroSubtitle:
+    "تلاميذ، أساتذة، جداول، حضور ومالية في أداة واحدة. جرّب النسخة عبر المتصفح من أي جهاز متصل، أو نسخة سطح المكتب دون اتصال حسب احتياجك.",
+  landingCtaSignup: "إنشاء حساب",
+  landingCtaLogin: "تسجيل الدخول",
+  landingHeroCtaPlans: "العروض والأسعار",
+  landingCtaSuperAdmin: "بوابة المشرف العام",
+  landingCtaDashboard: "الذهاب إلى لوحة التحكم",
+
+  landingFeaturesTitle: "كل ما تحتاجه مدرستك في مكان واحد",
+  landingFeaturesSubtitle:
+    "أقل جداول، أقل أخطاء: سير عمل واحد للإدارة والتدريس والمحاسبة.",
+  landingFeatureStudentsTitle: "التلاميذ والتسجيل",
+  landingFeatureStudentsDesc: "ملفات الطلاب، التسجيل في الأفواج ومتابعة مركزية.",
+  landingFeatureTeachersTitle: "الأساتذة والمواد",
+  landingFeatureTeachersDesc: "الملفات، المواد، التكليف ومتابعة الحصص.",
+  landingFeatureScheduleTitle: "الجدول الزمني",
+  landingFeatureScheduleDesc: "تنظيم القاعات والأوقات وتلافي التعارضات.",
+  landingFeatureAttendanceTitle: "الحضور والغياب",
+  landingFeatureAttendanceDesc: "إدخال سريع، أرشيف موثوق وإطلاع للإدارة.",
+  landingFeatureResultsTitle: "النتائج والتقارير",
+  landingFeatureResultsDesc: "إدخال منضبط، حسابات وطباعة للمتابعة الأكاديمية.",
+  landingFeatureFinanceTitle: "الفوترة والخزينة",
+  landingFeatureFinanceDesc: "تحصيل، وصولات، مصاريف، أرباح وخسائر وتتبع للعمليات.",
+
+  landingOffersTitle: "طريقتان لاستخدام نفس البرنامج",
+  landingOffersSubtitle:
+    "اختر ما يناسبك: اشتراك عبر الإنترنت (من المتصفح، مع تجربة لكل مدرسة)، أو تثبيت محلي على حاسوب للاستقلالية الكاملة.",
+  landingOfferSaaSTitle: "عبر الإنترنت — من المتصفح",
+  landingOfferSaaSBody:
+    "دخول آمن من أي مكان مع الاتصال بالإنترنت، تجربة مجانية محددة المدة، وتفعيل يدوي للاشتراكات (مناسب عند صعوبة الدفع بالبطاقة عبر الإنترنت).",
+  landingOfferDesktopTitle: "سطح المكتب / محلي ( دون اتصال )",
+  landingOfferDesktopBody:
+    "للمدارس التي تحتاج الاستقلال: تثبيت Windows، قاعدة محلية، توزيع عبر USB أو تنصيب في الموقع. عرض سعر منفصل — مثالي دون إنترنت دائم.",
+
+  landingTrustTitle: "مدارس تعمل معنا بالفعل",
+  landingTrustSubtitle:
+    "مؤسسات تعليمية تعتمد MMS في إدارتها اليومية — ومن بينها شريكنا المعروض أدناه.",
+  landingTrustPartnerAlkhawarezmi: "مدرسة الخوارزمي",
+  landingTrustPartnerAlkhawarezmiAlt: "شعار مدرسة الخوارزمي",
+  landingTrustRoles: "أدوار وصلاحيات دقيقة لحماية بياناتك.",
+  landingTrustAudit: "سجل تدقيق للعمليات المالية الحساسة.",
+  landingTrustSupport: "دعم بشري للتفعيل والتجديد والمرافقة.",
+
+  landingHowTitle: "ابدأ في 3 خطوات",
+  landingStep1Title: "أنشئ فضاء مدرستك",
+  landingStep1Desc: "تسجيل بسيط ثم الدخول إلى لوحة التحكم.",
+  landingStep2Title: "هيّئ الفريق وادعُه",
+  landingStep2Desc: "أقسام، أفواج، صلاحيات مستخدمين وأول حصص.",
+  landingStep3Title: "شغّل يومياً",
+  landingStep3Desc: "حضور، فوترة وتقارير من مكان واحد — عبر الإنترنت أو محلي.",
+
+  landingFooterCtaTitleGuest: "هل أنت جاهز لتحديث مدرستك؟",
+  landingFooterCtaTitleLogged: "عد إلى عملك",
+  landingFooterCtaSubGuest:
+    "أنشئ حساباً وابدأ التجربة: اختبر الوحدات الأساسية قبل تفعيل الاشتراك.",
+  landingFooterCtaSubLogged: "افتح لوحة التحكم للمتابعة.",
+  landingFooterCtaSignup: "التسجيل",
+  landingFooterCtaLogin: "تسجيل الدخول",
+  landingFooterDashboard: "لوحة التحكم",
+
+  landingPricingTitle: "العروض — عبر الإنترنت وسطح مكتب مدى الحياة (دون اتصال)",
+  landingPricingSubtitle:
+    "تجربة عبر الإنترنت 7 أيام، اشتراك 3 أو 12 شهرًا، أو ترخيص دائم لـ Windows على أجهزتكم. في الجزائر: Baridi Mob أو نقدًا… وتفعيل يدوي بعد تأكيد الدفع.",
+
+  landingPlanTrialBadge: "البداية",
+  landingPlanTrialTitle: "تجربة عبر الإنترنت",
+  landingPlanTrialPeriod: "7 أيام مجانًا",
+  landingPlanTrialNote:
+    "مدرسة واحدة = تجربة واحدة. وصول كامل للوحدات الأساسية لتقييم البرنامج قبل الدفع.",
+  landingPlanTrialF1: "التلاميذ، الأساتذة، الجدول الزمني",
+  landingPlanTrialF2: "الحضور والفوترة والتحصيل",
+  landingPlanTrialF3: "الأدوار والصلاحيات وتعدد المستخدمين",
+  landingPlanTrialF4: "مساعدة للانتقال لباقة مدفوعة",
+
+  landingPlan3Badge: "3 أشهر",
+  landingPlan3Title: "باقة 3 أشهر",
+  landingPlan3Period: "90 يومًا عبر الإنترنت",
+  landingPlan3Note:
+    "بعد الدفع (Baridi Mob أو طريقة أخرى متفق عليها) نُفعّل الفترة على حساب مدرستك.",
+  landingPlan3F1: "كل المزايا عبر الإنترنت خلال مدة الاشتراك",
+  landingPlan3F2: "الاستضافة والتحديثات مشمولة",
+  landingPlan3F3: "مناسبة لربع سنة أو تجربة",
+
+  landingPlan12Badge: "12 شهرًا",
+  landingPlan12Title: "باقة 12 شهرًا",
+  landingPlan12Period: "سنة كاملة عبر الإنترنت",
+  landingPlan12Popular: "أفضل قيمة سنوية",
+  landingPlan12Note:
+    "نفس المسار: تأكيد الدفع ثم التفعيل — غالبًا خلال يوم عمل.",
+  landingPlan12F1: "كل الوظائف عبر الإنترنت لسنة دراسية",
+  landingPlan12F2: "تجديد مبسط مع فريق الدعم",
+  landingPlan12F3: "أولوية في الدعم والمرافقة",
+
+  landingPlanCtaContact: "تواصل معنا للاشتراك",
+  landingPlanCtaDesktop: "اطلب عرض سعر لنسخة سطح المكتب",
+
+  landingPlanDesktopBadge: "مدى الحياة",
+  landingPlanDesktopTitle: "سطح المكتب — ترخيص دائم",
+  landingPlanDesktopPeriod: "دون اتصال • Windows • بيانات محلية",
+  landingPlanDesktopNote:
+    "بدون اشتراك عبر الإنترنت (مستضاف): تثبيت على حواسيبكم أو في مؤسستكم. السعر بعرض حسب الأعداد والأجهزة والخيارات (تكوين، USB، دعم).",
+  landingPlanDesktopF1: "عمل دون إنترنت بعد التثبيت",
+  landingPlanDesktopF2: "البيانات تبقى لديكم محليًا",
+  landingPlanDesktopF3: "جدول تحديثات يُتفق عليه (خارج التخزين والاستضافة على الإنترنت)",
+  landingPlanDesktopF4: "دفع في الجزائر (Baridi Mob، نقدًا…) ثم التسليم / تفعيل الرخصة",
+
+  landingPlanPriceDesktop: "عرض سعر",
+
+  landingPayFlowTitle: "كيف تحصل على التطبيق في الجزائر؟",
+  landingPayFlowSubtitle:
+    "لا حاجة لبطاقة بنكية دولية: ادفع بالطريقة المعتادة، نفعّل رخصتك بعد استلام المبلغ.",
+
+  landingPayStep1Title: "أنشئ حسابًا أو راسلنا",
+  landingPayStep1Desc:
+    "سجّل من الموقع أو تواصل (هاتف، بريد، شبكات) مع اسم مدرستك.",
+  landingPayStep2Title: "أرسل الدفع",
+  landingPayStep2Desc:
+    "Baridi Mob أو نقدًا أو طريقة نتفق عليها. نؤكد لك المبلغ وتفاصيل الدفع.",
+  landingPayStep3Title: "أرسل إثباتًا",
+  landingPayStep3Desc:
+    "لقطة شاشة أو وصل عبر واتساب أو البريد لتتبع العملية.",
+  landingPayStep4Title: "تفعيل المدرسة",
+  landingPayStep4Desc:
+    "للنسخة عبر الإنترنت: نُفعّل التجربة أو الاشتراك (3 / 12 شهرًا) على حسابكم. لسطح المكتب: نُكمّل الرخصة الدائمة أو نُسلّم التثبيت بعد الدفع.",
+
+  landingPlanPriceTrial: "0 دج",
+
+  landingNextStepLead: "الخطوة التالية:",
+  landingNextComparePlans: "عرض الباقات",
+  landingNextContactTeam: "تواصل معنا",
+  landingContactHelpLine:
+    "تجربة مجانية، اشتراك عبر الإنترنت أو عرض سعر لنسخة سطح المكتب — راسلنا عبر القنوات أدناه، أو قارن الباقات أولاً:",
+
+  landingContactTitle: "التواصل والدعم",
+  landingContactSubtitle:
+    "عرض توضيحي، اشتراك، تجديد أو مساعدة فنية — نحن بالخدمة.",
+
+  forbiddenTitle: "الوصول مرفوض",
+  forbiddenMessage: "ليس لديك الصلاحية لعرض هذه الصفحة.",
+  forbiddenBackHome: "العودة للرئيسية",
+
+  notFoundTitle: "الصفحة غير موجودة",
+  notFoundMessage: "الرابط غير صحيح أو الصفحة لم تعد متوفرة.",
+  notFoundBackHome: "العودة للرئيسية",
+
+  superAdminLoginBadge: "دخول آمن",
+  superAdminLoginTitle: "بوابة المشرف العام",
+  superAdminLoginSubtitle:
+    "إدارة الاشتراكات لكل مدرسة: تفعيل، إيقاف، متابعة التجارب والتراخيص.",
+  superAdminLoginFormTitle: "تسجيل دخول المشرف",
+  superAdminLoginFormHint: "يُسمح فقط لحسابات المشرف العام بالمتابعة.",
+  superAdminLoginPhone: "رقم الهاتف",
+  superAdminLoginPassword: "كلمة المرور",
+  superAdminLoginShow: "إظهار",
+  superAdminLoginHide: "إخفاء",
+  superAdminLoginSubmit: "الدخول إلى لوحة المشرف العام",
+  superAdminLoginSigningIn: "جارٍ تسجيل الدخول…",
+  superAdminLoginNotAllowed: "هذا الحساب غير مصرّح له بالدخول إلى لوحة المشرف العام.",
+
+  expiredPageTitle: "الوصول غير متاح",
+  expiredThankYou:
+    "شكراً لاستخدامك Madrasti Management Software. للمتابعة، تواصل معنا لتفعيل الوصول الكامل.",
+  expiredCallSupport: "اتصل بالدعم: {phone}",
+  expiredEmailButton: "البريد",
+  expiredFacebookButton: "فيسبوك",
+  expiredInstagramButton: "إنستغرام",
+  expiredHelpFooter: "تحتاج مساعدة سريعة؟ راسلنا على",
+
+  trialBanner: "نسخة تجريبية: بقي {days} يوم(أيام).",
+  expiredBanner:
+    "حساب مدرستك لم يعد نشطًا: انتهت الفترة التجريبية أو قام المسؤول بإيقاف الاشتراك. تواصل مع الدعم للتفعيل.",
+  expiredPageSubtitle:
+    "إذا كنت في تجربة مجانية (7 أيام) فقد انتهى الوقت. إذا كان لديك اشتراك مدفوع، فقد يكون المشرف العام أوقف الوصول بعد الدفع أو قرار إداري. في كل الأحوال، راسلنا لاستعادة الوصول."
 
 };
 

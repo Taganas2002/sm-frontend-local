@@ -1,6 +1,66 @@
-@import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Noto+Sans+Arabic:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&family=Source+Sans+Pro:wght@400;600;700&display=swap");
 @import "tailwindcss";
 
+/* Hero headline: Latin display font (Arabic overrides below) */
+.landing-hero-title {
+  font-family: "Plus Jakarta Sans", "Source Sans Pro", system-ui, sans-serif;
+}
+
+/*
+ * Arabic typography: Noto Sans Arabic first (reliable joins), kill tracking/justification
+ * artifacts; :lang(ar) catches subtree even if html lang is briefly wrong on first paint.
+ */
+html[lang="ar"] body,
+html[lang="ar"] #root,
+html[lang="ar"] .app,
+html[lang="ar"] .content,
+:lang(ar) {
+  font-family: "Noto Sans Arabic", "Cairo", "Segoe UI", "Tahoma", sans-serif;
+}
+
+html[lang="ar"] .landing-hero-title,
+:lang(ar) .landing-hero-title {
+  font-family: "Noto Sans Arabic", "Cairo", "Segoe UI", sans-serif;
+}
+
+html[lang="ar"] .tracking-tighter,
+html[lang="ar"] .tracking-tight,
+html[lang="ar"] .tracking-normal,
+html[lang="ar"] .tracking-wide,
+html[lang="ar"] .tracking-wider,
+html[lang="ar"] .tracking-widest,
+:lang(ar) .tracking-tighter,
+:lang(ar) .tracking-tight,
+:lang(ar) .tracking-normal,
+:lang(ar) .tracking-wide,
+:lang(ar) .tracking-wider,
+:lang(ar) .tracking-widest {
+  letter-spacing: normal !important;
+}
+
+/* No extra word gaps; avoid browser “stretching” Arabic lines */
+:lang(ar) p,
+:lang(ar) li,
+:lang(ar) h1,
+:lang(ar) h2,
+:lang(ar) h3,
+:lang(ar) h4,
+:lang(ar) button,
+:lang(ar) .landing-plan-card {
+  letter-spacing: normal !important;
+  word-spacing: normal !important;
+  font-synthesis: none;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
 
 html,
 body,
@@ -30,4 +90,116 @@ width: 10px;
 
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+/* Landing: subtle card lift + entrance (respect reduced motion) */
+@keyframes landing-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.landing-fade-up {
+  animation: landing-fade-up 0.55s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-fade-up {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .landing-card {
+    transition: none !important;
+  }
+
+  .landing-card:hover {
+    transform: none !important;
+  }
+}
+
+.landing-card {
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
+}
+
+.landing-card:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 12px 28px -8px rgb(15 23 42 / 0.12),
+    0 4px 8px -4px rgb(15 23 42 / 0.06);
+}
+
+.landing-card-focusable:focus-within {
+  outline: 2px solid #193d79;
+  outline-offset: 2px;
+}
+
+/* Section surfaces & premium polish */
+.landing-section-alt {
+  background: linear-gradient(165deg, #f1f5f9 0%, #ffffff 42%, #f8fafc 100%);
+}
+
+.landing-section-deep {
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 48%, #0f172a 100%);
+}
+
+.landing-heading-accent {
+  width: 3rem;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #193d79, #60a5fa);
+}
+
+@keyframes landing-hero-orbit {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translate(12px, -8px) scale(1.05);
+    opacity: 0.55;
+  }
+}
+
+.landing-hero-blob {
+  animation: landing-hero-orbit 14s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-hero-blob {
+    animation: none;
+  }
+}
+
+.landing-footer-cta {
+  background: linear-gradient(135deg, #0f172a 0%, #193d79 42%, #152d52 100%);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.06) inset,
+    0 16px 40px -20px rgb(15 23 42 / 0.45);
+}
+
+.landing-popular-glow {
+  box-shadow:
+    0 0 0 2px #193d79,
+    0 20px 40px -12px rgb(25 61 121 / 0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-popular-glow {
+    box-shadow: 0 0 0 2px #193d79;
+  }
+}
+
+.landing-stagger-children > * {
+  animation-fill-mode: both;
 }

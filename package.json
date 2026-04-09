@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:ec2": "powershell -ExecutionPolicy Bypass -File ./scripts/build-ec2.ps1 -Domain your-domain.com",
     "lint": "eslint .",
     "preview": "vite preview",
     "e2e:smoke": "playwright test -c playwright.config.js",
@@ -21,7 +22,8 @@
     "dist:portable": "npm run build:web && electron-builder --win portable",
     "build:trial14": "node scripts/set-config.js TRIAL 14 && npm run dist",
     "build:trial7": "node scripts/set-config.js TRIAL 7 && npm run dist",
-    "build:full": "node scripts/set-config.js FULL 0 && npm run dist"
+    "build:full": "node scripts/set-config.js FULL 0 && npm run dist",
+    "deploy:ec2:dist": "powershell -ExecutionPolicy Bypass -File ./scripts/upload-dist-to-ec2.ps1 -Host your-domain.com"
   },
   "dependencies": {
     "@alloc/quick-lru": "5.2.0",

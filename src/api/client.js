@@ -54,14 +54,33 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err && err.response && err.response.status === 401) {
-      // optional: clear & redirect
-      // localStorage.removeItem("auth");
-      // window.location.hash = "#/login";
+    const status = err?.response?.status;
+    const data = err?.response?.data;
+
+    // Immediate kick-out for expired/deactivated school license.
+    // This avoids waiting for periodic status polling in UI.
+    if (
+      status === 402 &&
+      data?.error === "license_expired" &&
+      typeof window !== "undefined" &&
+      window.location?.hash !== "#/expired"
+    ) {
+      window.location.hash = "#/expired";
     }
-    return Promise.reject(
-      (err && err.response && err.response.data) || { message: err && err.message }
-    );
+
+    if (status === 401 && typeof window !== "undefined") {
+      // keep current auth data handling by callers; this prevents silent dead-end sessions
+      // and keeps routing behavior consistent for protected pages.
+      if (!window.location.hash.includes("/super-admin/login") && !window.location.hash.includes("/login")) {
+        window.location.hash = "#/login";
+      }
+    }
+
+    return Promise.reject({
+      status,
+      ...(data && typeof data === "object" ? data : {}),
+      message: data?.message || err?.message || "Request failed",
+    });
   }
 );
 

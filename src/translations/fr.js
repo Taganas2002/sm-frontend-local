@@ -753,8 +753,200 @@ editExpense: "Modifier la dépense",
     "title8": "8. Effectuer une Inscription",
     "desc8": "Dans 'Inscriptions', associez un élève à un groupe pour l’année scolaire.",
 
-    "title9": "9. Calendrier Scolaire",
-    "desc9": "Ajoutez des événements et des périodes d'étude au calendrier scolaire."
+     "title9": "9. Calendrier Scolaire",
+    "desc9": "Ajoutez des événements et des périodes d'étude au calendrier scolaire.",
+
+  landingBrand: "Madrasti Management Software",
+  navbarToggleMenu: "Ouvrir le menu",
+  languageFr: "FR",
+  languageEn: "EN",
+  languageAr: "AR",
+
+  landingHeroBadge: "Gestion scolaire tout-en-un — En ligne & local",
+  landingHeroTitle: "Pilotez votre établissement avec une plateforme moderne",
+  landingHeroSubtitle:
+    "Élèves, enseignants, emploi du temps, présences et finances dans un seul outil sécurisé. Essayez la version en ligne (navigateur) ou la version bureau hors connexion selon vos besoins.",
+  landingCtaSignup: "Créer un compte",
+  landingCtaLogin: "Se connecter",
+  landingHeroCtaPlans: "Voir les offres",
+  landingCtaSuperAdmin: "Espace super admin",
+  landingCtaDashboard: "Aller au tableau de bord",
+
+  landingFeaturesTitle: "Tout ce dont votre école a besoin",
+  landingFeaturesSubtitle:
+    "Moins de tableurs, moins d’erreurs : un flux unique pour l’administration, le pédagogique et la comptabilité.",
+  landingFeatureStudentsTitle: "Élèves & inscriptions",
+  landingFeatureStudentsDesc:
+    "Dossiers élèves, inscriptions aux groupes et suivi centralisé.",
+  landingFeatureTeachersTitle: "Enseignants & matières",
+  landingFeatureTeachersDesc:
+    "Profils, matières, répartition et suivi des séances.",
+  landingFeatureScheduleTitle: "Emploi du temps",
+  landingFeatureScheduleDesc:
+    "Organisez salles, créneaux et conflits en un coup d’œil.",
+  landingFeatureAttendanceTitle: "Présences & absences",
+  landingFeatureAttendanceDesc:
+    "Saisie rapide, historique fiable et visibilité pour la direction.",
+  landingFeatureResultsTitle: "Notes & bulletins",
+  landingFeatureResultsDesc:
+    "Saisie contrôlée, calculs et exports pour le suivi pédagogique.",
+  landingFeatureFinanceTitle: "Facturation & trésorerie",
+  landingFeatureFinanceDesc:
+    "Encaissements, reçus, dépenses, P&L et traçabilité pour la caisse.",
+
+  landingOffersTitle: "Deux façons d’utiliser le même logiciel",
+  landingOffersSubtitle:
+    "Choisissez ce qui convient : abonnement en ligne (accès depuis le navigateur, essai par établissement), ou installation locale sur PC pour un fonctionnement autonome.",
+  landingOfferSaaSTitle: "En ligne — depuis le navigateur",
+  landingOfferSaaSBody:
+    "Accès sécurisé depuis n’importe où avec une connexion Internet, essai gratuit limité dans le temps et activation manuelle des abonnements (pratique sans carte bancaire internationale).",
+  landingOfferDesktopTitle: "Bureau / local (offline)",
+  landingOfferDesktopBody:
+    "Pour les écoles qui exigent autonomie : installation Windows, base de données locale, diffusion sur clé USB ou déploiement sur site. Devis séparé — idéal hors connexion permanente.",
+
+  landingTrustTitle: "Des écoles nous font déjà confiance",
+  landingTrustSubtitle:
+    "Des établissements font tourner leur gestion quotidienne sur MMS — parmi eux, notre partenaire institutionnel affiché ci-dessous.",
+  landingTrustPartnerAlkhawarezmi: "École Al Khawarezmi",
+  landingTrustPartnerAlkhawarezmiAlt: "Logo École Al Khawarezmi",
+  landingTrustRoles: "Rôles et permissions fines pour protéger vos données.",
+  landingTrustAudit: "Journal d’audit sur les opérations financières sensibles.",
+  landingTrustSupport: "Support humain pour activation, renouvellement et accompagnement.",
+
+  landingHowTitle: "Démarrer en 3 étapes",
+  landingStep1Title: "Créez votre établissement",
+  landingStep1Desc: "Inscription simple puis accès au tableau de bord.",
+  landingStep2Title: "Paramétrez & invitez l’équipe",
+  landingStep2Desc: "Classes, groupes, droits utilisateurs et premières séances.",
+  landingStep3Title: "Exploitez au quotidien",
+  landingStep3Desc:
+    "Présences, facturation et rapports depuis un seul endroit — en ligne ou local.",
+
+  landingFooterCtaTitleGuest: "Prêt à moderniser votre école ?",
+  landingFooterCtaTitleLogged: "Retournez à vos tâches",
+  landingFooterCtaSubGuest:
+    "Créez un compte et lancez l’essai : testez les modules clés avant d’activer un abonnement.",
+  landingFooterCtaSubLogged: "Ouvrez votre tableau de bord pour continuer.",
+  landingFooterCtaSignup: "S’inscrire",
+  landingFooterCtaLogin: "Se connecter",
+  landingFooterDashboard: "Tableau de bord",
+
+  landingPricingTitle: "Offres — en ligne & bureau à vie (hors connexion)",
+  landingPricingSubtitle:
+    "Essai en ligne 7 jours, abonnements 3 ou 12 mois, ou licence Windows perpétuelle installée chez vous. En Algérie : Baridi Mob, espèces… et activation manuelle après réception du règlement.",
+
+  landingPlanTrialBadge: "Démarrage",
+  landingPlanTrialTitle: "Essai en ligne",
+  landingPlanTrialPeriod: "7 jours gratuits",
+  landingPlanTrialNote:
+    "Une école = un essai. Accès complet aux modules principaux pour valider le logiciel avant tout engagement.",
+  landingPlanTrialF1: "Effectif, enseignants, emploi du temps",
+  landingPlanTrialF2: "Présences, facturation & encaissements",
+  landingPlanTrialF3: "Rôles, permissions, multi-utilisateurs",
+  landingPlanTrialF4: "Accompagnement pour passer à une formule payante",
+
+  landingPlan3Badge: "Trimestriel",
+  landingPlan3Title: "Forfait 3 mois",
+  landingPlan3Period: "90 jours d’accès en ligne",
+  landingPlan3Note:
+    "Après paiement (Baridi Mob ou moyen convenu), nous activons la période sur votre espace école.",
+  landingPlan3F1: "Toutes les fonctions en ligne pendant la durée souscrite",
+  landingPlan3F2: "Mises à jour et hébergement inclus",
+  landingPlan3F3: "Idéal pour un trimestre ou un pilote",
+
+  landingPlan12Badge: "Annuel",
+  landingPlan12Title: "Forfait 12 mois",
+  landingPlan12Period: "12 mois d’accès en ligne",
+  landingPlan12Popular: "Meilleur rapport année",
+  landingPlan12Note:
+    "Même démarche : paiement confirmé, puis activation sous 24h ouvrées en général.",
+  landingPlan12F1: "Suite complète en ligne pour l’année scolaire",
+  landingPlan12F2: "Renouvellement simple avec l’équipe support",
+  landingPlan12F3: "Priorité sur l’accompagnement et les demandes",
+
+  landingPlanCtaContact: "Nous contacter pour souscrire",
+  landingPlanCtaDesktop: "Demander un devis bureau",
+
+  landingPlanDesktopBadge: "À vie",
+  landingPlanDesktopTitle: "Bureau — licence perpétuelle",
+  landingPlanDesktopPeriod: "Offline • Windows • données locales",
+  landingPlanDesktopNote:
+    "Sans abonnement hébergé en ligne : logiciel installé sur vos machines ou déployé sur site. Tarif sur devis selon effectif, postes et options (formation, clé USB, support).",
+  landingPlanDesktopF1: "Travail sans connexion après installation",
+  landingPlanDesktopF2: "Données hébergées localement, sous votre responsabilité",
+  landingPlanDesktopF3: "Mises à jour convenues avec vous (hors formule hébergée en ligne)",
+  landingPlanDesktopF4: "Paiement Algérie (Baridi Mob, espèces…) puis livraison / activation licence",
+
+  landingPlanPriceDesktop: "Sur devis",
+
+  landingPayFlowTitle: "Comment obtenir l’application en Algérie ?",
+  landingPayFlowSubtitle:
+    "Pas besoin de carte bancaire internationale : vous réglez comme d’habitude, nous activons votre licence.",
+
+  landingPayStep1Title: "Créer un compte ou nous écrire",
+  landingPayStep1Desc:
+    "Inscription en ligne sur le site, ou message (téléphone, e-mail, réseaux sociaux) avec le nom de votre établissement.",
+  landingPayStep2Title: "Envoyer le paiement",
+  landingPayStep2Desc:
+    "Baridi Mob, espèces ou autre moyen convenu avec nous. Nous vous confirmons le montant et les coordonnées de paiement.",
+  landingPayStep3Title: "Transmettre une preuve",
+  landingPayStep3Desc:
+    "Capture d’écran ou reçu (WhatsApp, e-mail) pour tracer votre règlement.",
+  landingPayStep4Title: "Activation de l’école",
+  landingPayStep4Desc:
+    "Pour la formule en ligne : nous activons l’essai ou l’abonnement (3 / 12 mois) sur votre espace. Pour le bureau : nous finalisons la licence perpétuelle ou livrons l’installation après règlement.",
+
+  landingPlanPriceTrial: "0 DZD",
+
+  landingNextStepLead: "Étape suivante :",
+  landingNextComparePlans: "Voir les offres",
+  landingNextContactTeam: "Nous contacter",
+  landingContactHelpLine:
+    "Essai gratuit, abonnement en ligne ou devis licence bureau — écrivez-nous sur ces canaux, ou comparez d’abord les formules :",
+
+  landingContactTitle: "Contact & support",
+  landingContactSubtitle:
+    "Démo, souscription, renouvellement ou assistance technique : nous sommes là pour vous aider.",
+
+  forbiddenTitle: "Accès refusé",
+  forbiddenMessage:
+    "Vous n’avez pas les permissions nécessaires pour afficher cette page.",
+  forbiddenBackHome: "Retour à l’accueil",
+
+  notFoundTitle: "Page introuvable",
+  notFoundMessage: "Le lien est incorrect ou la page n’existe plus.",
+  notFoundBackHome: "Retour à l’accueil",
+
+  superAdminLoginBadge: "ACCÈS SÉCURISÉ",
+  superAdminLoginTitle: "Espace super administrateur",
+  superAdminLoginSubtitle:
+    "Gestion des abonnements par école : activation, désactivation, suivi des essais et des licences.",
+  superAdminLoginFormTitle: "Connexion administrateur",
+  superAdminLoginFormHint:
+    "Seuls les comptes avec rôle super administrateur peuvent continuer.",
+  superAdminLoginPhone: "Téléphone",
+  superAdminLoginPassword: "Mot de passe",
+  superAdminLoginShow: "Afficher",
+  superAdminLoginHide: "Masquer",
+  superAdminLoginSubmit: "Entrer dans le tableau de bord super admin",
+  superAdminLoginSigningIn: "Connexion…",
+  superAdminLoginNotAllowed:
+    "Ce compte n’a pas accès au tableau de bord super administrateur.",
+
+  expiredPageTitle: "Accès suspendu",
+  expiredThankYou:
+    "Merci d’utiliser Madrasti Management Software. Pour réactiver l’accès complet, contactez le support.",
+  expiredCallSupport: "Appeler le support : {phone}",
+  expiredEmailButton: "Email",
+  expiredFacebookButton: "Facebook",
+  expiredInstagramButton: "Instagram",
+  expiredHelpFooter: "Besoin d’aide rapide ? Écrivez-nous à",
+
+  trialBanner: "Version d’essai : il reste {days} jour(s).",
+  expiredBanner:
+    "Votre compte école n’est plus actif : fin de l’essai gratuit ou désactivation par l’administrateur. Contactez le support pour réactiver.",
+  expiredPageSubtitle:
+    "Vous étiez en période d’essai (7 jours) ? Le délai est dépassé. Vous aviez un abonnement payant ? Le super administrateur a pu désactiver l’accès (paiement, décision interne). Dans tous les cas, contactez-nous pour rétablir l’accès."
 
 };
 

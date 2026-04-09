@@ -307,7 +307,10 @@ const en = {
   logout: "Logout",
   signedIn: "Signed in",
   trialBanner: "Trial version: {days} day(s) remaining.",
-  expiredBanner: "Your trial period has expired. Contact the administrator to activate the license.",
+  expiredBanner:
+    "Your school account is no longer active: the free trial ended or an administrator deactivated the subscription. Contact support to renew.",
+  expiredPageSubtitle:
+    "If you were on the 7-day trial, the trial window has ended. If you had a paid plan, the super admin may have deactivated access after a payment or policy decision. In all cases, contact us to restore access.",
 
   summary: "Summary",
   cycles: "cycles",
@@ -425,6 +428,183 @@ const en = {
   auditLog_meta_category: "Category",
   auditLog_meta_expenseDate: "Expense date",
   auditLog_meta_cashierUserId: "Cashier user ID",
+
+  landingBrand: "Madrasti Management Software",
+  navbarToggleMenu: "Toggle menu",
+  languageFr: "FR",
+  languageEn: "EN",
+  languageAr: "AR",
+
+  landingHeroBadge: "All-in-one school management — Online & local",
+  landingHeroTitle: "Run your school with a modern platform",
+  landingHeroSubtitle:
+    "Students, teachers, timetable, attendance, and finances in one secure tool. Use it online in the browser or install the desktop/offline edition to match your needs.",
+  landingCtaSignup: "Create account",
+  landingCtaLogin: "Sign in",
+  landingHeroCtaPlans: "View plans",
+  landingCtaSuperAdmin: "Super admin portal",
+  landingCtaDashboard: "Go to dashboard",
+
+  landingFeaturesTitle: "Everything your school needs",
+  landingFeaturesSubtitle:
+    "Fewer spreadsheets, fewer mistakes: one workflow for admin, teaching, and accounting.",
+  landingFeatureStudentsTitle: "Students & enrollment",
+  landingFeatureStudentsDesc: "Student records, group enrollment, and centralized follow-up.",
+  landingFeatureTeachersTitle: "Teachers & subjects",
+  landingFeatureTeachersDesc: "Profiles, subjects, assignment, and session tracking.",
+  landingFeatureScheduleTitle: "Timetable",
+  landingFeatureScheduleDesc: "Organize rooms, slots, and conflicts at a glance.",
+  landingFeatureAttendanceTitle: "Attendance & absence",
+  landingFeatureAttendanceDesc: "Fast capture, reliable history, visibility for leadership.",
+  landingFeatureResultsTitle: "Grades & reports",
+  landingFeatureResultsDesc: "Controlled entry, calculations, and exports for academics.",
+  landingFeatureFinanceTitle: "Billing & treasury",
+  landingFeatureFinanceDesc: "Collections, receipts, expenses, P&L, and audit-friendly cash tracking.",
+
+  landingOffersTitle: "Two ways to run the same product",
+  landingOffersSubtitle:
+    "Pick what fits: an online subscription (in the browser, trial per school), or a local PC install for full autonomy without relying on the cloud.",
+  landingOfferSaaSTitle: "Online — in the browser",
+  landingOfferSaaSBody:
+    "Secure access from anywhere with internet, a limited free trial, and manual subscription activation (practical when card payments online are difficult).",
+  landingOfferDesktopTitle: "Desktop / local (offline)",
+  landingOfferDesktopBody:
+    "For schools that need autonomy: Windows install, local database, delivery on USB or on-site setup. Separate quote—ideal when you cannot rely on always-on internet.",
+
+  landingTrustTitle: "Schools already working with us",
+  landingTrustSubtitle:
+    "Established institutions run day-to-day operations on MMS — including our featured partner school below.",
+  landingTrustPartnerAlkhawarezmi: "Al Khawarezmi School",
+  landingTrustPartnerAlkhawarezmiAlt: "Al Khawarezmi School logo",
+  landingTrustRoles: "Fine-grained roles and permissions to protect your data.",
+  landingTrustAudit: "Audit trail for sensitive financial operations.",
+  landingTrustSupport: "Human support for activation, renewals, and onboarding.",
+
+  landingHowTitle: "Start in 3 steps",
+  landingStep1Title: "Create your school space",
+  landingStep1Desc: "Simple signup, then access your dashboard.",
+  landingStep2Title: "Configure & invite your team",
+  landingStep2Desc: "Classes, groups, user rights, and first sessions.",
+  landingStep3Title: "Operate day-to-day",
+  landingStep3Desc:
+    "Attendance, billing, and reporting from one place—online or local.",
+
+  landingFooterCtaTitleGuest: "Ready to modernize your school?",
+  landingFooterCtaTitleLogged: "Back to work",
+  landingFooterCtaSubGuest:
+    "Create an account and start the trial: validate key modules before activating a subscription.",
+  landingFooterCtaSubLogged: "Open your dashboard to continue.",
+  landingFooterCtaSignup: "Sign up",
+  landingFooterCtaLogin: "Sign in",
+  landingFooterDashboard: "Dashboard",
+
+  landingPricingTitle: "Plans — online & lifetime desktop (offline)",
+  landingPricingSubtitle:
+    "7-day online trial, 3- or 12-month online plans, or a perpetual Windows install on your premises. In Algeria: Baridi Mob, cash, etc.—manual activation after we confirm payment.",
+
+  landingPlanTrialBadge: "Start",
+  landingPlanTrialTitle: "Cloud trial",
+  landingPlanTrialPeriod: "7 days free",
+  landingPlanTrialNote:
+    "One school = one trial. Full access to core modules so you can evaluate the product before paying.",
+  landingPlanTrialF1: "Students, teachers, timetable",
+  landingPlanTrialF2: "Attendance, billing & collections",
+  landingPlanTrialF3: "Roles, permissions, multi-user",
+  landingPlanTrialF4: "Help upgrading to a paid plan",
+
+  landingPlan3Badge: "Quarterly",
+  landingPlan3Title: "3-month plan",
+  landingPlan3Period: "90 days of online access",
+  landingPlan3Note:
+    "After payment (Baridi Mob or another agreed method), we turn on the period on your school account.",
+  landingPlan3F1: "All online features for the subscribed period",
+  landingPlan3F2: "Hosting and updates included",
+  landingPlan3F3: "Great for a term or a pilot",
+
+  landingPlan12Badge: "Yearly",
+  landingPlan12Title: "12-month plan",
+  landingPlan12Period: "12 months of online access",
+  landingPlan12Popular: "Best yearly value",
+  landingPlan12Note:
+    "Same flow: payment confirmed, then activation—typically within one business day.",
+  landingPlan12F1: "Full online suite for the school year",
+  landingPlan12F2: "Simple renewal with our team",
+  landingPlan12F3: "Priority support and onboarding",
+
+  landingPlanCtaContact: "Contact us to subscribe",
+  landingPlanCtaDesktop: "Request a desktop quote",
+
+  landingPlanDesktopBadge: "Lifetime",
+  landingPlanDesktopTitle: "Desktop — perpetual license",
+  landingPlanDesktopPeriod: "Offline • Windows • local data",
+  landingPlanDesktopNote:
+    "No online hosting subscription: installed on your PCs or deployed on-site. Pricing on quote based on seats, workstations, and options (training, USB kit, support).",
+  landingPlanDesktopF1: "Work without internet after installation",
+  landingPlanDesktopF2: "Data stays on your infrastructure",
+  landingPlanDesktopF3: "Update cadence agreed with you (outside our hosted online plan)",
+  landingPlanDesktopF4: "Algeria payments (Baridi Mob, cash…) then license delivery / activation",
+
+  landingPlanPriceDesktop: "Custom quote",
+
+  landingPayFlowTitle: "How to get the app in Algeria?",
+  landingPayFlowSubtitle:
+    "No international card required—pay the way you already do; we enable your license after funds are received.",
+
+  landingPayStep1Title: "Sign up or message us",
+  landingPayStep1Desc:
+    "Create an account on the site, or reach out by phone, e-mail, or social media with your school name.",
+  landingPayStep2Title: "Send payment",
+  landingPayStep2Desc:
+    "Baridi Mob, cash, or another method we agree on. We confirm the amount and payment details with you.",
+  landingPayStep3Title: "Send proof",
+  landingPayStep3Desc:
+    "Screenshot or receipt via WhatsApp or e-mail so we can track your payment.",
+  landingPayStep4Title: "School activation",
+  landingPayStep4Desc:
+    "For the online plan: we enable your trial or subscription (3 / 12 months) on your school space. For desktop: we finalize the perpetual license or deliver the install after payment.",
+
+  landingPlanPriceTrial: "0 DZD",
+
+  landingNextStepLead: "Next step:",
+  landingNextComparePlans: "View plans",
+  landingNextContactTeam: "Contact us",
+  landingContactHelpLine:
+    "Free trial, online subscription renewal, or desktop quote — use the channels below, or compare plans first:",
+
+  landingContactTitle: "Contact & support",
+  landingContactSubtitle:
+    "Questions about a demo, subscription, renewal, or technical help — reach out anytime.",
+
+  forbiddenTitle: "Access denied",
+  forbiddenMessage: "You do not have permission to view this page.",
+  forbiddenBackHome: "Back to home",
+
+  notFoundTitle: "Page not found",
+  notFoundMessage: "The link may be wrong or this page no longer exists.",
+  notFoundBackHome: "Back to home",
+
+  superAdminLoginBadge: "SECURE ACCESS",
+  superAdminLoginTitle: "Super administrator portal",
+  superAdminLoginSubtitle:
+    "Manage per-school subscriptions: activation, deactivation, trials, and license status.",
+  superAdminLoginFormTitle: "Administrator sign-in",
+  superAdminLoginFormHint: "Only ROLE_SUPER_ADMIN accounts can continue.",
+  superAdminLoginPhone: "Phone",
+  superAdminLoginPassword: "Password",
+  superAdminLoginShow: "Show",
+  superAdminLoginHide: "Hide",
+  superAdminLoginSubmit: "Enter super admin dashboard",
+  superAdminLoginSigningIn: "Signing in...",
+  superAdminLoginNotAllowed: "This account is not allowed to access the super admin dashboard.",
+
+  expiredPageTitle: "Access suspended",
+  expiredThankYou:
+    "Thank you for using Madrasti Management Software. Contact support to restore full access.",
+  expiredCallSupport: "Call support: {phone}",
+  expiredEmailButton: "Email",
+  expiredFacebookButton: "Facebook",
+  expiredInstagramButton: "Instagram",
+  expiredHelpFooter: "Need quick help? Email us at",
 };
 
 export default en;
