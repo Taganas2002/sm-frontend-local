@@ -29,9 +29,16 @@ const TeacherDialog = ({ open, onClose, onSaved, language, teacher }) => {
   const t = getTranslations(language);
 
   const teacherSchema = yup.object().shape({
-    fullName: yup.string().required(t.requiredFullName || "Full name is required"),
-    phone: yup.string().required(t.requiredPhone || "Phone is required"),
-    email: yup.string().nullable().email(t.invalidEmail || "Invalid email"),
+    fullName: yup.string().trim().required(t.requiredFullName || "Full name is required"),
+    phone: yup.string().nullable().optional(),
+    email: yup
+      .string()
+      .nullable()
+      .transform((v) => (typeof v === "string" && v.trim() === "" ? null : v))
+      .test("email", t.invalidEmail || "Invalid email", (value) => {
+        if (value == null || value === "") return true;
+        return yup.string().email().isValidSync(value);
+      }),
   });
 
   const formik = useFormik({
@@ -46,7 +53,11 @@ const TeacherDialog = ({ open, onClose, onSaved, language, teacher }) => {
     validationSchema: teacherSchema,
     onSubmit: async (values, { resetForm }) => {
       try {
-        const payload = { ...values };
+        const payload = { fullName: values.fullName.trim() };
+        const ph = (values.phone || "").trim();
+        const em = (values.email || "").trim();
+        if (ph) payload.phone = ph;
+        if (em) payload.email = em;
         if (teacher?.id) {
           await updateTeacher(teacher.id, payload);
         } else {
@@ -61,6 +72,10 @@ const TeacherDialog = ({ open, onClose, onSaved, language, teacher }) => {
     },
   });
 
+  const requiredAsteriskSx = {
+    "& .MuiFormLabel-asterisk": { color: theme.palette.error.main },
+  };
+
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" data-testid="teachers-dialog">
       <DialogTitle sx={{ backgroundColor: colors.blueAccent[800], color: "#fff" }}>
@@ -73,12 +88,14 @@ const TeacherDialog = ({ open, onClose, onSaved, language, teacher }) => {
             inputProps={{ "data-testid": "teachers-fullName" }}
             margin="dense"
             fullWidth
+            required
             name="fullName"
-            placeholder={t.fullName || "Full name"}
+            label={t.fullName || "Full name"}
             value={formik.values.fullName}
             onChange={formik.handleChange}
             error={formik.touched.fullName && Boolean(formik.errors.fullName)}
             helperText={formik.touched.fullName && formik.errors.fullName}
+            sx={requiredAsteriskSx}
           />
 
           <TextField
@@ -86,11 +103,9 @@ const TeacherDialog = ({ open, onClose, onSaved, language, teacher }) => {
             margin="dense"
             fullWidth
             name="phone"
-            placeholder={t.phone || "Phone"}
+            label={t.phoneOptional || t.phone || "Phone"}
             value={formik.values.phone}
             onChange={formik.handleChange}
-            error={formik.touched.phone && Boolean(formik.errors.phone)}
-            helperText={formik.touched.phone && formik.errors.phone}
           />
 
           <TextField
@@ -98,7 +113,7 @@ const TeacherDialog = ({ open, onClose, onSaved, language, teacher }) => {
             margin="dense"
             fullWidth
             name="email"
-            placeholder={t.email || "Email"}
+            label={t.emailOptional || t.email || "Email"}
             value={formik.values.email || ""}
             onChange={formik.handleChange}
             error={formik.touched.email && Boolean(formik.errors.email)}

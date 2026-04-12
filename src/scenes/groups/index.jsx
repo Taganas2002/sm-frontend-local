@@ -47,6 +47,9 @@ import {
 
 const DEBOUNCE_MS = 350;
 
+const normalizeSectionList = (arr) =>
+  (Array.isArray(arr) ? arr : []).map((x) => ({ ...x, id: Number(x.id) }));
+
 /* ---------- helpers (format + compute preview) ---------- */
 const fmtDA = (n, lang = "fr") =>
   n == null
@@ -207,7 +210,7 @@ const Groups = ({ language = "fr" }) => {
         setTeachers(teachersList || []);
         setSubjects(subjectsList || []);
         setLevels(levelsList || []);
-        setSections(sectionsList?.content ? sectionsList.content : sectionsList || []);
+        setSections(normalizeSectionList(sectionsList));
         await loadGroups();
       } catch (err) {
         console.error("Error loading dropdown data:", err);
@@ -257,7 +260,8 @@ const Groups = ({ language = "fr" }) => {
           teacherName: teachers.find((x) => x.id === g.teacherId)?.fullName || "",
           subjectName: subjects.find((x) => x.id === g.subjectId)?.name || "",
           levelName: levels.find((x) => x.id === g.levelId)?.name || "",
-          sectionName: sections.find((x) => x.id === g.sectionId)?.name || "",
+          sectionName:
+            sections.find((x) => Number(x.id) === Number(g.sectionId))?.name || "",
           teacherSharePerSession: g.teacherSharePerSession ?? preview.perSession ?? null,
           teacherSharePerHour: g.teacherSharePerHour ?? preview.perHour ?? null,
           teacherSharePerMonth: g.teacherSharePerMonth ?? preview.perMonth ?? null,
@@ -287,13 +291,9 @@ const Groups = ({ language = "fr" }) => {
     setSectionFilter(""); // reset section
     try {
       if (levelId) {
-        const d = await listSections(levelId);
-        const list = d?.content ? d.content : d;
-        setSections(list || []);
+        setSections(normalizeSectionList(await listSections(levelId)));
       } else {
-        const d = await listSections();
-        const list = d?.content ? d.content : d;
-        setSections(list || []);
+        setSections(normalizeSectionList(await listSections()));
       }
     } catch (e) {
       // ignore
@@ -303,9 +303,7 @@ const Groups = ({ language = "fr" }) => {
   const fetchSectionsForLevel = async (levelId, setFieldValue) => {
     setFieldValue("levelId", levelId);
     try {
-      const data = await listSections(levelId);
-      const list = data?.content ? data.content : data;
-      setSections(list || []);
+      setSections(normalizeSectionList(await listSections(levelId)));
     } catch (err) {
       console.error("Failed to load sections for level", err);
       setSections([]);
@@ -316,7 +314,7 @@ const Groups = ({ language = "fr" }) => {
     setEditingGroup(row);
     setOpenDialog(true);
     if (row?.levelId) {
-      listSections(row.levelId).then((d) => setSections(d?.content ? d.content : d || []));
+      listSections(row.levelId).then((d) => setSections(normalizeSectionList(d)));
     }
   };
 
@@ -632,13 +630,12 @@ const Groups = ({ language = "fr" }) => {
           ))}
         </TextField>
 
-        {/* Section (depends on level) */}
+        {/* Section / شعبة (school-wide list; level filter optional) */}
         <TextField
           select
           value={sectionFilter}
           onChange={(e) => setSectionFilter(e.target.value)}
-          label={t.section}
-          disabled={!levelFilter}
+          label={t.sections}
         >
           <MenuItem value="">{allLabel}</MenuItem>
           {sections.map((x) => (

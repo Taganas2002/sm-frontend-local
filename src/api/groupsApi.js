@@ -60,8 +60,11 @@ export const deleteGroup = async (id) => {
 };
 
 export const listGroups = async () => {
-  const { data } = await api.get("/groups", { params: { size: 1000, sort: "id,asc" } });
-  return data.content ? data.content : data;
+  const { data } = await api.get("/groups", {
+    params: { page: 0, size: 2000, sort: "name,asc" },
+  });
+  const raw = data?.content ?? data;
+  return Array.isArray(raw) ? raw : [];
 };
 
 export const lookupGroups = async ({ q, academicYear, active, limit = 50 } = {}) => {

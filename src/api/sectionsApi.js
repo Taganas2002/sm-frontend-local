@@ -2,8 +2,8 @@
     import api from "./client";
 
     // List/search sections (with server paging)
-    export const searchSections = async ({ page = 0, size = 10 }) => {
-    const { data } = await api.get("/sections", { params: { page, size, sort: "name,asc" } });
+    export const searchSections = async ({ page = 0, size = 10, sort = "name,asc" } = {}) => {
+    const { data } = await api.get("/sections", { params: { page, size, sort } });
     return data; // { content, totalElements, ... }
     };
 
@@ -31,9 +31,18 @@
     return data;
     };
 
-    // NEW: List sections filtered by levelId
+    /**
+     * Sections for the current school. Optional levelId is passed for API compatibility;
+     * backend may return all sections for the tenant (filter client-side if needed).
+     * Always returns a plain array so callers never break on Page objects.
+     */
     export const listSections = async (levelId) => {
-    const { data } = await api.get("/sections", { params: { levelId, size: 1000 } });
-    return data.content ? data.content : data; // always array
+    const params = { page: 0, size: 2000, sort: "name,asc" };
+    if (levelId != null && levelId !== "") {
+      params.levelId = levelId;
+    }
+    const { data } = await api.get("/sections", { params });
+    const raw = data?.content ?? data;
+    return Array.isArray(raw) ? raw : [];
     };
 

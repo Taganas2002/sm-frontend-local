@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
-import translations from "../translations";
+import { getTranslations } from "../translations";
+import logoImg from "../assets/logo.png";
 
 
 // Nav item component
@@ -18,7 +19,7 @@ const Item = ({ to, children }) => (
 
 export default function Navbar({ language, setLanguage }) {
   const [open, setOpen] = useState(false);
-  const t = translations[language] || translations["fr"];
+  const t = getTranslations(language);
   const langs = [
     { code: "fr", label: t.languageFr || "Français" },
     { code: "en", label: t.languageEn || "English" },
@@ -32,9 +33,11 @@ export default function Navbar({ language, setLanguage }) {
           {/* Brand */}
           <Link to="/" className="flex items-center gap-2 min-w-0 flex-1">
             <img
-              src={`src/assets/logo.png`}
-              alt="Madrasti Logo"
-              className="h-25 w-25 rounded-xl object-cover shrink-0"
+              src={logoImg}
+              alt={t.landingBrand || "Madrasti"}
+              width={48}
+              height={48}
+              className="h-12 w-12 rounded-xl object-cover shrink-0"
             />
             <span className="text-lg font-semibold text-gray-900 truncate max-w-[min(52vw,280px)] sm:max-w-[min(40vw,320px)] md:max-w-none">
               {t.landingBrand || "Madrasti Management Software"}

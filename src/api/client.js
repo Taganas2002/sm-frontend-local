@@ -68,18 +68,27 @@ api.interceptors.response.use(
       window.location.hash = "#/expired";
     }
 
-    if (status === 401 && typeof window !== "undefined") {
-      // keep current auth data handling by callers; this prevents silent dead-end sessions
-      // and keeps routing behavior consistent for protected pages.
-      if (!window.location.hash.includes("/super-admin/login") && !window.location.hash.includes("/login")) {
-        window.location.hash = "#/login";
-      }
+    // Do not redirect or clear auth on 401 here. A global hash jump logs users out of good sessions
+    // when one endpoint fails (e.g. calendar) while the JWT is still valid. Let callers handle 401.
+
+    let message = data?.message;
+    if (
+      !message &&
+      data &&
+      typeof data === "object" &&
+      data.error === "VALIDATION_ERROR" &&
+      data.fields &&
+      typeof data.fields === "object"
+    ) {
+      message = Object.entries(data.fields)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join("; ");
     }
 
     return Promise.reject({
       status,
       ...(data && typeof data === "object" ? data : {}),
-      message: data?.message || err?.message || "Request failed",
+      message: message || err?.message || "Request failed",
     });
   }
 );

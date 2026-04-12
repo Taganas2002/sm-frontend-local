@@ -4,16 +4,24 @@ import {
   Autocomplete,
   Box,
   Button,
+  Checkbox,
+  Chip,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
+  Divider,
+  FormControlLabel,
+  FormGroup,
   IconButton,
   InputAdornment,
   MenuItem,
   Snackbar,
+  Tab,
+  Tabs,
   TextField,
   Tooltip,
+  Typography,
   useTheme,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
@@ -33,11 +41,12 @@ import {
   listEnrollments,
   filterEnrollmentsCSV,
   createEnrollment,
+  createEnrollmentBatch,
   updateEnrollmentStatus,
   deleteEnrollment,
 } from "../../api/enrollmentsApi";
 import { searchStudents, getStudent } from "../../api/studentsApi";
-import { lookupGroups } from "../../api/groupsApi";
+import { searchGroups, lookupGroups } from "../../api/groupsApi";
 
 const STATUS_OPTIONS = ["ACTIVE", "SUSPENDED", "DROPPED", "COMPLETED"];
 const ENROLLMENT_SCANNER_LS_KEY = "enrollment:studentScannerOn";
@@ -113,6 +122,14 @@ const Enrollments = ({ language = "fr" }) => {
   const scanInputRef = useRef(null);
   const studentSearchTimer = useRef(null);
 
+  /** 0 = one student + autocomplete, 1 = pick group then checkboxes */
+  const [addModeTab, setAddModeTab] = useState(0);
+  const [bulkGroupId, setBulkGroupId] = useState("");
+  const [bulkSearch, setBulkSearch] = useState("");
+  const [bulkSelectedIds, setBulkSelectedIds] = useState(() => new Set());
+  const [alreadyInGroupIds, setAlreadyInGroupIds] = useState(() => new Set());
+  const [groupLoadError, setGroupLoadError] = useState("");
+
   const studentsById = useMemo(() => {
     const map = {};
     (studentsList || []).forEach((s) => {
@@ -124,7 +141,13 @@ const Enrollments = ({ language = "fr" }) => {
 
   const enrollmentSchema = yup.object().shape({
     studentId: yup.number().required(t.studentId || "Student is required"),
-    groupId: yup.number().required(t.group || "Group is required"),
+    groupId: yup
+      .string()
+      .required(t.group || "Group is required")
+      .test("groupIdNum", t.group || "Group is required", (v) => {
+        const n = Number(v);
+        return v !== "" && Number.isFinite(n) && n > 0;
+      }),
     status: yup.string().oneOf(STATUS_OPTIONS).required(t.status || "Status is required"),
     notes: yup.string().nullable(),
   });
@@ -149,14 +172,49 @@ const Enrollments = ({ language = "fr" }) => {
     }
   };
 
+  const normalizeGroupRows = (arr) =>
+    (arr || [])
+      .map((g) => {
+        const id = Number(g?.id ?? g?.groupId);
+        const rawName = g?.name ?? g?.groupName;
+        const name =
+          rawName != null && String(rawName).trim() !== "" ? String(rawName).trim() : `Group #${id}`;
+        return { id, name };
+      })
+      .filter((g) => Number.isFinite(g.id) && g.id > 0);
+
   const loadGroups = async () => {
+    setGroupLoadError("");
     try {
-      // Backend historically only honored limit when 0 < limit < 500; use 499 so large schools still get a full page.
-      const data = await lookupGroups({ limit: 499 });
-      setGroups(Array.isArray(data) ? data : normalizeToArray(data));
+      let arr = [];
+      try {
+        const res = await searchGroups({
+          page: 0,
+          size: 500,
+          sort: "name,asc",
+        });
+        const raw = res?.content ?? res;
+        arr = Array.isArray(raw) ? raw : normalizeToArray(raw);
+      } catch (e1) {
+        console.warn("enrollment: searchGroups failed, will try lookup", e1);
+      }
+      if (!arr.length) {
+        try {
+          const lookup = await lookupGroups({ limit: 500 });
+          arr = Array.isArray(lookup) ? lookup : normalizeToArray(lookup);
+        } catch (e2) {
+          console.warn("enrollment: lookupGroups failed", e2);
+        }
+      }
+      const mapped = normalizeGroupRows(arr);
+      setGroups(mapped);
+      if (mapped.length === 0) {
+        setGroupLoadError(t.groupsLoadError || "Could not load groups. Check your connection or try again.");
+      }
     } catch (e) {
       console.error("Failed to load groups", e);
       setGroups([]);
+      setGroupLoadError(t.groupsLoadError || "Could not load groups.");
     }
   };
 
@@ -168,12 +226,12 @@ const Enrollments = ({ language = "fr" }) => {
           page: 0,
           size: 100,
           sort: "enrollmentDate,desc",
-          groupId: filterGroupId || undefined,
+          groupId: filterGroupId ? Number(filterGroupId) : undefined,
         });
         setRows(normalizeToArray(res));
       } else {
         const res = await filterEnrollmentsCSV({
-          groupId: filterGroupId || undefined,
+          groupId: filterGroupId ? Number(filterGroupId) : undefined,
           statuses: [filterStatus],
           page: 0,
           size: 100,
@@ -235,6 +293,59 @@ const Enrollments = ({ language = "fr" }) => {
     return () => clearTimeout(studentSearchTimer.current);
   }, [studentSearchInput, editingEnrollment]);
 
+  const bulkSelectedGroup = useMemo(
+    () => groups.find((g) => String(g.id) === String(bulkGroupId)),
+    [groups, bulkGroupId]
+  );
+
+  const bulkVisibleStudents = useMemo(() => {
+    const term = (bulkSearch || "").trim().toLowerCase();
+    const list = studentsList || [];
+    const filtered = !term
+      ? list
+      : list.filter((s) => {
+          const name = (s.fullName || "").toLowerCase();
+          const phone = (s.phone || "").toLowerCase();
+          const gphone = (s.guardianPhone || "").toLowerCase();
+          return name.includes(term) || phone.includes(term) || gphone.includes(term);
+        });
+    return [...filtered].sort((a, b) => String(a.fullName || "").localeCompare(String(b.fullName || ""), undefined, { sensitivity: "base" }));
+  }, [studentsList, bulkSearch]);
+
+  useEffect(() => {
+    if (!openDialog || editingEnrollment || addModeTab !== 1) {
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      if (!bulkGroupId) {
+        if (!cancelled) setAlreadyInGroupIds(new Set());
+        return;
+      }
+      try {
+        const res = await filterEnrollmentsCSV({
+          groupId: Number(bulkGroupId),
+          statuses: ["ACTIVE", "SUSPENDED"],
+          page: 0,
+          size: 500,
+          sort: "enrollmentDate,desc",
+        });
+        const ids = new Set(
+          normalizeToArray(res)
+            .map((r) => Number(r.studentId))
+            .filter((n) => Number.isFinite(n))
+        );
+        if (!cancelled) setAlreadyInGroupIds(ids);
+      } catch (e) {
+        console.error("Failed to load enrollments for group", e);
+        if (!cancelled) setAlreadyInGroupIds(new Set());
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [openDialog, editingEnrollment, addModeTab, bulkGroupId]);
+
   const filteredRows = useMemo(() => {
     const term = (q || "").trim().toLowerCase();
     if (!term) return rows;
@@ -242,7 +353,7 @@ const Enrollments = ({ language = "fr" }) => {
       const sid = Number(r.studentId);
       const student = Number.isFinite(sid) ? studentsById[sid] : undefined;
       const studentName = (student?.fullName || "").toLowerCase();
-      const groupName = (groups.find((g) => g.id === r.groupId)?.name || "").toLowerCase();
+      const groupName = (groups.find((g) => Number(g.id) === Number(r.groupId))?.name || "").toLowerCase();
       const notes = (r.notes || "").toLowerCase();
       return studentName.includes(term) || groupName.includes(term) || notes.includes(term);
     });
@@ -253,9 +364,88 @@ const Enrollments = ({ language = "fr" }) => {
     setEditingEnrollment(null);
     setSelectedStudent(null);
     setStudentSearchInput("");
+    setAddModeTab(0);
+    setBulkGroupId("");
+    setBulkSearch("");
+    setBulkSelectedIds(new Set());
+    setAlreadyInGroupIds(new Set());
+    setGroupLoadError("");
     formik.resetForm();
     formik.setValues({ ...initialValues });
   };
+
+  const toggleBulkStudent = (id) => {
+    const n = Number(id);
+    if (!Number.isFinite(n)) return;
+    setBulkSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(n)) next.delete(n);
+      else next.add(n);
+      return next;
+    });
+  };
+
+  const selectAllVisibleEligible = () => {
+    setBulkSelectedIds((prev) => {
+      const next = new Set(prev);
+      bulkVisibleStudents.forEach((s) => {
+        const id = Number(s.id);
+        if (!Number.isFinite(id) || alreadyInGroupIds.has(id)) return;
+        next.add(id);
+      });
+      return next;
+    });
+  };
+
+  const clearBulkSelection = () => setBulkSelectedIds(new Set());
+
+  const skipReasonLabel = (code) => {
+    const key = `skipReason_${code}`;
+    return t[key] || code;
+  };
+
+  async function handleBulkSave() {
+    if (!bulkGroupId) {
+      setSnack({ open: true, msg: t.bulkSelectGroupFirst || "Select a group first", severity: "warning" });
+      return;
+    }
+    const ids = [...bulkSelectedIds].filter((n) => Number.isFinite(n));
+    if (ids.length === 0) {
+      setSnack({ open: true, msg: t.selectAtLeastOneStudent || "Select at least one student", severity: "warning" });
+      return;
+    }
+    try {
+      const res = await createEnrollmentBatch({
+        groupId: Number(bulkGroupId),
+        studentIds: ids,
+        status: formik.values.status,
+        notes: formik.values.notes || "",
+        enrollmentDate: getLocalDate(),
+      });
+      await loadEnrollments();
+      await loadStudents();
+      let msg =
+        (t.bulkEnrollDone || "Created {{created}}, skipped {{skipped}}")
+          .replace(/\{\{created\}\}/g, String(res.createdCount ?? 0))
+          .replace(/\{\{skipped\}\}/g, String(res.skippedCount ?? 0));
+      if (res.skips?.length) {
+        const preview = res.skips
+          .slice(0, 5)
+          .map((sk) => `#${sk.studentId}: ${skipReasonLabel(sk.code)}`)
+          .join("; ");
+        msg += ` — ${preview}${res.skips.length > 5 ? "…" : ""}`;
+      }
+      setSnack({
+        open: true,
+        msg,
+        severity: res.skippedCount > 0 ? "warning" : "success",
+      });
+      handleClose();
+    } catch (err) {
+      console.error("Bulk save failed", err);
+      setSnack({ open: true, msg: t.failedSave || "Save failed", severity: "error" });
+    }
+  }
 
   async function handleSave(values) {
     try {
@@ -297,7 +487,7 @@ const Enrollments = ({ language = "fr" }) => {
     if (editingEnrollment) {
       formik.setValues({
         studentId: editingEnrollment.studentId || "",
-        groupId: editingEnrollment.groupId || "",
+        groupId: editingEnrollment.groupId != null ? String(editingEnrollment.groupId) : "",
         status: editingEnrollment.status || "ACTIVE",
         notes: editingEnrollment.notes || "",
       });
@@ -342,7 +532,7 @@ const Enrollments = ({ language = "fr" }) => {
       headerName: t.group || "Group",
       flex: 1,
       renderCell: (params) => {
-        const g = groups.find((x) => x.id === params.row.groupId);
+        const g = groups.find((x) => Number(x.id) === Number(params.row.groupId));
         return g ? g.name : params.row.groupId;
       },
     },
@@ -422,14 +612,45 @@ const Enrollments = ({ language = "fr" }) => {
           }}
         />
 
-        <TextField select label={t.groups || "Groups"} value={filterGroupId} onChange={(e) => setFilterGroupId(e.target.value)} size="small">
+        <TextField
+          select
+          label={t.groups || "Groups"}
+          value={filterGroupId}
+          onChange={(e) => setFilterGroupId(e.target.value)}
+          size="small"
+          InputLabelProps={{ shrink: true }}
+          SelectProps={{
+            displayEmpty: true,
+            renderValue: (selected) => {
+              if (selected === "" || selected == null) return t.all || "All";
+              const g = groups.find((x) => String(x.id) === String(selected));
+              return g?.name ?? String(selected);
+            },
+          }}
+        >
           <MenuItem value="">{t.all || "All"}</MenuItem>
           {groups.map((g) => (
-            <MenuItem key={g.id} value={g.id}>{g.name}</MenuItem>
+            <MenuItem key={g.id} value={String(g.id)}>
+              {g.name}
+            </MenuItem>
           ))}
         </TextField>
 
-        <TextField select label={t.status || "Status"} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} size="small">
+        <TextField
+          select
+          label={t.status || "Status"}
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          size="small"
+          InputLabelProps={{ shrink: true }}
+          SelectProps={{
+            displayEmpty: true,
+            renderValue: (selected) => {
+              if (selected === "" || selected == null) return t.all || "All";
+              return getEnrollmentStatusLabel(selected, t);
+            },
+          }}
+        >
           <MenuItem value="">{t.all || "All"}</MenuItem>
           {STATUS_OPTIONS.map((status) => (
             <MenuItem key={status} value={status}>{getEnrollmentStatusLabel(status, t)}</MenuItem>
@@ -444,6 +665,11 @@ const Enrollments = ({ language = "fr" }) => {
               setEditingEnrollment(null);
               setSelectedStudent(null);
               setStudentSearchInput("");
+              setAddModeTab(0);
+              setBulkGroupId("");
+              setBulkSearch("");
+              setBulkSelectedIds(new Set());
+              setAlreadyInGroupIds(new Set());
               formik.resetForm();
               formik.setValues({ ...initialValues });
               try {
@@ -469,10 +695,40 @@ const Enrollments = ({ language = "fr" }) => {
         <DataGrid rows={filteredRows} columns={columns} pageSize={10} loading={loading} disableRowSelectionOnClick getRowId={(row) => row.id} />
       </Box>
 
-      <Dialog open={openDialog} onClose={handleClose} fullWidth maxWidth="sm" data-testid="enrollments-dialog">
+      <Dialog
+        open={openDialog}
+        onClose={handleClose}
+        fullWidth
+        maxWidth={!editingEnrollment && addModeTab === 1 ? "md" : "sm"}
+        data-testid="enrollments-dialog"
+      >
         <DialogTitle sx={{ backgroundColor: theme.palette.mode === "light" ? "#0d47a1" : "#4274c7", color: "#fff", fontWeight: "bold" }}>
           {editingEnrollment ? t.editEnrollment || "Edit enrollment" : t.addEnrollment || "Add enrollment"}
         </DialogTitle>
+
+        {openDialog && groupLoadError && (
+          <Alert severity="error" sx={{ mx: 2, mt: 1 }} onClose={() => setGroupLoadError("")}>
+            {groupLoadError}
+          </Alert>
+        )}
+
+        {!editingEnrollment && (
+          <Box sx={{ direction: "ltr", width: "100%" }} dir="ltr">
+            <Tabs
+              value={addModeTab}
+              onChange={(_, v) => {
+                setAddModeTab(v);
+                setGroupLoadError("");
+              }}
+              variant="fullWidth"
+              sx={{ borderBottom: 1, borderColor: "divider", px: 1 }}
+              data-testid="enrollments-add-mode-tabs"
+            >
+              <Tab label={t.enrollmentSingle || "One student"} data-testid="enrollments-tab-single" />
+              <Tab label={t.enrollmentBulk || "Multiple students"} data-testid="enrollments-tab-bulk" />
+            </Tabs>
+          </Box>
+        )}
 
         <input
           ref={scanInputRef}
@@ -480,7 +736,7 @@ const Enrollments = ({ language = "fr" }) => {
           autoComplete="off"
           style={{ position: "absolute", opacity: 0, width: 1, height: 1, pointerEvents: "none" }}
           onKeyDown={(e) => {
-            if (!scannerOn || !openDialog || editingEnrollment) return;
+            if (!scannerOn || !openDialog || editingEnrollment || addModeTab !== 0) return;
             if (e.key === "Enter") {
               e.preventDefault();
               const raw = scanInputRef.current?.value ?? "";
@@ -490,123 +746,331 @@ const Enrollments = ({ language = "fr" }) => {
           }}
         />
 
-        <form onSubmit={formik.handleSubmit}>
-          <DialogContent>
-            <Box display="flex" gap={1} alignItems="center" mb={1}>
-              <Autocomplete
-                data-testid="enrollments-student-autocomplete"
+        {!editingEnrollment && addModeTab === 1 ? (
+          <>
+            <DialogContent dir={language === "ar" ? "rtl" : "ltr"}>
+              <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 0.5 }}>
+                {t.bulkStep1Title || "Step 1 — Group"}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1.5 }}>
+                {t.bulkEnrollmentHelp || "Choose the group, then select students."}
+              </Typography>
+              <TextField
+                select
                 fullWidth
-                options={studentOptions}
-                value={selectedStudent}
-                onChange={(_, value) => {
-                  setSelectedStudent(value);
-                  formik.setFieldValue("studentId", value?.id ? Number(value.id) : "");
+                margin="dense"
+                label={t.selectGroupForBulk || t.group || "Group"}
+                value={bulkGroupId}
+                onChange={(e) => {
+                  setBulkGroupId(e.target.value);
+                  setBulkSelectedIds(new Set());
                 }}
-                inputValue={studentSearchInput}
-                onInputChange={(_, value) => setStudentSearchInput(value)}
-                getOptionLabel={(option) => option?.fullName ? `${option.fullName}${option.phone ? ` - ${option.phone}` : ""}` : ""}
-                isOptionEqualToValue={(option, value) => option?.id === value?.id}
-                disabled={!!editingEnrollment}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    inputProps={{ ...params.inputProps, "data-testid": "enrollments-student-input" }}
-                    margin="dense"
-                    fullWidth
-                    name="studentId"
-                    label={t.studentId || "Student"}
-                    placeholder={t.searchStudents || "Search (name / phone / guardian)"}
-                    onBlur={formik.handleBlur}
-                    error={formik.touched.studentId && Boolean(formik.errors.studentId)}
-                    helperText={formik.touched.studentId && formik.errors.studentId}
-                  />
-                )}
+                data-testid="enrollments-bulk-group"
+                InputLabelProps={{ shrink: true }}
+                SelectProps={{
+                  displayEmpty: true,
+                  renderValue: (selected) => {
+                    if (selected === "" || selected == null) {
+                      return t.enrollmentPickGroup || "— Select group —";
+                    }
+                    const g = groups.find((x) => String(x.id) === String(selected));
+                    return g?.name ?? String(selected);
+                  },
+                }}
+              >
+                <MenuItem value="">{t.enrollmentPickGroup || "— Select group —"}</MenuItem>
+                {groups.map((g) => (
+                  <MenuItem key={g.id} value={String(g.id)}>
+                    {g.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+
+              {bulkGroupId && bulkSelectedGroup && (
+                <Alert severity="info" sx={{ mt: 1, mb: 1 }} variant="outlined">
+                  <Typography variant="body2" component="span">
+                    <strong>{bulkSelectedGroup.name}</strong>
+                    {" — "}
+                    {t.bulkStep2Hint || "Tick students below, then Save."}
+                  </Typography>
+                </Alert>
+              )}
+
+              <Typography variant="subtitle2" fontWeight="bold" sx={{ mt: 1, mb: 0.5 }}>
+                {t.bulkStep2Title || "Step 2 — Students"}
+              </Typography>
+
+              <TextField
+                select
+                margin="dense"
+                fullWidth
+                name="status"
+                label={t.status || "Status"}
+                value={formik.values.status}
+                onChange={formik.handleChange}
+                InputLabelProps={{ shrink: true }}
+              >
+                {STATUS_OPTIONS.map((status) => (
+                  <MenuItem key={status} value={status}>
+                    {getEnrollmentStatusLabel(status, t)}
+                  </MenuItem>
+                ))}
+              </TextField>
+
+              <TextField
+                margin="dense"
+                placeholder={t.notes || "Notes"}
+                fullWidth
+                name="notes"
+                value={formik.values.notes}
+                onChange={formik.handleChange}
+                multiline
+                minRows={2}
               />
 
-              <Tooltip title={scannerOn ? (t.scannerOffLabel || "Turn QR scanner OFF") : (t.scannerOnLabel || "Turn QR scanner ON")}>
-                <span>
-                  <IconButton
-                    onClick={() => setScannerOn((value) => !value)}
-                    disabled={!!editingEnrollment}
-                    sx={{
-                      mt: 1,
-                      border: 1,
-                      borderColor: scannerOn ? "primary.main" : "action.disabled",
-                      bgcolor: scannerOn ? "primary.main" : "transparent",
-                      color: scannerOn ? "primary.contrastText" : "text.secondary",
-                      borderRadius: "12px",
-                      width: 44,
-                      height: 44,
-                      "&:hover": { bgcolor: scannerOn ? "primary.dark" : "action.hover" },
+              <Divider sx={{ my: 1.5 }} />
+
+              <Box display="flex" gap={1} flexWrap="wrap" alignItems="center" mb={1}>
+                <TextField
+                  size="small"
+                  fullWidth
+                  sx={{ flex: "1 1 200px" }}
+                  label={t.searchStudents || "Search students"}
+                  value={bulkSearch}
+                  onChange={(e) => setBulkSearch(e.target.value)}
+                  data-testid="enrollments-bulk-search"
+                  InputLabelProps={{ shrink: true }}
+                />
+                <Chip
+                  label={(t.selectedStudentsCount || "{{n}} selected").replace("{{n}}", String(bulkSelectedIds.size))}
+                  color="primary"
+                  variant="outlined"
+                />
+              </Box>
+              <Box display="flex" gap={1} mb={1} flexWrap="wrap">
+                <Button size="small" variant="outlined" onClick={selectAllVisibleEligible} disabled={!bulkGroupId}>
+                  {t.selectAllVisibleStudents || "Select all (visible)"}
+                </Button>
+                <Button size="small" onClick={clearBulkSelection} disabled={bulkSelectedIds.size === 0}>
+                  {t.clearStudentSelection || "Clear"}
+                </Button>
+              </Box>
+
+              <Box
+                sx={{
+                  maxHeight: 340,
+                  overflow: "auto",
+                  border: 1,
+                  borderColor: "divider",
+                  borderRadius: 1,
+                  p: 1,
+                }}
+                data-testid="enrollments-bulk-list"
+              >
+                {!bulkGroupId ? (
+                  <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 3 }}>
+                    {t.bulkSelectGroupFirst || "Select a group first to load students."}
+                  </Typography>
+                ) : bulkVisibleStudents.length === 0 ? (
+                  <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 3 }}>
+                    {t.searchStudents || "No students"}
+                  </Typography>
+                ) : (
+                  <FormGroup>
+                    {bulkVisibleStudents.map((s) => {
+                      const id = Number(s.id);
+                      const inGroup = alreadyInGroupIds.has(id);
+                      return (
+                        <FormControlLabel
+                          key={s.id}
+                          labelPlacement="end"
+                          sx={{ mr: 0, ml: 0, alignItems: "flex-start", opacity: inGroup ? 0.55 : 1 }}
+                          control={
+                            <Checkbox
+                              checked={bulkSelectedIds.has(id)}
+                              onChange={() => toggleBulkStudent(id)}
+                              disabled={inGroup}
+                              data-testid={`enrollments-bulk-cb-${id}`}
+                            />
+                          }
+                          label={
+                            <Box>
+                              <Typography variant="body2">{s.fullName}</Typography>
+                              {inGroup && (
+                                <Typography variant="caption" color="warning.main">
+                                  {t.alreadyEnrolledShort || "Already in group"}
+                                </Typography>
+                              )}
+                            </Box>
+                          }
+                        />
+                      );
+                    })}
+                  </FormGroup>
+                )}
+              </Box>
+            </DialogContent>
+            <DialogActions>
+              <Button data-testid="enrollments-cancel" type="button" onClick={handleClose}>
+                {t.cancel || "Cancel"}
+              </Button>
+              <Button
+                data-testid="enrollments-bulk-save"
+                type="button"
+                variant="contained"
+                disabled={!bulkGroupId || bulkSelectedIds.size === 0}
+                onClick={handleBulkSave}
+              >
+                {t.save || "Save"}
+              </Button>
+            </DialogActions>
+          </>
+        ) : (
+          <form onSubmit={formik.handleSubmit}>
+            <DialogContent dir={language === "ar" ? "rtl" : "ltr"}>
+              {editingEnrollment && (
+                <TextField
+                  margin="dense"
+                  fullWidth
+                  disabled
+                  label={t.studentId || "Student"}
+                  value={selectedStudent?.fullName || String(editingEnrollment.studentId || "")}
+                  sx={{ mb: 1 }}
+                />
+              )}
+              {!editingEnrollment && (
+                <Box display="flex" gap={1} alignItems="center" mb={1}>
+                  <Autocomplete
+                    data-testid="enrollments-student-autocomplete"
+                    fullWidth
+                    options={studentOptions}
+                    value={selectedStudent}
+                    onChange={(_, value) => {
+                      setSelectedStudent(value);
+                      formik.setFieldValue("studentId", value?.id ? Number(value.id) : "");
                     }}
-                  >
-                    <QrCodeScannerIcon />
-                  </IconButton>
-                </span>
-              </Tooltip>
-            </Box>
+                    inputValue={studentSearchInput}
+                    onInputChange={(_, value) => setStudentSearchInput(value)}
+                    getOptionLabel={(option) =>
+                      option?.fullName ? `${option.fullName}${option.phone ? ` - ${option.phone}` : ""}` : ""
+                    }
+                    isOptionEqualToValue={(option, value) => option?.id === value?.id}
+                    disabled={!!editingEnrollment}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        inputProps={{ ...params.inputProps, "data-testid": "enrollments-student-input" }}
+                        margin="dense"
+                        fullWidth
+                        name="studentId"
+                        label={t.studentId || "Student"}
+                        placeholder={t.searchStudents || "Search (name / phone / guardian)"}
+                        onBlur={formik.handleBlur}
+                        error={formik.touched.studentId && Boolean(formik.errors.studentId)}
+                        helperText={formik.touched.studentId && formik.errors.studentId}
+                      />
+                    )}
+                  />
 
-            <TextField
-              inputProps={{ "data-testid": "enrollments-groupId" }}
-              select
-              fullWidth
-              margin="dense"
-              label={t.group || "Group"}
-              name="groupId"
-              value={formik.values.groupId}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              error={formik.touched.groupId && Boolean(formik.errors.groupId)}
-              helperText={formik.touched.groupId && formik.errors.groupId}
-              disabled={!!editingEnrollment}
-            >
-              {groups.map((g) => (
-                <MenuItem key={g.id} value={g.id}>{g.name}</MenuItem>
-              ))}
-            </TextField>
+                  <Tooltip title={scannerOn ? t.scannerOffLabel || "Turn QR scanner OFF" : t.scannerOnLabel || "Turn QR scanner ON"}>
+                    <span>
+                      <IconButton
+                        onClick={() => setScannerOn((value) => !value)}
+                        disabled={!!editingEnrollment}
+                        sx={{
+                          mt: 1,
+                          border: 1,
+                          borderColor: scannerOn ? "primary.main" : "action.disabled",
+                          bgcolor: scannerOn ? "primary.main" : "transparent",
+                          color: scannerOn ? "primary.contrastText" : "text.secondary",
+                          borderRadius: "12px",
+                          width: 44,
+                          height: 44,
+                          "&:hover": { bgcolor: scannerOn ? "primary.dark" : "action.hover" },
+                        }}
+                      >
+                        <QrCodeScannerIcon />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                </Box>
+              )}
 
-            <TextField
-              inputProps={{ "data-testid": "enrollments-status" }}
-              select
-              margin="dense"
-              fullWidth
-              name="status"
-              label={t.status || "Status"}
-              value={formik.values.status}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              error={formik.touched.status && Boolean(formik.errors.status)}
-              helperText={formik.touched.status && formik.errors.status}
-            >
-              {STATUS_OPTIONS.map((status) => (
-                <MenuItem key={status} value={status}>{getEnrollmentStatusLabel(status, t)}</MenuItem>
-              ))}
-            </TextField>
+              <TextField
+                inputProps={{ "data-testid": "enrollments-groupId" }}
+                select
+                fullWidth
+                margin="dense"
+                label={t.group || "Group"}
+                name="groupId"
+                value={formik.values.groupId === "" || formik.values.groupId == null ? "" : String(formik.values.groupId)}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                error={formik.touched.groupId && Boolean(formik.errors.groupId)}
+                helperText={formik.touched.groupId && formik.errors.groupId}
+                disabled={!!editingEnrollment}
+                InputLabelProps={{ shrink: true }}
+                SelectProps={{
+                  displayEmpty: true,
+                  renderValue: (selected) => {
+                    if (selected === "" || selected == null) return "—";
+                    const g = groups.find((x) => String(x.id) === String(selected));
+                    return g?.name ?? String(selected);
+                  },
+                }}
+              >
+                {groups.map((g) => (
+                  <MenuItem key={g.id} value={String(g.id)}>
+                    {g.name}
+                  </MenuItem>
+                ))}
+              </TextField>
 
-            <TextField
-              margin="dense"
-              placeholder={t.notes || "Notes"}
-              fullWidth
-              name="notes"
-              value={formik.values.notes}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              error={formik.touched.notes && Boolean(formik.errors.notes)}
-              helperText={formik.touched.notes && formik.errors.notes}
-              multiline
-              minRows={2}
-            />
-          </DialogContent>
+              <TextField
+                inputProps={{ "data-testid": "enrollments-status" }}
+                select
+                margin="dense"
+                fullWidth
+                name="status"
+                label={t.status || "Status"}
+                value={formik.values.status}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                error={formik.touched.status && Boolean(formik.errors.status)}
+                helperText={formik.touched.status && formik.errors.status}
+              >
+                {STATUS_OPTIONS.map((status) => (
+                  <MenuItem key={status} value={status}>
+                    {getEnrollmentStatusLabel(status, t)}
+                  </MenuItem>
+                ))}
+              </TextField>
 
-          <DialogActions>
-            <Button data-testid="enrollments-cancel" type="button" onClick={handleClose}>
-              {t.cancel || "Cancel"}
-            </Button>
-            <Button data-testid="enrollments-save" type="submit" variant="contained">
-              {t.save || "Save"}
-            </Button>
-          </DialogActions>
-        </form>
+              <TextField
+                margin="dense"
+                placeholder={t.notes || "Notes"}
+                fullWidth
+                name="notes"
+                value={formik.values.notes}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                error={formik.touched.notes && Boolean(formik.errors.notes)}
+                helperText={formik.touched.notes && formik.errors.notes}
+                multiline
+                minRows={2}
+              />
+            </DialogContent>
+
+            <DialogActions>
+              <Button data-testid="enrollments-cancel" type="button" onClick={handleClose}>
+                {t.cancel || "Cancel"}
+              </Button>
+              <Button data-testid="enrollments-save" type="submit" variant="contained">
+                {t.save || "Save"}
+              </Button>
+            </DialogActions>
+          </form>
+        )}
       </Dialog>
 
       <Snackbar open={snack.open} autoHideDuration={2500} onClose={() => setSnack((prev) => ({ ...prev, open: false }))} anchorOrigin={{ vertical: "bottom", horizontal: "right" }}>

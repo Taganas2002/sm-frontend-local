@@ -30,6 +30,8 @@ import {
 } from "../constants/supportContact";
 import { SupportEmailTileLabel, SupportPhoneInline } from "../utils/supportContactLabels";
 import partnerAlkhawarezmiImg from "../assets/partners/alkhawarezmi.png";
+import heroMockupVideo from "../assets/mockup.mp4";
+import heroVideoPoster from "../assets/screenshots/classroom.jpg";
 
 function SectionTitle({ children, subtitle, centered, isRtl }) {
   const wrap = centered ? (isRtl ? "text-right" : "text-center") : isRtl ? "text-right" : "text-start";
@@ -310,14 +312,15 @@ export default function Home({ language, setLanguage }) {
               className="landing-fade-up order-1 md:order-none rounded-2xl bg-white/10 p-2 md:p-3 backdrop-blur-md border border-white/20 shadow-2xl max-w-lg md:max-w-none mx-auto w-full"
               style={{ animationDelay: "0.1s" }}
             >
-              <div className="rounded-xl overflow-hidden ring-1 ring-black/10">
+              <div className="rounded-xl overflow-hidden ring-1 ring-black/10 bg-slate-900/40">
                 <video
-                  src="src/assets/mockup.mp4"
+                  src={heroMockupVideo}
+                  poster={heroVideoPoster}
                   autoPlay
                   loop
                   muted
                   playsInline
-                  className="rounded-lg w-full h-auto object-cover"
+                  className="rounded-lg w-full h-auto object-cover block bg-slate-900/50"
                 />
               </div>
             </div>

@@ -8,10 +8,11 @@ export const loginApi = async (phone, password) => {
 
 // SIGNUP: always send admin role (normalized to ROLE_ADMIN)
 export const signupApi = async (form) => {
+  const phone = String(form.phone ?? "").replace(/\s+/g, "").trim();
   const payload = {
-    username: form.username,
-    email: form.email,
-    phone: form.phone,
+    username: String(form.username ?? "").trim(),
+    email: String(form.email ?? "").trim(),
+    phone,
     password: form.password,
     role: ["admin"],
   };

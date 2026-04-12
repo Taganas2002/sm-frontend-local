@@ -1,11 +1,12 @@
 // src/scenes/global/Sidebar.jsx
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Sidebar, Menu, MenuItem, SubMenu } from "react-pro-sidebar";
 import { Box, IconButton, Typography, useTheme } from "@mui/material";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { tokens } from "../../theme";
-import translations from "../../translations/index";
+import { getTranslations } from "../../translations/index";
 import { useAuth } from "../../auth/AuthContext";
+import defaultUserImg from "../../assets/user.png";
 
 import CategoryIcon from "@mui/icons-material/Category";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
@@ -26,15 +27,26 @@ import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
 const Item = ({ title, to, icon, onClick, active }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+  const navigate = useNavigate();
   return (
     <MenuItem
-      component={<Link to={to} />}
+      component="button"
+      type="button"
       active={!!active}
       style={{
         color: theme.palette.mode === "light" ? "#334155" : colors.grey[900],
+        width: "100%",
+        border: "none",
+        background: "transparent",
+        font: "inherit",
+        textAlign: "inherit",
+        cursor: "pointer",
       }}
       icon={icon}
-      onClick={onClick}
+      onClick={(e) => {
+        onClick?.(e);
+        navigate(to);
+      }}
     >
       <Typography sx={{ fontSize: "1.20rem", fontWeight: "bold" }}>
         {title}
@@ -67,12 +79,19 @@ const MySidebar = ({ language }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [selected, setSelected] = useState("Dashboard"); // fallback
-  const t = translations[language];
+  const t = getTranslations(language);
 
   const { can, hasRole } = useAuth();
   const location = useLocation();
-  const [logo, setLogo] = useState(localStorage.getItem("userLogo") || "src/assets/user.png");
+  const [logo, setLogo] = useState(() => {
+    try {
+      const s = localStorage.getItem("userLogo");
+      if (s && s.startsWith("data:image")) return s;
+    } catch (_) {
+      /* ignore */
+    }
+    return defaultUserImg;
+  });
 
 // Handle logo upload
 const handleLogoChange = (e) => {
@@ -92,25 +111,6 @@ const handleLogoChange = (e) => {
   // helper to keep active state synced to URL
   const isActive = (path) =>
     location.pathname === path || location.pathname.startsWith(path + "/");
-
-  // also keep the old "selected" updated so your previous logic still works
-  useEffect(() => {
-    const p = location.pathname;
-    if (p.startsWith("/dashboard")) setSelected("Dashboard");
-    else if (p.startsWith("/teachers")) setSelected("Teachers");
-    else if (p.startsWith("/students")) setSelected("Students");
-    else if (p.startsWith("/groups")) setSelected("Groups");
-    else if (p.startsWith("/classes")) setSelected("Classes");
-    else if (p.startsWith("/subjects")) setSelected("Subjects");
-    else if (p.startsWith("/levels")) setSelected("Levels");
-    else if (p.startsWith("/sections")) setSelected("Sections");
-    else if (p.startsWith("/calendar")) setSelected("Calendar");
-    else if (p.startsWith("/enrollment")) setSelected("Enrollments");
-    // else if (p.startsWith("/Specialities")) setSelected("Specialities");
-    else if (p.startsWith("/finances")) setSelected("Finance");
-    else if (p.startsWith("/faq")) setSelected("About");
-    else if (p.startsWith("/admin/users")) setSelected("Users");
-  }, [location.pathname]);
 
   const showUsers =
     hasRole("ROLE_ADMIN") ||
@@ -239,7 +239,6 @@ const handleLogoChange = (e) => {
                 to="/dashboard"
                 icon={<HomeOutlinedIcon />}
                 active={isActive("/dashboard")}
-                onClick={() => setSelected("Dashboard")}
               />
             )}
 <hr className="my-1 border-gray-300" />
@@ -250,7 +249,6 @@ const handleLogoChange = (e) => {
                 to="/teachers"
                 icon={<PeopleOutlinedIcon />}
                 active={isActive("/teachers")}
-                onClick={() => setSelected("Teachers")}
               />
             )}
 <hr className="my-1 border-gray-300" />
@@ -261,7 +259,6 @@ const handleLogoChange = (e) => {
                 to="/students"
                 icon={<ContactsOutlinedIcon />}
                 active={isActive("/students")}
-                onClick={() => setSelected("Students")}
               />
             )}
 {/* <hr className="my-1 border-gray-300" />
@@ -283,7 +280,6 @@ const handleLogoChange = (e) => {
                 to="/groups"
                 icon={<MenuBookOutlinedIcon />}
                 active={isActive("/groups")}
-                onClick={() => setSelected("Groups")}
               />
             )}
 <hr className="my-1 border-gray-300" />
@@ -294,7 +290,6 @@ const handleLogoChange = (e) => {
                 to="/classes"
                 icon={<DoorFrontOutlinedIcon />}
                 active={isActive("/classes")}
-                onClick={() => setSelected("Classes")}
               />
             )}
 
@@ -305,7 +300,6 @@ const handleLogoChange = (e) => {
                 to="/subjects"
                 icon={<SchoolOutlinedIcon />}
                 active={isActive("/subjects")}
-                onClick={() => setSelected("Subjects")}
               />
             )}
 <hr className="my-1 border-gray-300" />
@@ -316,7 +310,6 @@ const handleLogoChange = (e) => {
                 to="/levels"
                 icon={<LayersOutlinedIcon />}
                 active={isActive("/levels")}
-                onClick={() => setSelected("Levels")}
               />
             )}
 <hr className="my-1 border-gray-300" />
@@ -327,7 +320,6 @@ const handleLogoChange = (e) => {
                 to="/sections"
                 icon={<CategoryIcon />}
                 active={isActive("/sections")}
-                onClick={() => setSelected("Sections")}
               />
             )}
 <hr className="my-1 border-gray-300" />
@@ -338,7 +330,6 @@ const handleLogoChange = (e) => {
                 to="/calendar"
                 icon={<CalendarTodayOutlinedIcon />}
                 active={isActive("/calendar")}
-                onClick={() => setSelected("Calendar")}
               />
             )}
 <hr className="my-1 border-gray-300" />
@@ -348,7 +339,6 @@ const handleLogoChange = (e) => {
                 to="/enrollment"
                 icon={<PeopleOutlinedIcon />}
                 active={isActive("/enrollment")}
-                onClick={() => setSelected("Enrollments")}
               />
             )}
 <hr className="my-1 border-gray-300" />
@@ -358,7 +348,6 @@ const handleLogoChange = (e) => {
                 to="/attendance"
                 icon={<CalendarTodayOutlinedIcon />}
                 active={isActive("/attendance")}
-                onClick={() => setSelected("Attendance")}
               />
             )}
             <hr className="my-1 border-gray-300" />
@@ -474,7 +463,6 @@ const handleLogoChange = (e) => {
                 to="/admin/users"
                 icon={<PeopleAltOutlinedIcon />}
                 active={isActive("/admin/users")}
-                onClick={() => setSelected("Users")}
               />
             )}
 
@@ -486,7 +474,6 @@ const handleLogoChange = (e) => {
                 to="/faq"
                 icon={<HelpOutlineOutlinedIcon />}
                 active={isActive("/faq")}
-                onClick={() => setSelected("About")}
               />
             )}
           </Box>

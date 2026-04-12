@@ -1,25 +1,54 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
-import translations from "../translations";
+import { getTranslations } from "../translations";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+
+/** Paths we can send the user back to after login (router state is lost on hash-only 401 redirects). */
+function isUsableReturnPath(p) {
+  if (!p || typeof p !== "string" || !p.startsWith("/")) return false;
+  if (p === "/login" || p.startsWith("/login/")) return false;
+  if (p === "/signup" || p.startsWith("/signup/")) return false;
+  if (p.startsWith("/super-admin/login")) return false;
+  return true;
+}
+
+function resolvePostLoginPath(location) {
+  const statePath = location.state?.from?.pathname;
+  if (isUsableReturnPath(statePath)) return statePath;
+  try {
+    const rt = sessionStorage.getItem("authReturnTo");
+    if (isUsableReturnPath(rt)) return rt;
+    const last = sessionStorage.getItem("last");
+    if (isUsableReturnPath(last)) return last;
+  } catch {
+    /* ignore */
+  }
+  return "/dashboard";
+}
 
 export default function Login({ language }) {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [err, setErr] = useState("");
-  const t = translations[language] || translations["fr"];
+  const t = getTranslations(language);
 
   const { login, loading, isLogged } = useAuth();
   const navigate = useNavigate();
   const loc = useLocation();
-  const from = loc.state?.from?.pathname || "/dashboard";
 
-  // if user is already logged in, push them to dashboard
+  // If already logged in (e.g. after axios 401 hash jump), return to the page they were on — not always /dashboard.
   useEffect(() => {
-    if (isLogged) navigate(from, { replace: true });
-  }, [isLogged, from, navigate]);
+    if (!isLogged) return;
+    const target = resolvePostLoginPath(loc);
+    navigate(target, { replace: true });
+    try {
+      sessionStorage.removeItem("authReturnTo");
+    } catch {
+      /* ignore */
+    }
+  }, [isLogged, loc, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

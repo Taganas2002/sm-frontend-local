@@ -3,13 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import translations from "../translations";
+import { getTranslations } from "../translations";
 // If you don't use Heroicons, replace with a simple "←" text or your own SVG
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 
 export default function Signup({ language }) {
   const { signup, loading } = useAuth(); // ⬅️ removed login here
-  const t = translations[language] || translations["fr"];
+  const t = getTranslations(language);
   const navigate = useNavigate();
 
   const [form, setForm] = useState({

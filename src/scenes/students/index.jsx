@@ -5,6 +5,7 @@ import {
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import AddIcon from "@mui/icons-material/Add";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SearchIcon from "@mui/icons-material/Search";
@@ -20,9 +21,10 @@ import { getTranslations } from "../../translations";
 
 import { searchStudents, deleteStudent } from "../../api/studentsApi";
 import { listLevels } from "../../api/levelsApi";
-import { listSections } from "../../api/sectionsApi";
+import { searchSections, listSections } from "../../api/sectionsApi";
 
 import StudentDialog from "./StudentDialog";
+import StudentImportDialog from "./StudentImportDialog";
 
 const normalizeList = (list = []) => (list || []).map((x) => ({ ...x, id: Number(x.id) }));
 
@@ -222,6 +224,7 @@ const Students = ({ language }) => {
   const [deleteError, setDeleteError] = useState("");
   const [cardOpen, setCardOpen] = useState(false);
   const [cardStudent, setCardStudent] = useState(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -234,24 +237,19 @@ const Students = ({ language }) => {
     })();
   }, []);
 
+  // All school sections for filter dropdown (backend lists by tenant; levelId is not required).
   useEffect(() => {
     (async () => {
-      if (!levelFilter) {
-        setSections([]);
-        setSectionFilter("");
-        return;
-      }
       try {
-        const secs = normalizeList(await listSections(levelFilter));
-        setSections(secs);
-        setSectionFilter("");
+        const data = await searchSections({ page: 0, size: 2000, sort: "name,asc" });
+        const list = data?.content ?? data ?? [];
+        setSections(normalizeList(Array.isArray(list) ? list : []));
       } catch (e) {
         console.error("Failed to load sections", e);
         setSections([]);
-        setSectionFilter("");
       }
     })();
-  }, [levelFilter]);
+  }, []);
 
   useEffect(() => {
     const h = setTimeout(() => setDebouncedSearch(searchText.trim()), 400);
@@ -266,8 +264,12 @@ const Students = ({ language }) => {
       const enriched = content.map((s) => ({
         ...s,
         id: Number(s.id),
-        levelName: levels.find((l) => Number(l.id) === Number(s.levelId))?.name || "",
-        sectionName: sections.find((sec) => Number(sec.id) === Number(s.sectionId))?.name || "",
+        levelName:
+          s.levelName || levels.find((l) => Number(l.id) === Number(s.levelId))?.name || "",
+        sectionName:
+          s.sectionName
+          || sections.find((sec) => Number(sec.id) === Number(s.sectionId))?.name
+          || "",
       }));
       setStudents(enriched);
       setRowCount(total);
@@ -380,11 +382,11 @@ const Students = ({ language }) => {
         }}
       >
         <TextField size="small" value={searchText} onChange={(e) => { setPage(0); setSearchText(e.target.value); }} placeholder={t.searchStudents || "Search (name / phone / guardian)"} InputProps={{ startAdornment: (<InputAdornment position="start"><SearchIcon /></InputAdornment>), endAdornment: searchText ? (<InputAdornment position="end"><IconButton size="small" onClick={() => { setSearchText(""); setPage(0); }}><ClearIcon /></IconButton></InputAdornment>) : null }} />
-        <TextField select size="small" label={t.levels} value={levelFilter} onChange={(e) => { setLevelFilter(e.target.value ? Number(e.target.value) : ""); setPage(0); }}>
+        <TextField select size="small" label={t.levels} value={levelFilter} onChange={(e) => { setLevelFilter(e.target.value ? Number(e.target.value) : ""); setSectionFilter(""); setPage(0); }}>
           <MenuItem value="">{t.allLevels || "All levels"}</MenuItem>
           {levels.map((lvl) => <MenuItem key={lvl.id} value={lvl.id}>{lvl.name}</MenuItem>)}
         </TextField>
-        <TextField select size="small" label={t.sections} value={sectionFilter} disabled={!levelFilter} onChange={(e) => { setSectionFilter(e.target.value ? Number(e.target.value) : ""); setPage(0); }}>
+        <TextField select size="small" label={t.sections} value={sectionFilter} onChange={(e) => { setSectionFilter(e.target.value ? Number(e.target.value) : ""); setPage(0); }}>
           <MenuItem value="">{t.allSections || "All sections"}</MenuItem>
           {sections.map((sec) => <MenuItem key={sec.id} value={sec.id}>{sec.name}</MenuItem>)}
         </TextField>
@@ -393,7 +395,18 @@ const Students = ({ language }) => {
           <MenuItem value="M">{t.male || "Male"}</MenuItem>
           <MenuItem value="F">{t.female || "Female"}</MenuItem>
         </TextField>
-        <Box textAlign="right">
+        <Box display="flex" gap={1} justifyContent="flex-end" flexWrap="wrap">
+          <Button
+            variant="outlined"
+            startIcon={<UploadFileIcon />}
+            onClick={() => setImportOpen(true)}
+            sx={{
+              borderColor: theme.palette.mode === "light" ? colors.blueAccent[800] : colors.blueAccent[400],
+              color: theme.palette.mode === "light" ? colors.blueAccent[800] : colors.blueAccent[400],
+            }}
+          >
+            {t.importStudents || "Import Excel"}
+          </Button>
           <Button
             data-testid="students-add"
             variant="contained"
@@ -442,6 +455,8 @@ const Students = ({ language }) => {
       </Box>
 
       <StudentDialog open={studentDialogOpen} onClose={() => setStudentDialogOpen(false)} language={language} student={editingStudent} reloadStudents={loadStudents} />
+
+      <StudentImportDialog open={importOpen} onClose={() => setImportOpen(false)} language={language} onImported={loadStudents} />
 
       <Dialog open={deleteDialogOpen} onClose={handleCancelDelete} maxWidth="xs" fullWidth PaperProps={{ sx: { backgroundColor: "#1e3a8a", color: "#fff", textAlign: "center", borderRadius: 2, p: 2 } }}>
         <DialogTitle sx={{ fontWeight: "bold", fontSize: "1.5rem", mb: 1 }}>{t.confirmDeleteTitle || "Are you sure?"}</DialogTitle>

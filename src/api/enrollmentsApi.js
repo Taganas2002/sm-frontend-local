@@ -9,6 +9,12 @@
     return data;
     };
 
+    /** Bulk enroll many students into one group (partial success; see skips in response). */
+    export const createEnrollmentBatch = async (payload) => {
+    const { data } = await api.post("/enrollments/batch", payload);
+    return data;
+    };
+
     /** 2) Get by ID */
     export const getEnrollment = async (id) => {
     const { data } = await api.get(`/enrollments/${id}`);

@@ -6,6 +6,7 @@ import {
 import { DataGrid } from "@mui/x-data-grid";
 
 import AddIcon from "@mui/icons-material/Add";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SearchIcon from "@mui/icons-material/Search";
@@ -16,6 +17,7 @@ import { tokens } from "../../theme";
 import { getTranslations } from "../../translations";
 import { searchTeachers, deleteTeacher } from "../../api/teachersApi";
 import TeacherDialog from "./TeacherDialog";
+import TeacherImportDialog from "./TeacherImportDialog";
 
 const Teachers = ({ language }) => {
   const theme = useTheme();
@@ -33,6 +35,7 @@ const Teachers = ({ language }) => {
   const [editingTeacher, setEditingTeacher] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   useEffect(() => {
     const h = setTimeout(() => setDebouncedSearch(searchText.trim()), 400);
@@ -156,7 +159,7 @@ const Teachers = ({ language }) => {
     <Box m="20px">
       <Header title={t.teachers || "Teachers"} subtitle={t.dataManagement || "Data management"} />
 
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} gap={2}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} gap={2} flexWrap="wrap">
         <TextField
           size="small"
           value={searchText}
@@ -184,30 +187,44 @@ const Teachers = ({ language }) => {
           }}
         />
 
-        <Button
-          data-testid="teachers-add"
-          variant="contained"
-          sx={{
-            backgroundColor:
-              theme.palette.mode === "light"
-                ? colors.blueAccent[800]
-                : colors.blueAccent[400],
-            color: "#fff",
-            "& .MuiButton-startIcon": {
-              marginInlineEnd: language === "ar" ? "8px" : "6px",
-            },
-            "&:hover": {
+        <Box display="flex" gap={1} flexWrap="wrap">
+          <Button
+            variant="outlined"
+            startIcon={<UploadFileIcon />}
+            onClick={() => setImportOpen(true)}
+            sx={{
+              borderColor: theme.palette.mode === "light" ? colors.blueAccent[800] : colors.blueAccent[400],
+              color: theme.palette.mode === "light" ? colors.blueAccent[800] : colors.blueAccent[400],
+              fontWeight: 600,
+            }}
+          >
+            {t.importTeachers || "Import Excel"}
+          </Button>
+          <Button
+            data-testid="teachers-add"
+            variant="contained"
+            sx={{
               backgroundColor:
                 theme.palette.mode === "light"
-                  ? colors.blueAccent[400]
-                  : colors.blueAccent[800],
-            },
-          }}
-          startIcon={<AddIcon />}
-          onClick={handleOpen}
-        >
-          {t.addTeacher || "Add teacher"}
-        </Button>
+                  ? colors.blueAccent[800]
+                  : colors.blueAccent[400],
+              color: "#fff",
+              "& .MuiButton-startIcon": {
+                marginInlineEnd: language === "ar" ? "8px" : "6px",
+              },
+              "&:hover": {
+                backgroundColor:
+                  theme.palette.mode === "light"
+                    ? colors.blueAccent[400]
+                    : colors.blueAccent[800],
+              },
+            }}
+            startIcon={<AddIcon />}
+            onClick={handleOpen}
+          >
+            {t.addTeacher || "Add teacher"}
+          </Button>
+        </Box>
       </Box>
 
       <Box
@@ -262,6 +279,13 @@ const Teachers = ({ language }) => {
         onSaved={loadTeachers}
         teacher={editingTeacher}
         reloadTeachers={loadTeachers}
+      />
+
+      <TeacherImportDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        language={language}
+        onImported={loadTeachers}
       />
 
       <Dialog

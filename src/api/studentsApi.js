@@ -13,9 +13,9 @@ export const searchStudents = async ({
 }) => {
   const params = { page, size, sort };
   if (search && search.trim()) params.search = search.trim();
-  if (schoolId != null) params.schoolId = schoolId;
-  if (levelId != null) params.levelId = levelId;
-  if (sectionId != null) params.sectionId = sectionId;
+  if (schoolId != null && schoolId !== "") params.schoolId = schoolId;
+  if (levelId != null && levelId !== "") params.levelId = Number(levelId);
+  if (sectionId != null && sectionId !== "") params.sectionId = Number(sectionId);
   if (gender) params.gender = gender;
 
   const { data } = await api.get("/students", { params });

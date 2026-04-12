@@ -56,7 +56,11 @@ export function AuthProvider({ children }) {
     } catch (err) {
       return {
         ok: false,
-        message: err?.response?.data?.message || err.message || "Login failed",
+        message:
+          err?.message ||
+          err?.response?.data?.message ||
+          (typeof err === "string" ? err : null) ||
+          "Login failed",
       };
     } finally {
       setLoading(false);
@@ -69,7 +73,14 @@ export function AuthProvider({ children }) {
       const data = await signupApi(form);
       return { ok: true, data };
     } catch (err) {
-      return { ok: false, message: err?.response?.data?.message || "Signup failed" };
+      return {
+        ok: false,
+        message:
+          err?.message ||
+          err?.response?.data?.message ||
+          (typeof err === "string" ? err : null) ||
+          "Signup failed",
+      };
     } finally {
       setLoading(false);
     }

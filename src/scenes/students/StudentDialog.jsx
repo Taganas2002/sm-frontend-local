@@ -45,27 +45,27 @@ const StudentDialog = ({ open, onClose, language, student, reloadStudents }) => 
   const [sections, setSections] = useState([]);
 
   useEffect(() => {
+    if (!open) return;
     (async () => {
       try {
         const levelsData = normalizeList((await listLevels()) || []);
         setLevels(levelsData);
 
         if (student?.levelId) {
-          const sectionsData = normalizeList((await listSections(student.levelId)) || []);
+          const sectionsData = normalizeList(await listSections(student.levelId));
           setSections(sectionsData);
         } else {
           setSections([]);
         }
       } catch (e) {
         console.error("Failed to load levels/sections", e);
+        setSections([]);
       }
     })();
-  }, [student]);
+  }, [open, student]);
 
   const studentSchema = yup.object().shape({
     fullName: yup.string().required(t.requiredFullName || "Full name is required"),
-    levelId: yup.number().typeError(t.requiredLevelSelection || "Level is required").required(t.requiredLevelSelection || "Level is required"),
-    sectionId: yup.number().typeError(t.requiredSectionSelection || "Section is required").required(t.requiredSectionSelection || "Section is required"),
     dob: yup.mixed().nullable(),
     gender: yup.mixed().nullable(),
     address: yup.mixed().nullable(),
@@ -204,16 +204,15 @@ const StudentDialog = ({ open, onClose, language, student, reloadStudents }) => 
           <TextField
             inputProps={{ "data-testid": "students-levelId" }}
             select
-            required
             margin="dense"
             fullWidth
             label={t.levels}
             name="levelId"
             value={formik.values.levelId || ""}
-            onChange={(e) => handleLevelChange(Number(e.target.value))}
-            error={formik.touched.levelId && Boolean(formik.errors.levelId)}
-            helperText={formik.touched.levelId && formik.errors.levelId}
-            sx={requiredAsteriskSx}
+            onChange={(e) => {
+              const v = e.target.value;
+              handleLevelChange(v === "" ? "" : Number(v));
+            }}
           >
             <MenuItem value="">{t.selectLevel}</MenuItem>
             {levels.map((lvl) => (
@@ -226,17 +225,13 @@ const StudentDialog = ({ open, onClose, language, student, reloadStudents }) => 
           <TextField
             inputProps={{ "data-testid": "students-sectionId" }}
             select
-            required
             margin="dense"
             fullWidth
             label={t.sections}
             name="sectionId"
             value={formik.values.sectionId || ""}
             onChange={formik.handleChange}
-            error={formik.touched.sectionId && Boolean(formik.errors.sectionId)}
-            helperText={formik.touched.sectionId && formik.errors.sectionId}
             disabled={!formik.values.levelId}
-            sx={requiredAsteriskSx}
           >
             <MenuItem value="">{t.selectSection}</MenuItem>
             {sections.map((sec) => (
