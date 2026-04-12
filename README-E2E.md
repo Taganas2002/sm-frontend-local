@@ -48,8 +48,8 @@ Or: `.\run-e2e.ps1` if present. Optional: `E2E_RESET_DB=false` to keep DB betwee
 
 ```powershell
 cd "path\to\school-desktop"
-$env:E2E_PHONE = "0555000000"   # optional
-$env:E2E_PASSWORD = "E2E-ChangeMe!2026"
+$env:E2E_PHONE = "<phone matching your e2e seed user>"   # optional
+$env:E2E_PASSWORD = "<password matching your e2e seed user>"
 npm run e2e:smoke
 ```
 
