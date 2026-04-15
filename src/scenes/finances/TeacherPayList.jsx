@@ -1,4 +1,4 @@
-// src/scenes/finances/TeacherPayList.jsx
+﻿// src/scenes/finances/TeacherPayList.jsx
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -131,7 +131,7 @@ export default function TeacherPayList({ language }) {
 
       <Paper elevation={0} sx={{ border: `1px solid ${colors.primary[300]}`, borderRadius: 2, overflow: "hidden" }}>
       <Box
-            height="80vh"
+            height="clamp(420px, calc(100dvh - 280px), 760px)"
             dir={language === "ar" ? "rtl" : "ltr"}
             sx={{
             "& .MuiDataGrid-root": { border: "none" },
@@ -188,3 +188,4 @@ export default function TeacherPayList({ language }) {
     </Box>
   );
 }
+

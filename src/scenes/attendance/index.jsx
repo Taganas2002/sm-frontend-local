@@ -1,4 +1,4 @@
-// src/pages/Attendance.jsx
+﻿// src/pages/Attendance.jsx
 import { useEffect, useMemo, useState } from "react";
 import {
   Box,
@@ -242,7 +242,6 @@ const Attendance = ({ language = "fr" }) => {
 
   /* ---------- Group columns ---------- */
   const groupColumns = [
-    { field: "id", headerName: "ID", width: 90 },
     { field: "name", headerName: t.groupName || "Group", flex: 1.2 },
     { field: "teacherName", headerName: t.teacher || "Teacher", flex: 1 },
     { field: "subjectName", headerName: t.subject || "Subject", flex: 0.9 },
@@ -297,24 +296,24 @@ const Attendance = ({ language = "fr" }) => {
     aoa.push([ "Month", monthAnchor.format("MMMM YYYY") ]);
     aoa.push([]); // empty spacer row
 
-    // Table header (only session dates, left->right; if none, one '–' column)
-    const header = ["#", language === "ar" ? "الإسم" : "Nom"];
+    // Table header (only session dates, left->right; if none, one 'â€“' column)
+    const header = ["#", language === "ar" ? "Ø§Ù„Ø¥Ø³Ù…" : "Nom"];
     if (hasSessions) {
       header.push(...sessionDates.map((d) => dayjs(d).format("DD/MM")));
     } else {
-      header.push("–");
+      header.push("â€“");
     }
     aoa.push(header);
 
-    // Table rows (✓ / ✗ / –)
+    // Table rows (âœ“ / âœ— / â€“)
     studentsRows.forEach((s, idx) => {
       const row = [idx + 1, s.name];
       if (!hasSessions) {
-        row.push("–");
+        row.push("â€“");
       } else {
         sessionDates.forEach((d) => {
           const v = s.byDate?.[d] ?? null;
-          row.push(v === "P" ? "✓" : v === "A" ? "✗" : "–");
+          row.push(v === "P" ? "âœ“" : v === "A" ? "âœ—" : "â€“");
         });
       }
       aoa.push(row);
@@ -339,7 +338,7 @@ const Attendance = ({ language = "fr" }) => {
 
   /* ===================== RENDER ===================== */
 
-  // ======== MATRIX (only session days, L→R) ========
+  // ======== MATRIX (only session days, Lâ†’R) ========
   if (view === "MATRIX") {
     const monthTitle = monthAnchor.format("MMMM YYYY");
     const hasSessions = sessionDates.length > 0;
@@ -353,7 +352,7 @@ const Attendance = ({ language = "fr" }) => {
               setView("LIST");
               setSelectedGroup(null);
             }}
-            title={language === "ar" ? "رجوع إلى قائمة الأفواج" : "Back to groups"}
+            title={language === "ar" ? "Ø±Ø¬ÙˆØ¹ Ø¥Ù„Ù‰ Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø£ÙÙˆØ§Ø¬" : "Back to groups"}
             size="small"
           >
             <ArrowBackIosNewIcon fontSize="small" />
@@ -361,7 +360,7 @@ const Attendance = ({ language = "fr" }) => {
         </Box>
 
         <Header
-          title={language === "ar" ? "الحضور والغياب" : "Présence & Absence"}
+          title={language === "ar" ? "Ø§Ù„Ø­Ø¶ÙˆØ± ÙˆØ§Ù„ØºÙŠØ§Ø¨" : "PrÃ©sence & Absence"}
           subtitle={selectedGroup?.name ? String(selectedGroup.name) : ""}
         />
 
@@ -392,7 +391,7 @@ const Attendance = ({ language = "fr" }) => {
           <Box sx={{ flex: 1 }} />
 
           <Button variant="contained" onClick={handleExportExcel} startIcon={<FileDownloadIcon />}>
-            {language === "ar" ? "تصدير Excel" : "Export Excel"}
+            {language === "ar" ? "ØªØµØ¯ÙŠØ± Excel" : "Export Excel"}
           </Button>
 
           <Button
@@ -403,7 +402,7 @@ const Attendance = ({ language = "fr" }) => {
               setSelectedGroup(null);
             }}
           >
-            {language === "ar" ? "رجوع" : "Back"}
+            {language === "ar" ? "Ø±Ø¬ÙˆØ¹" : "Back"}
           </Button>
         </Box>
 
@@ -420,7 +419,7 @@ const Attendance = ({ language = "fr" }) => {
                 <TableRow>
                   <TableCell sx={{ fontWeight: "bold", width: 60 }}>#</TableCell>
                   <TableCell sx={{ fontWeight: "bold", minWidth: 220 }}>
-                    {language === "ar" ? "الإسم" : "Nom"}
+                    {language === "ar" ? "Ø§Ù„Ø¥Ø³Ù…" : "Nom"}
                   </TableCell>
                   <TableCell
                     align="center"
@@ -431,7 +430,7 @@ const Attendance = ({ language = "fr" }) => {
                   </TableCell>
                 </TableRow>
 
-                {/* Header dates (or single '–') */}
+                {/* Header dates (or single 'â€“') */}
                 <TableRow>
                   <TableCell />
                   <TableCell />
@@ -442,7 +441,7 @@ const Attendance = ({ language = "fr" }) => {
                       </TableCell>
                     ))
                   ) : (
-                    <TableCell align="center">–</TableCell>
+                    <TableCell align="center">â€“</TableCell>
                   )}
                 </TableRow>
               </TableHead>
@@ -464,7 +463,7 @@ const Attendance = ({ language = "fr" }) => {
                               <CancelIcon sx={{ color: "#ef4444" }} fontSize="small" />
                             ) : (
                               <Typography component="span" sx={{ opacity: 0.5 }}>
-                                –
+                                â€“
                               </Typography>
                             )}
                           </TableCell>
@@ -473,7 +472,7 @@ const Attendance = ({ language = "fr" }) => {
                     ) : (
                       <TableCell align="center">
                         <Typography component="span" sx={{ opacity: 0.5 }}>
-                          –
+                          â€“
                         </Typography>
                       </TableCell>
                     )}
@@ -484,7 +483,7 @@ const Attendance = ({ language = "fr" }) => {
                   <TableRow>
                     <TableCell colSpan={2 + (hasSessions ? sessionDates.length : 1)}>
                       <Box py={4} textAlign="center" sx={{ opacity: 0.7 }}>
-                        {language === "ar" ? "لا توجد بيانات" : "No data"}
+                        {language === "ar" ? "Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¨ÙŠØ§Ù†Ø§Øª" : "No data"}
                       </Box>
                     </TableCell>
                   </TableRow>
@@ -501,8 +500,8 @@ const Attendance = ({ language = "fr" }) => {
   return (
     <Box m="20px">
       <Header
-        title={language === "ar" ? "الحضور والغياب" : "Présence & Absence"}
-        subtitle={language === "ar" ? "قائمة الأفواج - اختيار فقط" : "Select a group to view attendance"}
+        title={language === "ar" ? "Ø§Ù„Ø­Ø¶ÙˆØ± ÙˆØ§Ù„ØºÙŠØ§Ø¨" : "PrÃ©sence & Absence"}
+        subtitle={language === "ar" ? "Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø£ÙÙˆØ§Ø¬ - Ø§Ø®ØªÙŠØ§Ø± ÙÙ‚Ø·" : "Select a group to view attendance"}
       />
 
       {/* Filter Bar (read-only list + filters) */}
@@ -517,8 +516,8 @@ const Attendance = ({ language = "fr" }) => {
         <TextField
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          label={language === "ar" ? "بحث بالإسم" : "Search by name"}
-          placeholder={language === "ar" ? "اكتب اسم الفوج..." : "Type group name..."}
+          label={language === "ar" ? "Ø¨Ø­Ø« Ø¨Ø§Ù„Ø¥Ø³Ù…" : "Search by name"}
+          placeholder={language === "ar" ? "Ø§ÙƒØªØ¨ Ø§Ø³Ù… Ø§Ù„ÙÙˆØ¬..." : "Type group name..."}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -538,8 +537,8 @@ const Attendance = ({ language = "fr" }) => {
         <TextField
           value={academicYear}
           onChange={(e) => setAcademicYear(e.target.value)}
-          label={language === "ar" ? "السنة الدراسية" : "Academic Year"}
-          placeholder={language === "ar" ? "مثال: 2024-2025" : "e.g. 2024-2025"}
+          label={language === "ar" ? "Ø§Ù„Ø³Ù†Ø© Ø§Ù„Ø¯Ø±Ø§Ø³ÙŠØ©" : "Academic Year"}
+          placeholder={language === "ar" ? "Ù…Ø«Ø§Ù„: 2024-2025" : "e.g. 2024-2025"}
           InputProps={{
             endAdornment: academicYear ? (
               <InputAdornment position="end">
@@ -555,15 +554,15 @@ const Attendance = ({ language = "fr" }) => {
           select
           value={activeFilter}
           onChange={(e) => setActiveFilter(e.target.value)}
-          label={language === "ar" ? "الحالة" : "Status"}
+          label={language === "ar" ? "Ø§Ù„Ø­Ø§Ù„Ø©" : "Status"}
         >
-          <MenuItem value="">{language === "ar" ? "الكل" : "All"}</MenuItem>
-          <MenuItem value="true">{language === "ar" ? "مفعل" : "Active"}</MenuItem>
-          <MenuItem value="false">{language === "ar" ? "غير مفعل" : "Inactive"}</MenuItem>
+          <MenuItem value="">{language === "ar" ? "Ø§Ù„ÙƒÙ„" : "All"}</MenuItem>
+          <MenuItem value="true">{language === "ar" ? "Ù…ÙØ¹Ù„" : "Active"}</MenuItem>
+          <MenuItem value="false">{language === "ar" ? "ØºÙŠØ± Ù…ÙØ¹Ù„" : "Inactive"}</MenuItem>
         </TextField>
 
         <TextField select value={teacherFilter} onChange={(e) => setTeacherFilter(e.target.value)} label={t.teacher}>
-          <MenuItem value="">{language === "ar" ? "الكل" : "All"}</MenuItem>
+          <MenuItem value="">{language === "ar" ? "Ø§Ù„ÙƒÙ„" : "All"}</MenuItem>
           {teachers.map((x) => (
             <MenuItem key={x.id} value={x.id}>
               {x.fullName}
@@ -572,7 +571,7 @@ const Attendance = ({ language = "fr" }) => {
         </TextField>
 
         <TextField select value={subjectFilter} onChange={(e) => setSubjectFilter(e.target.value)} label={t.subject}>
-          <MenuItem value="">{language === "ar" ? "الكل" : "All"}</MenuItem>
+          <MenuItem value="">{language === "ar" ? "Ø§Ù„ÙƒÙ„" : "All"}</MenuItem>
           {subjects.map((x) => (
             <MenuItem key={x.id} value={x.id}>
               {x.name}
@@ -599,7 +598,7 @@ const Attendance = ({ language = "fr" }) => {
           }}
           label={t.level}
         >
-          <MenuItem value="">{language === "ar" ? "الكل" : "All"}</MenuItem>
+          <MenuItem value="">{language === "ar" ? "Ø§Ù„ÙƒÙ„" : "All"}</MenuItem>
           {levels.map((x) => (
             <MenuItem key={x.id} value={x.id}>
               {x.name}
@@ -614,7 +613,7 @@ const Attendance = ({ language = "fr" }) => {
           label={t.section}
           disabled={!levelFilter}
         >
-          <MenuItem value="">{language === "ar" ? "الكل" : "All"}</MenuItem>
+          <MenuItem value="">{language === "ar" ? "Ø§Ù„ÙƒÙ„" : "All"}</MenuItem>
           {sections.map((x) => (
             <MenuItem key={x.id} value={x.id}>
               {x.name}
@@ -626,22 +625,22 @@ const Attendance = ({ language = "fr" }) => {
           select
           value={privateFilter}
           onChange={(e) => setPrivateFilter(e.target.value)}
-          label={language === "ar" ? "خاصة" : "Private"}
+          label={language === "ar" ? "Ø®Ø§ØµØ©" : "Private"}
         >
-          <MenuItem value="">{language === "ar" ? "الكل" : "All"}</MenuItem>
-          <MenuItem value="true">{language === "ar" ? "نعم" : "Yes"}</MenuItem>
-          <MenuItem value="false">{language === "ar" ? "لا" : "No"}</MenuItem>
+          <MenuItem value="">{language === "ar" ? "Ø§Ù„ÙƒÙ„" : "All"}</MenuItem>
+          <MenuItem value="true">{language === "ar" ? "Ù†Ø¹Ù…" : "Yes"}</MenuItem>
+          <MenuItem value="false">{language === "ar" ? "Ù„Ø§" : "No"}</MenuItem>
         </TextField>
 
         <TextField
           select
           value={revisionFilter}
           onChange={(e) => setRevisionFilter(e.target.value)}
-          label={language === "ar" ? "مراجعة" : "Revision"}
+          label={language === "ar" ? "Ù…Ø±Ø§Ø¬Ø¹Ø©" : "Revision"}
         >
-          <MenuItem value="">{language === "ar" ? "الكل" : "All"}</MenuItem>
-          <MenuItem value="true">{language === "ar" ? "نعم" : "Yes"}</MenuItem>
-          <MenuItem value="false">{language === "ar" ? "لا" : "No"}</MenuItem>
+          <MenuItem value="">{language === "ar" ? "Ø§Ù„ÙƒÙ„" : "All"}</MenuItem>
+          <MenuItem value="true">{language === "ar" ? "Ù†Ø¹Ù…" : "Yes"}</MenuItem>
+          <MenuItem value="false">{language === "ar" ? "Ù„Ø§" : "No"}</MenuItem>
         </TextField>
       </Box>
 
@@ -685,3 +684,4 @@ const Attendance = ({ language = "fr" }) => {
 };
 
 export default Attendance;
+

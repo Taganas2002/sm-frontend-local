@@ -23,6 +23,7 @@ import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import DoorFrontOutlinedIcon from "@mui/icons-material/DoorFrontOutlined";
 import MenuBookTwoToneIcon from "@mui/icons-material/MenuBookTwoTone";
 import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
+import PaletteOutlinedIcon from "@mui/icons-material/PaletteOutlined";
 
 const Item = ({ title, to, icon, onClick, active }) => {
   const theme = useTheme();
@@ -81,7 +82,7 @@ const MySidebar = ({ language }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const t = getTranslations(language);
 
-  const { can, hasRole } = useAuth();
+  const { can, hasRole, user } = useAuth();
   const location = useLocation();
   const [logo, setLogo] = useState(() => {
     try {
@@ -117,6 +118,7 @@ const handleLogoChange = (e) => {
     hasRole("ROLE_PRINCIPAL") ||
     can("API:ACCOUNTS_READ") ||
     can("API:USER_PERMS_WRITE");
+  const schoolName = user?.schoolName || user?.school?.name || "School";
 
   return (
     <Box
@@ -149,7 +151,8 @@ const handleLogoChange = (e) => {
         collapsed={isCollapsed}
         style={{
           backgroundColor: theme.palette.mode === "dark" ? "#334155" : "#cbd5e1",
-          height: "470vh",
+          height: "100dvh",
+          overflowY: "auto",
         }}
       >
         <Menu iconShape="square">
@@ -222,6 +225,20 @@ const handleLogoChange = (e) => {
 >
   Click image to upload logo
 </Typography>
+  <Typography
+    variant="body1"
+    sx={{
+      color: "#0f172a",
+      mt: 1,
+      px: 1,
+      fontWeight: 800,
+      fontSize: "1.05rem",
+      lineHeight: 1.3,
+      wordBreak: "break-word",
+    }}
+  >
+    {schoolName}
+  </Typography>
 
   </Box>
 )}
@@ -239,67 +256,6 @@ const handleLogoChange = (e) => {
                 to="/dashboard"
                 icon={<HomeOutlinedIcon />}
                 active={isActive("/dashboard")}
-              />
-            )}
-<hr className="my-1 border-gray-300" />
-
-            {can(CAN.TEACHERS) && (
-              <Item
-                title={t.teachers}
-                to="/teachers"
-                icon={<PeopleOutlinedIcon />}
-                active={isActive("/teachers")}
-              />
-            )}
-<hr className="my-1 border-gray-300" />
-
-            {can(CAN.STUDENTS) && (
-              <Item
-                title={t.students}
-                to="/students"
-                icon={<ContactsOutlinedIcon />}
-                active={isActive("/students")}
-              />
-            )}
-{/* <hr className="my-1 border-gray-300" />
-
-            {can(CAN.SCHOOLS) && (
-              <Item
-                title={t.schools}
-                to="/schools"
-                icon={<SchoolOutlinedIcon />}
-                active={isActive("/schools")}
-                onClick={() => setSelected("Schools")}
-              />
-            )} */}
-<hr className="my-1 border-gray-300" />
-
-            {can(CAN.GROUPS) && (
-              <Item
-                title={t.groups}
-                to="/groups"
-                icon={<MenuBookOutlinedIcon />}
-                active={isActive("/groups")}
-              />
-            )}
-<hr className="my-1 border-gray-300" />
-        
-            {can(CAN.CLASSES) && (
-              <Item
-                title={t.classes}
-                to="/classes"
-                icon={<DoorFrontOutlinedIcon />}
-                active={isActive("/classes")}
-              />
-            )}
-
-<hr className="my-1 border-gray-300" />
-          {can(CAN.SUBJECTS) && (
-              <Item
-                title={t.subjects}
-                to="/subjects"
-                icon={<SchoolOutlinedIcon />}
-                active={isActive("/subjects")}
               />
             )}
 <hr className="my-1 border-gray-300" />
@@ -324,15 +280,56 @@ const handleLogoChange = (e) => {
             )}
 <hr className="my-1 border-gray-300" />
 
-            {can(CAN.TIMETABLE) && (
+          {can(CAN.SUBJECTS) && (
               <Item
-                title={t.schedule}
-                to="/calendar"
-                icon={<CalendarTodayOutlinedIcon />}
-                active={isActive("/calendar")}
+                title={t.subjects}
+                to="/subjects"
+                icon={<SchoolOutlinedIcon />}
+                active={isActive("/subjects")}
               />
             )}
 <hr className="my-1 border-gray-300" />
+
+            {can(CAN.CLASSES) && (
+              <Item
+                title={t.classes}
+                to="/classes"
+                icon={<DoorFrontOutlinedIcon />}
+                active={isActive("/classes")}
+              />
+            )}
+<hr className="my-1 border-gray-300" />
+
+            {can(CAN.TEACHERS) && (
+              <Item
+                title={t.teachers}
+                to="/teachers"
+                icon={<PeopleOutlinedIcon />}
+                active={isActive("/teachers")}
+              />
+            )}
+<hr className="my-1 border-gray-300" />
+
+            {can(CAN.STUDENTS) && (
+              <Item
+                title={t.students}
+                to="/students"
+                icon={<ContactsOutlinedIcon />}
+                active={isActive("/students")}
+              />
+            )}
+<hr className="my-1 border-gray-300" />
+
+            {can(CAN.GROUPS) && (
+              <Item
+                title={t.groups}
+                to="/groups"
+                icon={<MenuBookOutlinedIcon />}
+                active={isActive("/groups")}
+              />
+            )}
+<hr className="my-1 border-gray-300" />
+
 {can(CAN.ENROLLMENTS) && (
               <Item
                 title={t.enrollment}
@@ -342,6 +339,17 @@ const handleLogoChange = (e) => {
               />
             )}
 <hr className="my-1 border-gray-300" />
+
+            {can(CAN.TIMETABLE) && (
+              <Item
+                title={t.schedule}
+                to="/calendar"
+                icon={<CalendarTodayOutlinedIcon />}
+                active={isActive("/calendar")}
+              />
+            )}
+<hr className="my-1 border-gray-300" />
+
 {can(CAN.ATTENDANCE) && (
               <Item
                 title={t.presence}
@@ -351,17 +359,6 @@ const handleLogoChange = (e) => {
               />
             )}
             <hr className="my-1 border-gray-300" />
-
-            {/* {can(CAN.SPECIALTIES) && (
-              <Item
-                title={t.specialties}
-                to="/Specialities"
-                icon={<MenuBookTwoToneIcon />}
-                active={isActive("/Specialities")}
-                onClick={() => setSelected("Specialities")}
-              />
-            )}
-<hr className="my-1 border-gray-300" /> */}
 
 {/* Finance submenu */}
             {can(CAN.FINANCE) && (
@@ -465,6 +462,14 @@ const handleLogoChange = (e) => {
                 active={isActive("/admin/users")}
               />
             )}
+
+<hr className="my-1 border-gray-300" />
+            <Item
+              title={t.cardDesigner || "Card designer"}
+              to="/Settings"
+              icon={<PaletteOutlinedIcon />}
+              active={isActive("/Settings")}
+            />
 
 <hr className="my-1 border-gray-300" />
 

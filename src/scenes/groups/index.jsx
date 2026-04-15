@@ -1,4 +1,4 @@
-// src/scenes/groups/Groups.jsx
+﻿// src/scenes/groups/Groups.jsx
 import {
   Box,
   Button,
@@ -353,8 +353,7 @@ const Groups = ({ language = "fr" }) => {
 
   /* ---------- columns (with safe valueFormatters) ---------- */
   const columns = [
-    { field: "id", headerName: "ID", width: 80 },
-    { field: "name", headerName: t.groupName || "إسم الفوج", flex: 1.2 },
+    { field: "name", headerName: t.groupName || "Ã˜Â¥Ã˜Â³Ã™â€¦ Ã˜Â§Ã™â€žÃ™ÂÃ™Ë†Ã˜Â¬", flex: 1.2 },
     { field: "teacherName", headerName: t.teacher, flex: 1 },
     { field: "subjectName", headerName: t.subject, flex: 0.9 },
     { field: "levelName", headerName: t.level, flex: 0.8 },
@@ -537,7 +536,15 @@ const Groups = ({ language = "fr" }) => {
   };
 
   return (
-    <Box m="20px">
+    <Box
+      p="20px"
+      sx={{
+        height: "calc(100dvh - 110px)",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+      }}
+    >
       <Header title={t.groups} subtitle={t.dataManagement} />
 
       {/* Filter Bar */}
@@ -630,7 +637,7 @@ const Groups = ({ language = "fr" }) => {
           ))}
         </TextField>
 
-        {/* Section / شعبة (school-wide list; level filter optional) */}
+        {/* Section / Ã˜Â´Ã˜Â¹Ã˜Â¨Ã˜Â© (school-wide list; level filter optional) */}
         <TextField
           select
           value={sectionFilter}
@@ -696,10 +703,11 @@ const Groups = ({ language = "fr" }) => {
 
       {/* DataGrid */}
       <Box
-        height="80vh"
         dir={language === "ar" ? "rtl" : "ltr"}
         sx={{
-          "& .MuiDataGrid-root": { border: "none" },
+          flex: 1,
+          minHeight: 0,
+          "& .MuiDataGrid-root": { border: "none", height: "100%" },
           "& .MuiDataGrid-columnHeaders": {
             backgroundColor: colors.blueAccent[700],
             borderBottom: "none",
@@ -1154,6 +1162,9 @@ const Groups = ({ language = "fr" }) => {
 };
 
 export default Groups;
+
+
+
 
 
 

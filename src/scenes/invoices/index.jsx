@@ -1,4 +1,4 @@
-    import { Box, Typography, useTheme } from "@mui/material";
+﻿    import { Box, Typography, useTheme } from "@mui/material";
     import { DataGrid } from "@mui/x-data-grid";
     import { tokens } from "../../theme";
     import { mockDataInvoices } from "../../data/mockData";
@@ -8,7 +8,6 @@
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
     const columns = [
-        { field: "id", headerName: "ID" },
         {
         field: "name",
         headerName: "Name",

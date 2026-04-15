@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import {
   Box, Button, Dialog, DialogTitle, DialogContent, DialogActions,
   Typography, useTheme, TextField, InputAdornment, IconButton,
@@ -102,7 +102,6 @@ const Teachers = ({ language }) => {
   };
 
   const columns = useMemo(() => ([
-    { field: "id", headerName: "ID", width: 80 },
     { field: "fullName", headerName: t.fullName || "Full name", flex: 1, minWidth: 200 },
     { field: "phone", headerName: t.phone || "Phone", width: 160 },
     { field: "email", headerName: t.email || "Email", width: 220 },
@@ -156,7 +155,15 @@ const Teachers = ({ language }) => {
   ]), [t, theme.palette.mode, colors.blueAccent]);
 
   return (
-    <Box m="20px">
+    <Box
+      p="20px"
+      sx={{
+        height: "calc(100dvh - 110px)",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+      }}
+    >
       <Header title={t.teachers || "Teachers"} subtitle={t.dataManagement || "Data management"} />
 
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} gap={2} flexWrap="wrap">
@@ -228,10 +235,11 @@ const Teachers = ({ language }) => {
       </Box>
 
       <Box
-        height="80vh"
         dir={language === "ar" ? "rtl" : "ltr"}
         sx={{
-          "& .MuiDataGrid-root": { border: "none" },
+          flex: 1,
+          minHeight: 0,
+          "& .MuiDataGrid-root": { border: "none", height: "100%" },
           "& .MuiDataGrid-columnHeaders": {
             backgroundColor: colors.blueAccent[700],
             borderBottom: "none",
@@ -349,3 +357,6 @@ const Teachers = ({ language }) => {
 };
 
 export default Teachers;
+
+
+

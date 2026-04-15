@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Outlet } from "react-router-dom";
+import { Box } from "@mui/material";
 import Topbar from "./Topbar";
 import MySidebar from "./Sidebar";
 
@@ -15,7 +16,9 @@ export default function AppShell({ language, setLanguage }) {
           setLanguage={setLanguage}
           language={language}
         />
-        <Outlet />
+        <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+          <Outlet />
+        </Box>
       </main>
     </div>
   );

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Box, Button, Typography, Dialog, DialogTitle, DialogContent, DialogActions,
   useTheme, TextField, InputAdornment, IconButton, MenuItem, CircularProgress, Tooltip
@@ -13,11 +13,15 @@ import ClearIcon from "@mui/icons-material/Clear";
 import QrCode2Icon from "@mui/icons-material/QrCode2";
 import PrintIcon from "@mui/icons-material/Print";
 import CloseIcon from "@mui/icons-material/Close";
+import PaletteOutlinedIcon from "@mui/icons-material/PaletteOutlined";
+import { useNavigate } from "react-router-dom";
 import { QRCodeCanvas } from "qrcode.react";
+import QRCode from "qrcode";
 
 import Header from "../../components/Header";
 import { tokens } from "../../theme";
 import { getTranslations } from "../../translations";
+import { useAuth } from "../../auth/AuthContext";
 
 import { searchStudents, deleteStudent } from "../../api/studentsApi";
 import { listLevels } from "../../api/levelsApi";
@@ -28,10 +32,205 @@ import StudentImportDialog from "./StudentImportDialog";
 
 const normalizeList = (list = []) => (list || []).map((x) => ({ ...x, id: Number(x.id) }));
 
-const StudentCardModal = ({ open, onClose, student, levels, language }) => {
+const escapeHtml = (value) =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+const toQrDataUrl = async (value) =>
+  QRCode.toDataURL(String(value ?? ""), {
+    errorCorrectionLevel: "M",
+    margin: 1,
+    width: 220,
+    color: { dark: "#000000", light: "#ffffff" },
+  });
+
+const resolveCardTheme = (user) => ({
+  templateKey: user?.cardTemplateKey || "CLASSIC",
+  primaryColor: user?.cardPrimaryColor || "#133C86",
+  headerBg: user?.cardHeaderBg || "#EAEFFC",
+  textColor: user?.cardTextColor || "#1A2233",
+  bodyBg: (user?.cardTemplateKey || "CLASSIC") === "DARK" ? "#0F172A" : "#FFFFFF",
+  bodyTextColor: (user?.cardTemplateKey || "CLASSIC") === "DARK"
+    ? "#E5E7EB"
+    : (user?.cardTextColor || "#1A2233"),
+  qrFrameColor: user?.cardQrFrameColor || "#E5E7EB",
+  showSchoolName: user?.cardShowSchoolName ?? true,
+  showLogo: user?.cardShowLogo ?? true,
+  showLevelSection: user?.cardShowLevelSection ?? true,
+  nameFontScale: Number(user?.cardNameFontScale || 1),
+});
+
+const buildCardMarkup = ({ student, qrDataUrl, schoolName, schoolLogoUrl, cardTheme }) => {
+  const name = escapeHtml((student.fullName || "").trim());
+  const levelLine = escapeHtml(cardTheme.showLevelSection ? (student.levelSectionLine || "") : "");
+  const school = escapeHtml(schoolName || "");
+  const logo = (cardTheme.showLogo && schoolLogoUrl) ? `<img class="card__logo" src="${escapeHtml(schoolLogoUrl)}" alt="logo" />` : "";
+  const schoolText = cardTheme.showSchoolName ? `<span class="card__school">${school}</span>` : "";
+  const fontScale = Math.max(0.85, Math.min(1.35, Number(cardTheme.nameFontScale || 1)));
+  const cardClass =
+    cardTheme.templateKey === "PREMIUM" ? "card card--premium"
+      : cardTheme.templateKey === "MODERN" ? "card card--modern"
+        : cardTheme.templateKey === "DARK" ? "card card--dark"
+          : "card";
+  return `
+    <article class="${cardClass}">
+      <div class="card__inner">
+        <header class="card__header">
+          ${logo}
+          ${schoolText}
+        </header>
+        <section class="card__body">
+          <div class="card__left card__left--no-photo">
+            <h3 class="card__name" style="font-size:${(3.7 * fontScale).toFixed(2)}mm">${name}</h3>
+            ${levelLine ? `<p class="card__meta">${levelLine}</p>` : ""}
+          </div>
+          <div class="card__qr-wrap">
+            <img class="card__qr" src="${qrDataUrl}" alt="qr" />
+          </div>
+        </section>
+      </div>
+    </article>
+  `;
+};
+
+const openCardsPrintSheet = ({ cardsMarkup, title, cardTheme }) => {
+  const html = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>${escapeHtml(title)}</title>
+  <style>
+    @page { size: A4 portrait; margin: 8mm; }
+    html, body {
+      margin: 0; padding: 0; background: #fff;
+      font-family: Arial, Helvetica, sans-serif;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .sheet {
+      display: grid;
+      grid-template-columns: repeat(2, 85.6mm);
+      gap: 4mm;
+      justify-content: center;
+      align-content: start;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .card {
+      width: 85.6mm;
+      height: 54mm;
+      background: ${cardTheme.primaryColor};
+      border-radius: 3.2mm;
+      padding: 2.4mm;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .card--premium { box-shadow: inset 0 0 0 0.4mm rgba(250, 204, 21, 0.5); }
+    .card--modern { border-radius: 2.1mm; }
+    .card--dark { box-shadow: inset 0 0 0 0.4mm rgba(255,255,255,0.2); }
+    .card__inner {
+      width: 100%;
+      height: 100%;
+      background: ${cardTheme.bodyBg || "#fff"};
+      border-radius: 2.2mm;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .card__header {
+      background: ${cardTheme.headerBg};
+      color: ${cardTheme.textColor};
+      font-size: 3mm;
+      font-weight: 700;
+      padding: 1.2mm 2mm;
+      display: flex;
+      align-items: center;
+      gap: 1.4mm;
+      min-height: 8.6mm;
+    }
+    .card__logo {
+      width: 7mm;
+      height: 7mm;
+      object-fit: contain;
+      border-radius: 0.7mm;
+      background: #fff;
+      border: 0.25mm solid ${cardTheme.qrFrameColor};
+      padding: 0.4mm;
+      flex-shrink: 0;
+    }
+    .card__school {
+      max-width: 62mm;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .card__body {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 20mm;
+      gap: 2.2mm;
+      padding: 2.8mm 2.4mm 2.4mm;
+      min-height: 0;
+    }
+    .card__left { min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 1.2mm; }
+    .card__left--no-photo { padding-right: 1.2mm; }
+    .card__name {
+      margin: 0;
+      font-size: 3.7mm;
+      line-height: 1.15;
+      color: ${cardTheme.bodyTextColor || cardTheme.textColor};
+      font-weight: 700;
+      max-width: 52mm;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .card__meta {
+      margin: 0;
+      font-size: 2.55mm;
+      line-height: 1.25;
+      color: ${cardTheme.bodyTextColor || cardTheme.textColor};
+      opacity: 0.75;
+      max-height: 6.5mm;
+      overflow: hidden;
+    }
+    .card__qr-wrap { display: flex; align-items: center; justify-content: center; }
+    .card__qr {
+      width: 19mm;
+      height: 19mm;
+      display: block;
+      border: 0.25mm solid ${cardTheme.qrFrameColor};
+      border-radius: 0.6mm;
+      background: #fff;
+      padding: 0.45mm;
+    }
+  </style>
+</head>
+<body>
+  <section class="sheet">${cardsMarkup}</section>
+  <script>window.onload = function(){ window.print(); };</script>
+</body>
+</html>`;
+  const win = window.open("", "_blank", "width=1100,height=900");
+  if (!win) return;
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+};
+
+const StudentCardModal = ({ open, onClose, student, levels, language, schoolName, schoolLogoUrl, cardTheme, onEditDesign }) => {
   const t = getTranslations(language);
+  const theme = useTheme();
   const cardRef = useRef(null);
   const [loading, setLoading] = useState(false);
+  const [printing, setPrinting] = useState(false);
   const [levelName, setLevelName] = useState("");
   const [sectionName, setSectionName] = useState("");
 
@@ -65,89 +264,22 @@ const StudentCardModal = ({ open, onClose, student, levels, language }) => {
     })();
   }, [open, student, levels]);
 
-  const handlePrint = () => {
-    if (!cardRef.current || !student) return;
-
-    const qrCanvas = cardRef.current.querySelector("canvas");
-    const qrDataUrl = qrCanvas ? qrCanvas.toDataURL("image/png") : "";
-    const name = (student.fullName || "").trim();
-    const levelSection = (levelName || "") + (sectionName ? ` - ${sectionName}` : "");
-    const mm = (px) => (px * 85.6) / 540;
-
-    const html = `<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8"/>
-  <title>Card</title>
-  <style>
-    @page { size: 85.6mm 54mm; margin: 0; }
-    html, body {
-      margin: 0; padding: 0; background: #fff;
-      font-family: Arial, Helvetica, sans-serif;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
+  const handlePrint = async () => {
+    if (!student || printing) return;
+    try {
+      setPrinting(true);
+      const qrDataUrl = await toQrDataUrl(student.id ?? "");
+      const cardsMarkup = buildCardMarkup({
+        student: { ...student, levelSectionLine: (levelName || "") + (sectionName ? ` - ${sectionName}` : "") },
+        qrDataUrl,
+        schoolName,
+        schoolLogoUrl,
+        cardTheme,
+      });
+      openCardsPrintSheet({ cardsMarkup, title: t.studentCard || "Student card", cardTheme });
+    } finally {
+      setPrinting(false);
     }
-    * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    .frame {
-      width: 85.6mm; height: 54mm;
-      padding: ${mm(20)}mm;
-      background: #133C86;
-      border-radius: ${mm(16)}mm;
-      display: flex; align-items: stretch; justify-content: stretch;
-    }
-    .inner {
-      background: #fff;
-      border-radius: ${mm(12)}mm;
-      overflow: hidden;
-      display: flex; flex-direction: column; width: 100%;
-    }
-    .header { background: #EAEFFC; padding: ${mm(8)}mm ${mm(16)}mm; }
-    .title  { margin: 0; color: #103A8C; font-weight: 700; font-size: 4mm; }
-    .body { display: flex; gap: ${mm(16)}mm; padding: ${mm(16)}mm; align-items: flex-start; }
-    .left { display: flex; flex-direction: column; gap: ${mm(8)}mm; min-width: 0; }
-    .photoBox {
-      width: ${mm(170)}mm; height: ${mm(170)}mm;
-      border: ${mm(2)}mm solid #d0d6e6; border-radius: ${mm(6)}mm;
-      background: #fafbff;
-      display: flex; align-items: center; justify-content: center; overflow: hidden;
-    }
-    .avatar { max-width: 100%; max-height: 100%; object-fit: cover; }
-    .name { margin: 0; font-weight: 700; font-size: 4.2mm; color: #1a2233; }
-    .lvl  { margin: 0; color: #4c5568; font-size: 3.2mm; }
-    .qrCol { flex: 1; display: flex; align-items: center; justify-content: center; }
-    .qr    { width: ${mm(180)}mm; height: ${mm(180)}mm; }
-    .footer { padding: 0 ${mm(16)}mm ${mm(16)}mm; color: #6c7893; font-size: 2.6mm; }
-  </style>
-</head>
-<body>
-  <div class="frame">
-    <div class="inner">
-      <div class="header"><p class="title">${t.studentId || "Student ID"}</p></div>
-      <div class="body">
-        <div class="left">
-          <div class="photoBox">
-            ${student.photoUrl ? `<img class="avatar" src="${student.photoUrl}" alt="avatar"/>` : `<span style="color:#8590a7;font-size:3.2mm">${t.noPhoto || "No photo"}</span>`}
-          </div>
-          <p class="name">${name}</p>
-          <p class="lvl">${levelSection}</p>
-        </div>
-        <div class="qrCol">
-          ${qrDataUrl ? `<img class="qr" src="${qrDataUrl}" alt="QR" />` : ""}
-        </div>
-      </div>
-      <div class="footer">${t.scanQrHint || "Scan the QR code to get the student ID"}</div>
-    </div>
-  </div>
-  <script>window.onload = function(){ window.print(); };</script>
-</body>
-</html>`;
-
-    const win = window.open("", "_blank", "width=900,height=700");
-    if (!win) return;
-    win.document.open();
-    win.document.write(html);
-    win.document.close();
-    win.focus();
   };
 
   const line = (levelName || sectionName) ? `${levelName}${sectionName ? " - " + sectionName : ""}` : "";
@@ -163,39 +295,76 @@ const StudentCardModal = ({ open, onClose, student, levels, language }) => {
             <CircularProgress />
           </Box>
         ) : (
-          <Box ref={cardRef} id="printable-student-card" sx={{ width: 540, mx: "auto", p: 2.5, borderRadius: "16px", background: "#133C86", boxShadow: 6 }}>
-            <Box sx={{ background: "#fff", borderRadius: "12px", overflow: "hidden" }}>
-              <Box sx={{ background: "#EAEFFC", px: 2, py: 1 }}>
-                <Typography variant="subtitle1" sx={{ color: "#103A8C", fontWeight: 700 }}>
-                  {t.studentId || "Student ID"}
-                </Typography>
+          <Box ref={cardRef} id="printable-student-card" sx={{ width: 540, height: 340, mx: "auto", p: 2.5, borderRadius: "16px", background: cardTheme.primaryColor, boxShadow: 6 }}>
+            <Box sx={{ background: cardTheme.bodyBg || "#fff", borderRadius: "12px", overflow: "hidden" }}>
+              <Box sx={{ background: cardTheme.headerBg, px: 2, py: 1 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  {(cardTheme.showLogo && schoolLogoUrl) ? (
+                    <Box component="img" src={schoolLogoUrl} alt="logo" sx={{ width: 28, height: 28, objectFit: "contain", borderRadius: 1, background: "#fff", border: `1px solid ${cardTheme.qrFrameColor}`, p: 0.4 }} />
+                  ) : null}
+                  {cardTheme.showSchoolName ? (
+                    <Typography variant="subtitle1" sx={{ color: cardTheme.textColor, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {schoolName}
+                    </Typography>
+                  ) : null}
+                </Box>
               </Box>
-              <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, p: 2 }}>
-                <Box sx={{ display: "grid", gridTemplateRows: "auto auto auto", gap: 1 }}>
-                  <Box sx={{ width: 170, height: 170, border: "2px solid #d0d6e6", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", background: "#fafbff" }}>
-                    {student.photoUrl ? (
-                      <img src={student.photoUrl} alt="avatar" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "cover" }} />
-                    ) : (
-                      <Typography sx={{ color: "#8590a7" }}>{t.noPhoto || "No photo"}</Typography>
-                    )}
-                  </Box>
-                  <Typography sx={{ fontWeight: 700, fontSize: 18, color: "#1a2233", mt: 0.5 }}>{(student.fullName || "").trim()}</Typography>
-                  <Typography sx={{ color: "#4c5568" }}>{line}</Typography>
+              <Box sx={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 2, p: 2.2, alignItems: "center", minHeight: 245 }}>
+                <Box sx={{ display: "grid", gap: 1.2, pr: 1 }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: `${(22 * cardTheme.nameFontScale).toFixed(1)}px`, color: cardTheme.bodyTextColor || cardTheme.textColor, mt: 0.2, lineHeight: 1.15 }}>
+                    {(student.fullName || "").trim()}
+                  </Typography>
+                  {cardTheme.showLevelSection ? (
+                    <Typography sx={{ color: cardTheme.bodyTextColor || cardTheme.textColor, opacity: 0.8, fontSize: 14.5, lineHeight: 1.25 }}>{line}</Typography>
+                  ) : null}
                 </Box>
                 <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <QRCodeCanvas value={student.id ? String(student.id) : ""} size={180} includeMargin />
+                  <Box sx={{ border: `1px solid ${cardTheme.qrFrameColor}`, borderRadius: "6px", p: 0.5, background: "#fff" }}>
+                    <QRCodeCanvas value={student.id ? String(student.id) : ""} size={160} includeMargin />
+                  </Box>
                 </Box>
-              </Box>
-              <Box sx={{ px: 2, pb: 2 }}>
-                <Typography variant="caption" sx={{ color: "#6c7893" }}>{t.scanQrHint || "Scan the QR code to get the student ID"}</Typography>
               </Box>
             </Box>
           </Box>
         )}
       </DialogContent>
       <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={onClose} startIcon={<CloseIcon />}>{t.close || "Close"}</Button>
-        <Button onClick={handlePrint} variant="contained" startIcon={<PrintIcon />}>{t.print || "Print"}</Button>
+        <Button
+          onClick={onClose}
+          startIcon={<CloseIcon />}
+          variant="outlined"
+          sx={{
+            borderColor: theme.palette.mode === "dark" ? "#94a3b8" : "#1e293b",
+            color: theme.palette.mode === "dark" ? "#e2e8f0" : "#0f172a",
+          }}
+        >
+          {t.close || "Close"}
+        </Button>
+        <Button
+          onClick={handlePrint}
+          variant="contained"
+          disabled={printing}
+          startIcon={<PrintIcon />}
+          sx={{
+            backgroundColor: theme.palette.mode === "dark" ? "#2563eb" : "#1d4ed8",
+            color: "#fff",
+            "&:hover": { backgroundColor: theme.palette.mode === "dark" ? "#3b82f6" : "#1e40af" },
+          }}
+        >
+          {t.print || "Print"}
+        </Button>
+        <Button
+          onClick={onEditDesign}
+          variant="contained"
+          startIcon={<PaletteOutlinedIcon />}
+          sx={{
+            backgroundColor: theme.palette.mode === "dark" ? "#1d4ed8" : "#1e40af",
+            color: "#fff",
+            "&:hover": { backgroundColor: theme.palette.mode === "dark" ? "#2563eb" : "#1d4ed8" },
+          }}
+        >
+          {t.editCardDesign || "Edit card design"}
+        </Button>
       </DialogActions>
     </Dialog>
   );
@@ -205,6 +374,8 @@ const Students = ({ language }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const t = getTranslations(language);
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [searchText, setSearchText] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -225,6 +396,23 @@ const Students = ({ language }) => {
   const [cardOpen, setCardOpen] = useState(false);
   const [cardStudent, setCardStudent] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [selectionModel, setSelectionModel] = useState({ type: "include", ids: new Set() });
+  const [bulkPrinting, setBulkPrinting] = useState(false);
+  const cardTheme = resolveCardTheme(user);
+  const schoolName =
+    user?.schoolName
+    || user?.school?.name
+    || user?.school?.schoolName
+    || "School";
+  const schoolLogoUrl = (() => {
+    if (user?.schoolLogoUrl) return user.schoolLogoUrl;
+    try {
+      const v = localStorage.getItem("userLogo");
+      return v && v.startsWith("data:image") ? v : "";
+    } catch {
+      return "";
+    }
+  })();
 
   useEffect(() => {
     (async () => {
@@ -302,9 +490,40 @@ const Students = ({ language }) => {
   };
   const handleCancelDelete = () => { setDeleteDialogOpen(false); setStudentToDelete(null); setDeleteError(""); };
   const openCard = (row) => { setCardStudent(row); setCardOpen(true); };
+  const selectedStudents = students.filter((s) =>
+    selectionModel.type === "exclude"
+      ? !selectionModel.ids?.has(s.id)
+      : selectionModel.ids?.has(s.id),
+  );
+
+  const printStudentCards = async (list) => {
+    if (!Array.isArray(list) || !list.length || bulkPrinting) return;
+    try {
+      setBulkPrinting(true);
+      const withQr = await Promise.all(
+        list.map(async (s) => ({
+          student: {
+            ...s,
+            levelSectionLine: (s.levelName || "") + (s.sectionName ? ` - ${s.sectionName}` : ""),
+          },
+          qrDataUrl: await toQrDataUrl(s.id ?? ""),
+        })),
+      );
+      const cardsMarkup = withQr
+        .map(({ student, qrDataUrl }) => buildCardMarkup({ student, qrDataUrl, schoolName, schoolLogoUrl, cardTheme }))
+        .join("");
+      openCardsPrintSheet({ cardsMarkup, title: t.studentCard || "Student cards", cardTheme });
+    } finally {
+      setBulkPrinting(false);
+    }
+  };
+
+  const handleBulkPrint = async () => {
+    if (!selectedStudents.length) return;
+    await printStudentCards(selectedStudents);
+  };
 
   const columns = useMemo(() => [
-    { field: "id", headerName: "ID", width: 70 },
     { field: "fullName", headerName: t.fullName, flex: 1.2, minWidth: 180 },
     { field: "dob", headerName: t.dob, width: 110 },
     { field: "gender", headerName: t.gender, width: 90 },
@@ -365,7 +584,15 @@ const Students = ({ language }) => {
   ], [t, theme.palette.mode, colors.blueAccent]);
 
   return (
-    <Box m="20px">
+    <Box
+      p="20px"
+      sx={{
+        height: "calc(100dvh - 110px)",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+      }}
+    >
       <Header title={t.studentsTitle} subtitle={t.studentsSubtitle} />
 
       <Box
@@ -408,6 +635,29 @@ const Students = ({ language }) => {
             {t.importStudents || "Import Excel"}
           </Button>
           <Button
+            variant="outlined"
+            startIcon={<PrintIcon />}
+            disabled={!selectedStudents.length || bulkPrinting}
+            onClick={handleBulkPrint}
+            sx={{
+              backgroundColor: theme.palette.mode === "light" ? colors.blueAccent[800] : colors.blueAccent[500],
+              color: "#fff",
+              borderColor: theme.palette.mode === "light" ? colors.blueAccent[800] : colors.blueAccent[500],
+              "&:hover": {
+                backgroundColor: theme.palette.mode === "light" ? colors.blueAccent[700] : colors.blueAccent[400],
+                borderColor: theme.palette.mode === "light" ? colors.blueAccent[700] : colors.blueAccent[400],
+              },
+              "&.Mui-disabled": {
+                opacity: 1,
+                backgroundColor: theme.palette.mode === "light" ? "#90a4ae" : "#455a64",
+                borderColor: theme.palette.mode === "light" ? "#90a4ae" : "#455a64",
+                color: theme.palette.mode === "light" ? "#1a1a1a" : "#eceff1",
+              },
+            }}
+          >
+            {(t.print || "Print")} {selectedStudents.length ? `(${selectedStudents.length})` : ""}
+          </Button>
+          <Button
             data-testid="students-add"
             variant="contained"
             sx={{
@@ -424,11 +674,11 @@ const Students = ({ language }) => {
       </Box>
 
       <Box
-        height="calc(100vh - 255px)"
-        minHeight={460}
         dir={language === "ar" ? "rtl" : "ltr"}
         sx={{
-          "& .MuiDataGrid-root": { border: "none" },
+          flex: 1,
+          minHeight: 0,
+          "& .MuiDataGrid-root": { border: "none", height: "100%" },
           "& .MuiDataGrid-columnHeaders": { backgroundColor: colors.blueAccent[700], borderBottom: "none", textAlign: language === "ar" ? "right" : "left" },
           "& .MuiDataGrid-cell": { textAlign: language === "ar" ? "right" : "left" },
           "& .MuiDataGrid-virtualScroller": { backgroundColor: colors.primary[400] },
@@ -449,7 +699,14 @@ const Students = ({ language }) => {
           onPageSizeChange={(newSize) => { setPageSize(newSize); setPage(0); }}
           rowsPerPageOptions={[10, 20, 50]}
           density="compact"
-          disableSelectionOnClick
+          checkboxSelection
+          checkboxSelectionVisibleOnly
+          rowSelectionModel={selectionModel}
+          onRowSelectionModelChange={(model) => {
+            const nextIds = new Set(Array.from(model?.ids || []).map((x) => Number(x)));
+            setSelectionModel({ type: model?.type || "include", ids: nextIds });
+          }}
+          disableRowSelectionOnClick
           columnVisibilityModel={{ id: false, guardianName: false }}
         />
       </Box>
@@ -469,9 +726,25 @@ const Students = ({ language }) => {
         </DialogActions>
       </Dialog>
 
-      <StudentCardModal open={cardOpen} onClose={() => setCardOpen(false)} student={cardStudent} levels={levels} language={language} />
+      <StudentCardModal
+        open={cardOpen}
+        onClose={() => setCardOpen(false)}
+        onEditDesign={() => {
+          setCardOpen(false);
+          navigate("/Settings");
+        }}
+        student={cardStudent}
+        levels={levels}
+        language={language}
+        schoolName={schoolName}
+        schoolLogoUrl={schoolLogoUrl}
+        cardTheme={cardTheme}
+      />
     </Box>
   );
 };
 
 export default Students;
+
+
+

@@ -1,4 +1,4 @@
-    // src/scenes/subjects/Subjects.jsx
+﻿    // src/scenes/subjects/Subjects.jsx
     import {
     Box,
     Button,
@@ -120,8 +120,8 @@
         ) {
             message =
             language === "ar"
-                ? "لا يمكن حذف هذه المادة لأنها مرتبطة بسجلات أخرى."
-                : "Impossible de supprimer cette matière car elle est encore liée à d'autres enregistrements.";
+                ? "Ù„Ø§ ÙŠÙ…ÙƒÙ† Ø­Ø°Ù Ù‡Ø°Ù‡ Ø§Ù„Ù…Ø§Ø¯Ø© Ù„Ø£Ù†Ù‡Ø§ Ù…Ø±ØªØ¨Ø·Ø© Ø¨Ø³Ø¬Ù„Ø§Øª Ø£Ø®Ø±Ù‰."
+                : "Impossible de supprimer cette matiÃ¨re car elle est encore liÃ©e Ã  d'autres enregistrements.";
         }
 
         setDeleteError(message);
@@ -136,7 +136,6 @@
 
     // ---------- COLUMNS ----------
     const columns = [
-        { field: "id", headerName: "ID", width: 90 },
         { field: "name", headerName: t.subjectName, flex: 1 },
         { field: "code", headerName: t.subjectCode, flex: 1 },
         {
@@ -431,3 +430,4 @@
     };
 
     export default Subjects;
+

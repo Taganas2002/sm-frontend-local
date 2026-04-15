@@ -1,4 +1,4 @@
-    import {
+﻿    import {
     Box,
     Button,
     Dialog,
@@ -63,7 +63,6 @@
 
     // ---------- COLUMNS ----------
     const columns = [
-        { field: "id", headerName: "ID", width: 90 },
         { field: "productName", headerName: t.productName, flex: 1 },
         { field: "productCode", headerName: t.productCode, flex: 1 },
         { field: "salePrice", headerName: t.salePrice, flex: 1 },
@@ -169,17 +168,17 @@
 
         {/* DataGrid */}
         <Box
-            height="80vh"
-             dir={language === "ar" ? "rtl" : "ltr"}   // 👈 force direction
+            height="clamp(420px, calc(100dvh - 280px), 760px)"
+             dir={language === "ar" ? "rtl" : "ltr"}   // ðŸ‘ˆ force direction
             sx={{
                 "& .MuiDataGrid-root": { border: "none" },
                 "& .MuiDataGrid-columnHeaders": {
                 backgroundColor: colors.blueAccent[700],
                 borderBottom: "none",
-                textAlign: language === "ar" ? "right" : "left", // 👈 align header text
+                textAlign: language === "ar" ? "right" : "left", // ðŸ‘ˆ align header text
                 },
                 "& .MuiDataGrid-cell": {
-                textAlign: language === "ar" ? "right" : "left", // 👈 align cell text
+                textAlign: language === "ar" ? "right" : "left", // ðŸ‘ˆ align cell text
                 },
             "& .MuiDataGrid-virtualScroller": {
                 backgroundColor: colors.primary[400],
@@ -192,7 +191,7 @@
                 color:
                 theme.palette.mode === "light"
                     ? colors.blueAccent[800]
-                    : colors.blueAccent[400], // ✅ dark blue checkbox
+                    : colors.blueAccent[400], // âœ… dark blue checkbox
             },
             }}
         >
@@ -403,3 +402,5 @@
     };
 
     export default SalesDialog;
+
+

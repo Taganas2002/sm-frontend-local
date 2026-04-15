@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Button,
@@ -81,7 +81,6 @@ const UsersPage = ({ language = "fr" }) => {
 
   const columns = useMemo(
     () => [
-      { field: "id", headerName: "ID", width: 80 },
       { field: "name", headerName: t.name, flex: 1, minWidth: 160 },
       { field: "email", headerName: t.email, flex: 1, minWidth: 200 },
       { field: "phone", headerName: t.phone, flex: 1, minWidth: 160 },
@@ -318,3 +317,4 @@ const UsersPage = ({ language = "fr" }) => {
 };
 
 export default UsersPage;
+

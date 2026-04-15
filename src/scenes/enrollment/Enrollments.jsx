@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Autocomplete,
@@ -433,7 +433,7 @@ const Enrollments = ({ language = "fr" }) => {
           .slice(0, 5)
           .map((sk) => `#${sk.studentId}: ${skipReasonLabel(sk.code)}`)
           .join("; ");
-        msg += ` — ${preview}${res.skips.length > 5 ? "…" : ""}`;
+        msg += ` â€” ${preview}${res.skips.length > 5 ? "â€¦" : ""}`;
       }
       setSnack({
         open: true,
@@ -516,7 +516,6 @@ const Enrollments = ({ language = "fr" }) => {
   };
 
   const columns = [
-    { field: "id", headerName: "ID", width: 80 },
     {
       field: "studentId",
       headerName: t.studentId || "Student",
@@ -598,7 +597,7 @@ const Enrollments = ({ language = "fr" }) => {
       <Box mb={2} display="grid" gridTemplateColumns="minmax(260px, 1fr) 220px 220px auto" gap={2} alignItems="center">
         <TextField
           placeholder={t.searchEnrollment || "Search (name / group / notes)"}
-          // put test id on the actual input (root is a div — Playwright fill needs the input)
+          // put test id on the actual input (root is a div â€” Playwright fill needs the input)
           inputProps={{ "data-testid": "enrollments-search-q" }}
           value={q}
           onChange={(e) => setQ(e.target.value)}
@@ -750,7 +749,7 @@ const Enrollments = ({ language = "fr" }) => {
           <>
             <DialogContent dir={language === "ar" ? "rtl" : "ltr"}>
               <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 0.5 }}>
-                {t.bulkStep1Title || "Step 1 — Group"}
+                {t.bulkStep1Title || "Step 1 â€” Group"}
               </Typography>
               <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1.5 }}>
                 {t.bulkEnrollmentHelp || "Choose the group, then select students."}
@@ -771,14 +770,14 @@ const Enrollments = ({ language = "fr" }) => {
                   displayEmpty: true,
                   renderValue: (selected) => {
                     if (selected === "" || selected == null) {
-                      return t.enrollmentPickGroup || "— Select group —";
+                      return t.enrollmentPickGroup || "â€” Select group â€”";
                     }
                     const g = groups.find((x) => String(x.id) === String(selected));
                     return g?.name ?? String(selected);
                   },
                 }}
               >
-                <MenuItem value="">{t.enrollmentPickGroup || "— Select group —"}</MenuItem>
+                <MenuItem value="">{t.enrollmentPickGroup || "â€” Select group â€”"}</MenuItem>
                 {groups.map((g) => (
                   <MenuItem key={g.id} value={String(g.id)}>
                     {g.name}
@@ -790,14 +789,14 @@ const Enrollments = ({ language = "fr" }) => {
                 <Alert severity="info" sx={{ mt: 1, mb: 1 }} variant="outlined">
                   <Typography variant="body2" component="span">
                     <strong>{bulkSelectedGroup.name}</strong>
-                    {" — "}
+                    {" â€” "}
                     {t.bulkStep2Hint || "Tick students below, then Save."}
                   </Typography>
                 </Alert>
               )}
 
               <Typography variant="subtitle2" fontWeight="bold" sx={{ mt: 1, mb: 0.5 }}>
-                {t.bulkStep2Title || "Step 2 — Students"}
+                {t.bulkStep2Title || "Step 2 â€” Students"}
               </Typography>
 
               <TextField
@@ -1013,7 +1012,7 @@ const Enrollments = ({ language = "fr" }) => {
                 SelectProps={{
                   displayEmpty: true,
                   renderValue: (selected) => {
-                    if (selected === "" || selected == null) return "—";
+                    if (selected === "" || selected == null) return "â€”";
                     const g = groups.find((x) => String(x.id) === String(selected));
                     return g?.name ?? String(selected);
                   },
@@ -1083,3 +1082,4 @@ const Enrollments = ({ language = "fr" }) => {
 };
 
 export default Enrollments;
+

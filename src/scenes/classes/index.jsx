@@ -1,4 +1,4 @@
-import {
+﻿import {
   Box,
   Button,
   Dialog,
@@ -115,7 +115,6 @@ const Classes = ({ language }) => {
   };
 
   const columns = [
-    { field: "id", headerName: "ID", width: 90 },
     { field: "roomName", headerName: t.roomName, flex: 1 },
     { field: "capacity", headerName: t.capacity, flex: 1 },
     { field: "equipment", headerName: t.equipment, flex: 1 },
@@ -283,3 +282,4 @@ const Classes = ({ language }) => {
 };
 
 export default Classes;
+

@@ -1,4 +1,4 @@
-import {
+﻿import {
   Box,
   Button,
   Dialog,
@@ -105,7 +105,6 @@ const Sections = ({ language }) => {
   };
 
   const columns = [
-    { field: "id", headerName: "ID", width: 90 },
     { field: "name", headerName: t.sectionName || "Section name", flex: 1 },
     {
       field: "actions",
@@ -127,7 +126,15 @@ const Sections = ({ language }) => {
   const initialValues = { name: "" };
 
   return (
-    <Box m="20px">
+    <Box
+      p="20px"
+      sx={{
+        height: "calc(100dvh - 110px)",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+      }}
+    >
       <Header title={t.sectionsTitle || "Sections"} subtitle={t.dataManagement} />
 
       <Box display="flex" justifyContent="flex-end" mb={2}>
@@ -147,7 +154,18 @@ const Sections = ({ language }) => {
         </Button>
       </Box>
 
-      <Box height="80vh" dir={language === "ar" ? "rtl" : "ltr"} sx={{ "& .MuiDataGrid-root": { border: "none" }, "& .MuiDataGrid-columnHeaders": { backgroundColor: colors.blueAccent[700], borderBottom: "none", textAlign: language === "ar" ? "right" : "left" }, "& .MuiDataGrid-cell": { textAlign: language === "ar" ? "right" : "left" }, "& .MuiDataGrid-virtualScroller": { backgroundColor: colors.primary[400] }, "& .MuiDataGrid-footerContainer": { borderTop: "none", backgroundColor: colors.blueAccent[400] } }}>
+      <Box
+        dir={language === "ar" ? "rtl" : "ltr"}
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          "& .MuiDataGrid-root": { border: "none", height: "100%" },
+          "& .MuiDataGrid-columnHeaders": { backgroundColor: colors.blueAccent[700], borderBottom: "none", textAlign: language === "ar" ? "right" : "left" },
+          "& .MuiDataGrid-cell": { textAlign: language === "ar" ? "right" : "left" },
+          "& .MuiDataGrid-virtualScroller": { backgroundColor: colors.primary[400] },
+          "& .MuiDataGrid-footerContainer": { borderTop: "none", backgroundColor: colors.blueAccent[400] },
+        }}
+      >
         <DataGrid rows={sections} columns={columns} checkboxSelection disableRowSelectionOnClick loading={loading} getRowId={(row) => row.id} />
       </Box>
 
@@ -226,3 +244,6 @@ const Sections = ({ language }) => {
 };
 
 export default Sections;
+
+
+

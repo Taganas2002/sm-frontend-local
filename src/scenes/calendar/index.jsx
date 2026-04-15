@@ -256,7 +256,7 @@ const Calendar = ({ language }) => {
     }
   };
 
-  // ---------- Map backend week events → FullCalendar (local times) ----------
+  // ---------- Map backend week events â†’ FullCalendar (local times) ----------
   const mapWeekEventsToCalendar = (list) =>
     (list || [])
       .filter((event) => {
@@ -332,7 +332,14 @@ const Calendar = ({ language }) => {
   }, [resourcePage, safeResourcePage]);
 
   return (
-    <Box m="15px">
+    <Box
+      p="20px"
+      sx={{
+        height: "calc(100dvh - 110px)",
+        overflowY: "auto",
+        overflowX: "hidden",
+      }}
+    >
       <Header title={t.schoolCalendar} subtitle={t.organizeTimetable} />
 
       {/* Add Class Button */}
@@ -624,7 +631,7 @@ const Calendar = ({ language }) => {
             timeZone="local"
             firstDay={0}
             locale={calendarLocale}
-            height="calc(100vh - 220px)"
+            height="clamp(420px, calc(100dvh - 250px), 760px)"
             plugins={[timeGridPlugin, interactionPlugin, resourceTimeGridPlugin]}
             initialView="resourceTimeGridDay"
             headerToolbar={{
@@ -690,7 +697,7 @@ const Calendar = ({ language }) => {
                 setDeleteId(event.id);
                 setContextMenu({ mouseX: e.clientX + 2, mouseY: e.clientY - 6 });
 
-                // ❌ removed: openPanelFromEventObj(event);
+                // âŒ removed: openPanelFromEventObj(event);
               });
             }}
           />
@@ -712,7 +719,7 @@ const Calendar = ({ language }) => {
             setContextMenu(null);
           }}
         >
-          ✏️ {t.editSession}
+          âœï¸ {t.editSession}
         </MenuItem>
         <MenuItem
           onClick={() => {
@@ -720,7 +727,7 @@ const Calendar = ({ language }) => {
             setContextMenu(null);
           }}
         >
-          🗑️ {t.delete || "Delete"}
+          ðŸ—‘ï¸ {t.delete || "Delete"}
         </MenuItem>
       </Menu>
 
@@ -790,7 +797,7 @@ const Calendar = ({ language }) => {
 
                 await updateSchedule(values.id, payload);
 
-                // ✅ Close any open attendance panels for this schedule to avoid stale list
+                // âœ… Close any open attendance panels for this schedule to avoid stale list
                 setDockPanels((prev) => prev.filter((p) => p.scheduleId !== values.id));
 
                 setSnackbar({ open: true, message: t.successMsg, severity: "success" });
@@ -927,12 +934,12 @@ const Calendar = ({ language }) => {
               try {
                 await deleteSchedule(deleteId);
 
-                // ✅ Also remove any open panels for the deleted schedule
+                // âœ… Also remove any open panels for the deleted schedule
                 setDockPanels((prev) => prev.filter((p) => p.scheduleId !== deleteId));
 
                 setSnackbar({
                   open: true,
-                  message: t.deleted || "🗑️ Session deleted successfully!",
+                  message: t.deleted || "ðŸ—‘ï¸ Session deleted successfully!",
                   severity: "success",
                 });
                 setOpenDeleteDialog(false);
@@ -942,7 +949,7 @@ const Calendar = ({ language }) => {
                 console.error("Failed to delete schedule", err);
                 setSnackbar({
                   open: true,
-                  message: t.sessionDeleteFailed || "❌ Failed to delete session.",
+                  message: t.sessionDeleteFailed || "âŒ Failed to delete session.",
                   severity: "error",
                 });
               }
@@ -985,3 +992,4 @@ const Calendar = ({ language }) => {
 };
 
 export default Calendar;
+

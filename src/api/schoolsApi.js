@@ -15,6 +15,11 @@
     return data;
     };
 
+export const getMySchool = async () => {
+    const { data } = await api.get("/schools/me");
+    return data;
+};
+
     // Create school
     export const createSchool = async (payload) => {
     const { data } = await api.post("/schools", payload);
@@ -26,6 +31,11 @@
     const { data } = await api.put(`/schools/${id}`, payload);
     return data;
     };
+
+export const updateMySchool = async (payload) => {
+    const { data } = await api.put("/schools/me", payload);
+    return data;
+};
 
     // Delete school
     export const deleteSchool = async (id) => {

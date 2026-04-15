@@ -1,4 +1,4 @@
-    import {
+﻿    import {
     Box,
     Button,
     Dialog,
@@ -63,7 +63,6 @@
 
     // ---------- COLUMNS ----------
     const columns = [
-        { field: "id", headerName: "ID", width: 90 },
         { field: "groupName", headerName: t.groupName, flex: 1 },
         { field: "studentName", headerName: t.studentName, flex: 1 },
         { field: "amount", headerName: t.amount, flex: 1 },
@@ -159,16 +158,16 @@
 
         {/* DataGrid */}
         <Box
-            height="80vh"
+            height="clamp(420px, calc(100dvh - 280px), 760px)"
             sx={{
                 "& .MuiDataGrid-root": { border: "none" },
                 "& .MuiDataGrid-columnHeaders": {
                 backgroundColor: colors.blueAccent[700],
                 borderBottom: "none",
-                textAlign: language === "ar" ? "right" : "left", // 👈 align header text
+                textAlign: language === "ar" ? "right" : "left", // ðŸ‘ˆ align header text
                 },
                 "& .MuiDataGrid-cell": {
-                textAlign: language === "ar" ? "right" : "left", // 👈 align cell text
+                textAlign: language === "ar" ? "right" : "left", // ðŸ‘ˆ align cell text
                 },
             "& .MuiDataGrid-virtualScroller": {
                 backgroundColor: colors.primary[400],
@@ -180,7 +179,7 @@
             "& .MuiCheckbox-root.Mui-checked": {
                 color: theme.palette.mode === "light"
                     ? colors.blueAccent[800]
-                    : colors.blueAccent[400], // ✅ dark blue checkbox
+                    : colors.blueAccent[400], // âœ… dark blue checkbox
             },
             }}
         >
@@ -273,7 +272,7 @@
                         InputLabelProps={{ shrink: true }}
                     />
 
-                    {/* ✅ Notes full width */}
+                    {/* âœ… Notes full width */}
                     <TextField
                         margin="dense"
                         placeholder={t.notes}
@@ -347,3 +346,5 @@
     };
 
     export default IncomeDialog;
+
+

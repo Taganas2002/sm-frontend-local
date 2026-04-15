@@ -1,4 +1,4 @@
-    import {
+﻿    import {
     Box,
     Button,
     Dialog,
@@ -63,7 +63,6 @@
 
     // ---------- COLUMNS ----------
     const columns = [
-        { field: "id", headerName: "ID", width: 90 },
         { field: "specialiteAr", headerName: t.specialiteAr, flex: 1 },
         { field: "specialiteEn", headerName: t.specialiteEn, flex: 1 },
         { field: "department", headerName: t.department, flex: 1 },
@@ -299,3 +298,4 @@
     };
 
     export default Specialities;
+

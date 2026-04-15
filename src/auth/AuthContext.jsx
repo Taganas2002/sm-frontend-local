@@ -87,6 +87,10 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => setAuth(null);
+  const updateUser = (patch) => {
+    if (!patch || typeof patch !== "object") return;
+    setAuth((prev) => (prev ? { ...prev, ...patch } : prev));
+  };
 
   // helpers
   const token = getToken(auth || {});
@@ -112,6 +116,7 @@ export function AuthProvider({ children }) {
       login,
       signup,
       logout,
+      updateUser,
       hasRole,
       can,
       roles,

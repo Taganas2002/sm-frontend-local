@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -78,12 +78,12 @@ export default function StudentBillingSearch({ language = "fr" }) {
   const isCompactScreen = useMediaQuery(theme.breakpoints.down("lg"));
   const colors = tokens(theme.palette.mode);
 
-  const startLabel = language === "ar" ? "??????? (YYYY-MM)" : language === "en" ? "Start (YYYY-MM)" : "D�but (YYYY-MM)";
+  const startLabel = language === "ar" ? "??????? (YYYY-MM)" : language === "en" ? "Start (YYYY-MM)" : "Dï¿½but (YYYY-MM)";
   const endLabel = language === "ar" ? "??????? (YYYY-MM)" : language === "en" ? "End (YYYY-MM)" : "Fin (YYYY-MM)";
   const scannerOnLabel = language === "ar" ? "????? ???? QR" : language === "en" ? "Turn QR scanner ON" : "Activer le scanner QR";
-  const scannerOffLabel = language === "ar" ? "????? ???? QR" : language === "en" ? "Turn QR scanner OFF" : "D�sactiver le scanner QR";
+  const scannerOffLabel = language === "ar" ? "????? ???? QR" : language === "en" ? "Turn QR scanner OFF" : "Dï¿½sactiver le scanner QR";
   const scanNotRecognizedLabel = language === "ar" ? "?? ??? ?????? ??? ?????" : language === "en" ? "Scan not recognized" : "Scan non reconnu";
-  const studentSelectedLabel = language === "ar" ? "?? ????? ??????" : language === "en" ? "Student selected" : "�l�ve s�lectionn�";
+  const studentSelectedLabel = language === "ar" ? "?? ????? ??????" : language === "en" ? "Student selected" : "ï¿½lï¿½ve sï¿½lectionnï¿½";
 
   const [status, setStatus] = useState("OPEN_DUE");
   const [page, setPage] = useState(0);
@@ -501,7 +501,7 @@ export default function StudentBillingSearch({ language = "fr" }) {
       )}
 
       <Box
-        height="calc(100vh - 255px)"
+        height="clamp(420px, calc(100dvh - 280px), 760px)"
         minHeight={420}
         sx={{
           "& .MuiDataGrid-root": { border: "none" },
@@ -569,6 +569,7 @@ export default function StudentBillingSearch({ language = "fr" }) {
     </Box>
   );
 }
+
 
 
 

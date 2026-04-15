@@ -1,4 +1,4 @@
-    // src/scenes/finances/Expenses.jsx
+﻿    // src/scenes/finances/Expenses.jsx
     import { useEffect, useMemo, useState } from "react";
     import {
     Box,
@@ -113,7 +113,7 @@ const [deleteId, setDeleteId] = useState(null);
             id: e.id,
             expenseDate,                                // YYYY-MM-DD
             time: createdAt ? dayjs(createdAt).format("hh:mm A") : "",
-            categoryLabel: [e.category, e.subCategory].filter(Boolean).join(" — "),
+            categoryLabel: [e.category, e.subCategory].filter(Boolean).join(" â€” "),
             method: e.method || null,
             amountNum,                                  // keep numeric for potential future sorting
             amountLabel: nf.format(amountNum),
@@ -236,7 +236,7 @@ const [deleteId, setDeleteId] = useState(null);
             <Grid item xs={12} sm={4} md={3}>
             <TextField
             label={t.category}
-                placeholder="ELECTRICITY / WATER / RENT …"
+                placeholder="ELECTRICITY / WATER / RENT â€¦"
                 fullWidth
                 size="small"
                 value={category}
@@ -289,7 +289,7 @@ const [deleteId, setDeleteId] = useState(null);
             </Grid>
         </Grid>
 
-        <Box height="80vh"
+        <Box height="clamp(420px, calc(100dvh - 280px), 760px)"
             dir={language === "ar" ? "rtl" : "ltr"}
             sx={{
             "& .MuiDataGrid-root": { border: "none" },
@@ -403,3 +403,4 @@ const [deleteId, setDeleteId] = useState(null);
         </Box>
     );
     }
+

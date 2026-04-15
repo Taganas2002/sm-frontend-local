@@ -1,4 +1,4 @@
-    import { Box, Button, useTheme } from "@mui/material";
+﻿    import { Box, Button, useTheme } from "@mui/material";
     import { DataGrid } from "@mui/x-data-grid";
     import { tokens } from "../../theme";
     import Header from "../../components/Header";
@@ -62,7 +62,6 @@
 
     // ---------- COLUMNS ----------
     const columns = [
-        { field: "id", headerName: "ID", width: 90 },
         { field: "studentName", headerName: t.studentName, flex: 1 },
         { field: "expenseType", headerName: t.expenseType, flex: 1 },
         { field: "amount", headerName: t.amount, flex: 1 },
@@ -171,17 +170,17 @@
 
         {/* DataGrid */}
         <Box
-            height="80vh"
-             dir={language === "ar" ? "rtl" : "ltr"}   // 👈 force direction
+            height="clamp(420px, calc(100dvh - 280px), 760px)"
+             dir={language === "ar" ? "rtl" : "ltr"}   // ðŸ‘ˆ force direction
             sx={{
                 "& .MuiDataGrid-root": { border: "none" },
                 "& .MuiDataGrid-columnHeaders": {
                 backgroundColor: colors.blueAccent[700],
                 borderBottom: "none",
-                textAlign: language === "ar" ? "right" : "left", // 👈 align header text
+                textAlign: language === "ar" ? "right" : "left", // ðŸ‘ˆ align header text
                 },
                 "& .MuiDataGrid-cell": {
-                textAlign: language === "ar" ? "right" : "left", // 👈 align cell text
+                textAlign: language === "ar" ? "right" : "left", // ðŸ‘ˆ align cell text
                 },
                 "& .MuiDataGrid-virtualScroller": {
                 backgroundColor: colors.primary[400],
@@ -231,3 +230,5 @@
     };
 
     export default Finances;
+
+

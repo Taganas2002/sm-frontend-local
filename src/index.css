@@ -75,6 +75,15 @@ body,
 .app{
   display:flex;
   position: relative;
+  min-height: 100dvh;
+}
+
+.content {
+  flex: 1;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 ::-webkit-scrollbar {

@@ -1,4 +1,4 @@
-    // src/scenes/levels/Levels.jsx
+﻿    // src/scenes/levels/Levels.jsx
     import {
     Box,
     Button,
@@ -86,7 +86,7 @@
         }
     };
 
-        // When clicking the delete button → just open confirmation
+        // When clicking the delete button Ã¢â€ â€™ just open confirmation
     const handleDeleteClick = (level) => {
     setLevelToDelete(level);
     setDeleteDialogOpen(true);
@@ -123,8 +123,8 @@
         ) {
         message =
             language === "ar"
-            ? "لا يمكن حذف هذا المستوى لأنه مرتبط بسجلات أخرى."
-            : "Impossible de supprimer ce niveau car il est encore lié à d'autres enregistrements.";
+            ? "Ã™â€žÃ˜Â§ Ã™Å Ã™â€¦Ã™Æ’Ã™â€  Ã˜Â­Ã˜Â°Ã™Â Ã™â€¡Ã˜Â°Ã˜Â§ Ã˜Â§Ã™â€žÃ™â€¦Ã˜Â³Ã˜ÂªÃ™Ë†Ã™â€° Ã™â€žÃ˜Â£Ã™â€ Ã™â€¡ Ã™â€¦Ã˜Â±Ã˜ÂªÃ˜Â¨Ã˜Â· Ã˜Â¨Ã˜Â³Ã˜Â¬Ã™â€žÃ˜Â§Ã˜Âª Ã˜Â£Ã˜Â®Ã˜Â±Ã™â€°."
+            : "Impossible de supprimer ce niveau car il est encore liÃƒÂ© ÃƒÂ  d'autres enregistrements.";
         }
 
         setDeleteError(message);
@@ -141,7 +141,6 @@
 
     // ---------- COLUMNS ----------
     const columns = [
-        { field: "id", headerName: "ID", width: 90 },
         { field: "name", headerName: t.levelsTitle || "Name", flex: 1 },
         {
         field: "actions",
@@ -188,7 +187,15 @@
     };
 
     return (
-        <Box m="20px">
+        <Box
+            p="20px"
+            sx={{
+                height: "calc(100dvh - 110px)",
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
+            }}
+        >
         <Header title={t.levels || "Levels"} subtitle={t.dataManagement} />
 
         {/* Top Button */}
@@ -221,10 +228,11 @@
 
         {/* DataGrid */}
         <Box
-            height="80vh"
             dir={language === "ar" ? "rtl" : "ltr"}
             sx={{
-            "& .MuiDataGrid-root": { border: "none" },
+            flex: 1,
+            minHeight: 0,
+            "& .MuiDataGrid-root": { border: "none", height: "100%" },
             "& .MuiDataGrid-columnHeaders": {
                 backgroundColor: colors.blueAccent[700],
                 borderBottom: "none",
@@ -411,3 +419,6 @@
     };
 
     export default Levels;
+
+
+

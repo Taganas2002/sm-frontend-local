@@ -1,4 +1,4 @@
-    import { Box } from "@mui/material";
+﻿    import { Box } from "@mui/material";
     import { DataGrid, GridToolbar } from "@mui/x-data-grid";
     import { tokens } from "../../theme";
     import { mockDataContacts } from "../../data/mockData";
@@ -10,7 +10,6 @@
     const colors = tokens(theme.palette.mode);
 
     const columns = [
-        { field: "id", headerName: "ID", flex: 0.5 },
         { field: "registrarId", headerName: "Registrar ID" },
         {
         field: "name",

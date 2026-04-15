@@ -1,4 +1,4 @@
-    import {
+﻿    import {
     Box,
     Button,
     Dialog,
@@ -33,6 +33,12 @@
     address: yup.string().max(255),
     phone: yup.string().max(60),
     email: yup.string().email("Invalid email").max(160),
+    logoUrl: yup.string().max(2000000),
+    cardPrimaryColor: yup.string().matches(/^#[0-9a-fA-F]{6}$/, "Use #RRGGBB format"),
+    cardHeaderBg: yup.string().matches(/^#[0-9a-fA-F]{6}$/, "Use #RRGGBB format"),
+    cardTextColor: yup.string().matches(/^#[0-9a-fA-F]{6}$/, "Use #RRGGBB format"),
+    cardQrFrameColor: yup.string().matches(/^#[0-9a-fA-F]{6}$/, "Use #RRGGBB format"),
+    cardNameFontScale: yup.number().min(0.85).max(1.3),
     active: yup.boolean(),
     });
 
@@ -41,6 +47,16 @@
     address: "",
     phone: "",
     email: "",
+    logoUrl: "",
+    cardTemplateKey: "CLASSIC",
+    cardPrimaryColor: "#133C86",
+    cardHeaderBg: "#EAEFFC",
+    cardTextColor: "#1A2233",
+    cardQrFrameColor: "#E5E7EB",
+    cardShowSchoolName: true,
+    cardShowLogo: true,
+    cardShowLevelSection: true,
+    cardNameFontScale: 1,
     active: true,
     level: "1AP", // default level
     };
@@ -108,7 +124,6 @@
     };
 
     const columns = [
-        { field: "id", headerName: t.id || "ID", flex: 0.3 },
         { field: "name", headerName: t.name || "Name", flex: 1 },
         { field: "address", headerName: t.address || "Address", flex: 1 },
         { field: "phone", headerName: t.phone || "Phone", flex: 0.8 },
@@ -276,6 +291,40 @@
                     error={!!touched.email && !!errors.email}
                     helperText={touched.email && errors.email}
                     />
+                    <TextField
+                    margin="dense"
+                    label="Logo URL"
+                    name="logoUrl"
+                    fullWidth
+                    variant="outlined"
+                    value={values.logoUrl || ""}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={!!touched.logoUrl && !!errors.logoUrl}
+                    helperText={touched.logoUrl && errors.logoUrl}
+                    />
+                    <FormControlLabel
+                    control={
+                        <Switch
+                        checked={!!values.cardShowSchoolName}
+                        onChange={(e) => setFieldValue("cardShowSchoolName", e.target.checked)}
+                        name="cardShowSchoolName"
+                        color="primary"
+                        />
+                    }
+                    label="Show school name on student cards"
+                    />
+                    <FormControlLabel
+                    control={
+                        <Switch
+                        checked={!!values.cardShowLogo}
+                        onChange={(e) => setFieldValue("cardShowLogo", e.target.checked)}
+                        name="cardShowLogo"
+                        color="primary"
+                        />
+                    }
+                    label="Show logo on student cards"
+                    />
                     <FormControlLabel
                     control={
                         <Switch
@@ -338,3 +387,4 @@
     };
 
     export default Schools;
+
