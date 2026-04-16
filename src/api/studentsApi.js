@@ -27,6 +27,32 @@ export const getStudent = async (id) => {
   return data;
 };
 
+/**
+ * Resolve many student ids to fullName (parallel GET /students/{id}).
+ * Used when list/search APIs do not support bulk id lookup (e.g. attendance roster).
+ * @param {Array<number|string>} ids
+ * @returns {Promise<Record<number, string>>}
+ */
+export async function fetchStudentNamesByIds(ids) {
+  const uniq = [...new Set((ids || []).map((x) => Number(x)).filter((n) => Number.isFinite(n) && n > 0))];
+  const out = {};
+  const concurrency = 10;
+  for (let i = 0; i < uniq.length; i += concurrency) {
+    const slice = uniq.slice(i, i + concurrency);
+    await Promise.all(
+      slice.map(async (id) => {
+        try {
+          const s = await getStudent(id);
+          if (s?.fullName) out[id] = s.fullName;
+        } catch {
+          /* missing or forbidden */
+        }
+      })
+    );
+  }
+  return out;
+}
+
 export const listStudents = async () => {
   try {
     const res = await searchStudents({ page: 0, size: 100 });

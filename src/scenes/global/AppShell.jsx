@@ -16,7 +16,7 @@ export default function AppShell({ language, setLanguage }) {
           setLanguage={setLanguage}
           language={language}
         />
-        <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+        <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden" }}>
           <Outlet />
         </Box>
       </main>

@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Alert,
   Box,
   Button,
   Chip,
@@ -9,6 +8,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   FormControl,
   IconButton,
   InputLabel,
@@ -16,21 +16,35 @@ import {
   Paper,
   Select,
   Stack,
-  TextField,
   Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import Header from "../../components/Header";
 import { tokens } from "../../theme";
 import { getTranslations } from "../../translations";
 import { searchAuditLogs } from "../../api/auditLogs";
+import { fetchStudentNamesByIds } from "../../api/studentsApi";
 
 const PAGE_SIZE = 25;
+
+/** Maps UI scope dropdown → API query (only the four views you asked for). */
+function scopeToQuery(scopeKey) {
+  switch (scopeKey) {
+    case "receipts":
+      return { action: "BILLING_COLLECT", entityType: "Receipt" };
+    case "teacherPayouts":
+      return { action: "TEACHER_PAYOUT_CREATE", entityType: "TeacherPayout" };
+    case "expenses":
+      return { action: "", entityType: "Expense" };
+    default:
+      return { action: "", entityType: "" };
+  }
+}
 
 /** @param {string|null|undefined} raw */
 function parseMetadata(raw) {
@@ -40,22 +54,6 @@ function parseMetadata(raw) {
   } catch {
     return { _parseError: true, _raw: raw };
   }
-}
-
-function startOfDayIso(dateStr) {
-  if (!dateStr) return null;
-  const d = new Date(dateStr + "T12:00:00");
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString();
-}
-
-/** `to` is exclusive on the API — use day after selected end date */
-function exclusiveEndIso(dateStr) {
-  if (!dateStr) return null;
-  const d = new Date(dateStr + "T12:00:00");
-  d.setDate(d.getDate() + 1);
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString();
 }
 
 function moneyish(v) {
@@ -71,11 +69,16 @@ function moneyish(v) {
  * Human-readable one-line summary for the grid (not a full "output" — see dialog).
  * @param {string} action
  * @param {object|null} meta
+ * @param {Record<number, string>} [studentNames]
  */
-function summarizeRow(action, meta) {
+function summarizeRow(action, meta, studentNames) {
   if (!meta || meta._parseError) return "—";
   const parts = [];
-  if (meta.studentId != null) parts.push(`Student #${meta.studentId}`);
+  if (meta.studentId != null) {
+    const sid = Number(meta.studentId);
+    const label = Number.isFinite(sid) && studentNames?.[sid] ? studentNames[sid] : `Student #${meta.studentId}`;
+    parts.push(label);
+  }
   if (meta.totalAmount != null) parts.push(moneyish(meta.totalAmount));
   if (meta.amount != null && action === "PAYMENT_ALLOCATE") parts.push(`Amt ${moneyish(meta.amount)}`);
   if (meta.method) parts.push(String(meta.method));
@@ -203,26 +206,31 @@ export default function PaymentAuditLog({ language = "fr" }) {
     [t]
   );
 
-  const [action, setAction] = useState("");
-  const [entityType, setEntityType] = useState("");
-  const [entityId, setEntityId] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  const entityDisplay = useMemo(
+    () => ({
+      "": t.auditLog_entity_any,
+      Receipt: t.auditLog_entity_receipt,
+      Student: t.auditLog_entity_student,
+      TeacherPayout: t.auditLog_entity_teacherPayout,
+      Teacher: t.auditLog_entity_teacher,
+      Expense: t.auditLog_entity_expense,
+    }),
+    [t]
+  );
+
+  const [scopeKey, setScopeKey] = useState("all");
   const [page, setPage] = useState(0);
   const [detailRow, setDetailRow] = useState(null);
+  const [helpOpen, setHelpOpen] = useState(false);
+
+  const { action, entityType } = useMemo(() => scopeToQuery(scopeKey), [scopeKey]);
 
   const queryParams = useMemo(() => {
     const p = { page, size: PAGE_SIZE };
     if (action) p.action = action;
     if (entityType.trim()) p.entityType = entityType.trim();
-    const idNum = entityId.trim() ? Number(entityId) : NaN;
-    if (Number.isFinite(idNum)) p.entityId = idNum;
-    const from = startOfDayIso(fromDate);
-    const to = exclusiveEndIso(toDate);
-    if (from) p.from = from;
-    if (to) p.to = to;
     return p;
-  }, [action, entityType, entityId, fromDate, toDate, page]);
+  }, [action, entityType, page]);
 
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["audit-logs", queryParams],
@@ -243,14 +251,45 @@ export default function PaymentAuditLog({ language = "fr" }) {
     }));
   }, [data]);
 
-  const resetFilters = useCallback(() => {
-    setAction("");
-    setEntityType("");
-    setEntityId("");
-    setFromDate("");
-    setToDate("");
-    setPage(0);
-  }, []);
+  const studentIdsOnPage = useMemo(() => {
+    const ids = new Set();
+    for (const r of rows) {
+      const m = parseMetadata(r.metadataJson);
+      if (m?.studentId != null) {
+        const n = Number(m.studentId);
+        if (Number.isFinite(n)) ids.add(n);
+      }
+    }
+    return [...ids];
+  }, [rows]);
+
+  const { data: studentNameMap = {} } = useQuery({
+    queryKey: ["audit-log-student-names", studentIdsOnPage.slice().sort((a, b) => a - b).join(",")],
+    queryFn: () => fetchStudentNamesByIds(studentIdsOnPage),
+    enabled: studentIdsOnPage.length > 0,
+    staleTime: 60_000,
+  });
+
+  const detailStudentIdForName = useMemo(() => {
+    if (!detailRow) return null;
+    const m = parseMetadata(detailRow.metadataJson);
+    if (!m || m._parseError || m.studentId == null) return null;
+    const n = Number(m.studentId);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }, [detailRow]);
+
+  const { data: detailStudentNameMap = {} } = useQuery({
+    queryKey: ["audit-log-detail-student-name", detailStudentIdForName],
+    queryFn: () => fetchStudentNamesByIds([detailStudentIdForName]),
+    enabled:
+      detailStudentIdForName != null && !studentNameMap[detailStudentIdForName],
+    staleTime: 60_000,
+  });
+
+  const mergedStudentNames = useMemo(
+    () => ({ ...studentNameMap, ...detailStudentNameMap }),
+    [studentNameMap, detailStudentNameMap]
+  );
 
   const total = data?.total ?? 0;
 
@@ -259,7 +298,7 @@ export default function PaymentAuditLog({ language = "fr" }) {
       {
         field: "createdAt",
         headerName: t.auditLog_col_when,
-        width: isNarrow ? 160 : 200,
+        width: isNarrow ? 150 : 185,
         valueGetter: (value) => {
           if (!value) return "";
           try {
@@ -275,8 +314,8 @@ export default function PaymentAuditLog({ language = "fr" }) {
       {
         field: "action",
         headerName: t.auditLog_col_what,
-        flex: 1,
-        minWidth: 200,
+        flex: 0.9,
+        minWidth: 150,
         renderCell: (params) => {
           const code = params.value || "";
           const info = actionCatalog[code] || {
@@ -297,31 +336,45 @@ export default function PaymentAuditLog({ language = "fr" }) {
       {
         field: "entitySummary",
         headerName: t.auditLog_col_record,
-        flex: 1,
+        flex: 0.95,
         minWidth: 160,
-        valueGetter: (_v, row) => {
-          const et = row.entityType ?? "—";
+        sortable: false,
+        renderCell: (params) => {
+          const row = params.row;
+          const et = row.entityType;
+          const label = et ? entityDisplay[et] || et : "—";
           const eid = row.entityId != null ? `#${row.entityId}` : "";
-          return `${et} ${eid}`.trim();
+          return (
+            <Stack justifyContent="center" sx={{ minHeight: 52, py: 0.5 }}>
+              <Typography variant="body2" lineHeight={1.25}>
+                {label}
+              </Typography>
+              {eid ? (
+                <Typography variant="caption" color="text.secondary">
+                  {eid}
+                </Typography>
+              ) : null}
+            </Stack>
+          );
         },
       },
       {
         field: "actorUserId",
         headerName: t.auditLog_col_user,
-        width: 110,
+        width: 95,
         valueFormatter: (value) => (value == null ? "—" : String(value)),
       },
       {
         field: "summary",
         headerName: t.auditLog_col_summary,
-        flex: 1,
+        flex: 1.25,
         minWidth: 200,
-        valueGetter: (_v, row) => summarizeRow(row.action, parseMetadata(row.metadataJson)),
+        valueGetter: (_v, row) => summarizeRow(row.action, parseMetadata(row.metadataJson), mergedStudentNames),
       },
       {
         field: "actions",
         headerName: t.auditLog_col_details,
-        width: 100,
+        width: 88,
         sortable: false,
         filterable: false,
         renderCell: (params) => (
@@ -331,219 +384,193 @@ export default function PaymentAuditLog({ language = "fr" }) {
         ),
       },
     ],
-    [actionCatalog, isNarrow, t]
+    [actionCatalog, entityDisplay, isNarrow, mergedStudentNames, t]
   );
 
   const detailMeta = detailRow ? parseMetadata(detailRow.metadataJson) : null;
   const detailInfo = detailRow?.action ? actionCatalog[detailRow.action] : null;
+  const detailEntityLabel = detailRow?.entityType ? entityDisplay[detailRow.entityType] || detailRow.entityType : "—";
+
+  const rootLayoutSx = isNarrow
+    ? {
+        minHeight: "100%",
+        height: "auto",
+        display: "block",
+        overflow: "visible",
+        boxSizing: "border-box",
+        px: { xs: 1, sm: 2 },
+        py: { xs: 1, sm: 1.5 },
+        pb: 3,
+        maxWidth: "100%",
+      }
+    : {
+        height: "100%",
+        minHeight: 0,
+        display: "flex",
+        flexDirection: "column",
+        boxSizing: "border-box",
+        px: { xs: 1, sm: 2 },
+        py: { xs: 1, sm: 1.5 },
+        gap: 1.5,
+        maxWidth: "100%",
+        overflow: "hidden",
+      };
 
   return (
-    <Box m="20px" dir={dir}>
-      <Header title={t.auditLog_title} subtitle={t.auditLog_subtitle} />
+    <Box dir={dir} sx={rootLayoutSx}>
+      <Box sx={{ flexShrink: 0, mb: isNarrow ? 1.5 : 0 }}>
+        <Header title={t.auditLog_title} subtitle={t.auditLog_subtitle} />
+        <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ mt: 0.5 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ flex: 1, minWidth: 0 }}>
+            {t.auditLog_liveFiltersHint}
+          </Typography>
+          <Button size="small" variant="text" startIcon={<HelpOutlineIcon />} onClick={() => setHelpOpen(true)} sx={{ flexShrink: 0 }}>
+            {t.auditLog_howToUse}
+          </Button>
+        </Stack>
+      </Box>
 
       <Paper
         elevation={0}
         sx={{
-          p: 2,
-          mb: 2,
+          flexShrink: 0,
+          mb: isNarrow ? 1.5 : 0,
+          p: { xs: 1.5, sm: 2 },
           border: `1px solid ${theme.palette.divider}`,
           borderRadius: 2,
-          background: theme.palette.mode === "light" ? "rgba(255,255,255,0.9)" : colors.primary[400],
+          background: theme.palette.mode === "light" ? "rgba(255,255,255,0.92)" : colors.primary[400],
         }}
       >
-        <Stack direction="row" spacing={1} alignItems="flex-start" sx={{ mb: 1 }}>
-          <InfoOutlinedIcon color="info" sx={{ mt: 0.25 }} />
-          <Box>
-            <Typography variant="subtitle2" fontWeight={700}>
-              {t.auditLog_introTitle}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {t.auditLog_introBody}
-            </Typography>
-          </Box>
-        </Stack>
-      </Paper>
-
-      <Alert severity="info" sx={{ mb: 2 }} variant="outlined">
-        <Typography variant="body2" component="span">
-          <strong>{t.auditLog_legend_inputs}</strong> {t.auditLog_legend_inputsExpl}
-        </Typography>
-        <Typography variant="body2" component="div" sx={{ mt: 1 }}>
-          <strong>{t.auditLog_legend_outputs}</strong> {t.auditLog_legend_outputsExpl}
-        </Typography>
-      </Alert>
-
-      <Stack
-        direction={{ xs: "column", md: "row" }}
-        spacing={2}
-        sx={{ mb: 2 }}
-        flexWrap="wrap"
-        useFlexGap
-      >
-        <FormControl size="small" sx={{ minWidth: 280 }}>
-          <InputLabel id="audit-action-label">{t.auditLog_filter_eventType}</InputLabel>
+        <FormControl size="small" fullWidth>
+          <InputLabel id="audit-view-scope-label">{t.auditLog_filter_whatToShow}</InputLabel>
           <Select
-            labelId="audit-action-label"
-            value={action}
-            label={t.auditLog_filter_eventType}
+            labelId="audit-view-scope-label"
+            label={t.auditLog_filter_whatToShow}
+            value={scopeKey}
             onChange={(e) => {
               setPage(0);
-              setAction(e.target.value);
+              setScopeKey(e.target.value);
             }}
+            MenuProps={{ PaperProps: { sx: { maxHeight: "min(70dvh, 400px)" } } }}
           >
-            {Object.keys(actionCatalog).map((key) => (
-              <MenuItem key={key === "" ? "all" : key} value={key}>
-                {actionCatalog[key].label}
-              </MenuItem>
-            ))}
+            <MenuItem value="all">{t.auditLog_preset_all}</MenuItem>
+            <MenuItem value="receipts">{t.auditLog_preset_receipts}</MenuItem>
+            <MenuItem value="teacherPayouts">{t.auditLog_preset_teacherPay}</MenuItem>
+            <MenuItem value="expenses">{t.auditLog_preset_expenses}</MenuItem>
           </Select>
         </FormControl>
+      </Paper>
 
-        <TextField
-          size="small"
-          label={t.auditLog_filter_entityType}
-          placeholder="Receipt, Student, …"
-          value={entityType}
-          onChange={(e) => {
-            setPage(0);
-            setEntityType(e.target.value);
-          }}
-          sx={{ minWidth: 160 }}
-        />
-        <TextField
-          size="small"
-          label={t.auditLog_filter_entityId}
-          type="number"
-          value={entityId}
-          onChange={(e) => {
-            setPage(0);
-            setEntityId(e.target.value);
-          }}
-          sx={{ width: 120 }}
-        />
-        <TextField
-          size="small"
-          type="date"
-          label={t.auditLog_filter_from}
-          InputLabelProps={{ shrink: true }}
-          value={fromDate}
-          onChange={(e) => {
-            setPage(0);
-            setFromDate(e.target.value);
-          }}
-          sx={{ minWidth: 160 }}
-        />
-        <TextField
-          size="small"
-          type="date"
-          label={t.auditLog_filter_to}
-          InputLabelProps={{ shrink: true }}
-          value={toDate}
-          onChange={(e) => {
-            setPage(0);
-            setToDate(e.target.value);
-          }}
-          sx={{ minWidth: 160 }}
-        />
-        <Button variant="outlined" onClick={resetFilters}>
-          {t.auditLog_reset}
-        </Button>
-      </Stack>
-
-      <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
-        {t.auditLog_quickPresets}
-      </Typography>
-      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
-        <Chip
-          size="small"
-          label={t.auditLog_preset_receipts}
-          onClick={() => {
-            setPage(0);
-            setAction("BILLING_COLLECT");
-          }}
-          variant={action === "BILLING_COLLECT" ? "filled" : "outlined"}
-          color="primary"
-        />
-        <Chip
-          size="small"
-          label={t.auditLog_preset_allocate}
-          onClick={() => {
-            setPage(0);
-            setAction("PAYMENT_ALLOCATE");
-          }}
-          variant={action === "PAYMENT_ALLOCATE" ? "filled" : "outlined"}
-          color="info"
-        />
-        <Chip
-          size="small"
-          label={t.auditLog_preset_teacherPay}
-          onClick={() => {
-            setPage(0);
-            setAction("TEACHER_PAYOUT_CREATE");
-          }}
-          variant={action === "TEACHER_PAYOUT_CREATE" ? "filled" : "outlined"}
-          color="secondary"
-        />
-        <Chip
-          size="small"
-          label={t.auditLog_preset_expenses}
-          onClick={() => {
-            setPage(0);
-            setAction("EXPENSE_CREATE");
-          }}
-          variant={action === "EXPENSE_CREATE" ? "filled" : "outlined"}
-          color="error"
-        />
-        <Chip
-          size="small"
-          label={t.auditLog_preset_all}
-          onClick={() => {
-            setPage(0);
-            setAction("");
-          }}
-          variant={action === "" ? "filled" : "outlined"}
-        />
-      </Stack>
-
-      <Box
-        height="62vh"
+      <Paper
+        elevation={0}
         sx={{
-          "& .MuiDataGrid-columnHeaders": {
-            backgroundColor: colors.blueAccent[700],
-            borderBottom: "none",
-          },
-          "& .MuiDataGrid-footerContainer": {
-            borderTop: "none",
-            backgroundColor: colors.blueAccent[400],
-          },
+          flex: isNarrow ? "none" : 1,
+          minHeight: isNarrow ? 0 : 0,
+          display: "flex",
+          flexDirection: "column",
+          overflow: isNarrow ? "visible" : "hidden",
+          p: { xs: 0.5, sm: 1 },
+          border: `1px solid ${theme.palette.divider}`,
+          borderRadius: 2,
+          background: theme.palette.mode === "light" ? "rgba(255,255,255,0.92)" : colors.primary[400],
         }}
       >
-        <DataGrid
-          rows={rows}
-          columns={columns}
-          loading={isLoading || isFetching}
-          paginationMode="server"
-          rowCount={total}
-          paginationModel={{ page, pageSize: PAGE_SIZE }}
-          onPaginationModelChange={(m) => {
-            setPage(m.page);
-          }}
-          pageSizeOptions={[PAGE_SIZE]}
-          disableRowSelectionOnClick
-          localeText={{
-            noRowsLabel: isError ? t.auditLog_errorLoad : t.auditLog_noRows,
-          }}
-        />
-      </Box>
+        <Box sx={{ flex: isNarrow ? "none" : 1, minHeight: isNarrow ? 360 : 280, width: "100%" }}>
+          <DataGrid
+            rows={rows}
+            columns={columns}
+            loading={isLoading || isFetching}
+            paginationMode="server"
+            rowCount={total}
+            paginationModel={{ page, pageSize: PAGE_SIZE }}
+            onPaginationModelChange={(m) => {
+              setPage(m.page);
+            }}
+            pageSizeOptions={[PAGE_SIZE]}
+            disableRowSelectionOnClick
+            autoHeight={isNarrow}
+            columnVisibilityModel={{
+              actorUserId: !isNarrow,
+              entitySummary: true,
+              summary: true,
+            }}
+            sx={{
+              ...(isNarrow
+                ? {
+                    minHeight: 360,
+                    border: "none",
+                  }
+                : {
+                    height: "100%",
+                    border: "none",
+                  }),
+              width: "100%",
+              "& .MuiDataGrid-columnHeaders": {
+                backgroundColor: colors.blueAccent[700],
+                borderBottom: "none",
+              },
+              "& .MuiDataGrid-footerContainer": {
+                borderTop: "none",
+                backgroundColor: colors.blueAccent[400],
+              },
+              "& .MuiDataGrid-cell": {
+                alignItems: "center",
+              },
+              "& .MuiDataGrid-main": {
+                overflow: "auto",
+              },
+            }}
+            localeText={{
+              noRowsLabel: isError ? t.auditLog_errorLoad : t.auditLog_noRows,
+            }}
+          />
+        </Box>
+      </Paper>
 
       {isError && (
-        <Typography color="error" variant="body2" sx={{ mt: 1 }}>
-          {error?.message || String(error)}
+        <Typography color="error" variant="body2" sx={{ flexShrink: 0 }}>
+          {error?.message || String(error)}{" "}
           <Button size="small" onClick={() => refetch()}>
             {t.auditLog_retry}
           </Button>
         </Typography>
       )}
+
+      <Dialog open={helpOpen} onClose={() => setHelpOpen(false)} maxWidth="sm" fullWidth dir={dir}>
+        <DialogTitle>{t.auditLog_helpDialogTitle}</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2}>
+            <Box>
+              <Typography variant="subtitle2" fontWeight={700} gutterBottom>
+                {t.auditLog_introTitle}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {t.auditLog_introBody}
+              </Typography>
+            </Box>
+            <Divider />
+            <Box>
+              <Typography variant="subtitle2" fontWeight={700} gutterBottom>
+                {t.auditLog_legend_inputs}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {t.auditLog_legend_inputsExpl}
+              </Typography>
+            </Box>
+            <Box>
+              <Typography variant="subtitle2" fontWeight={700} gutterBottom>
+                {t.auditLog_legend_outputs}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {t.auditLog_legend_outputsExpl}
+              </Typography>
+            </Box>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setHelpOpen(false)}>{t.close}</Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={!!detailRow} onClose={() => setDetailRow(null)} maxWidth="md" fullWidth dir={dir}>
         <DialogTitle>{t.auditLog_detailTitle}</DialogTitle>
@@ -566,7 +593,7 @@ export default function PaymentAuditLog({ language = "fr" }) {
                 {detailInfo?.desc || ""}
               </Typography>
               <Typography variant="body2">
-                <strong>{t.auditLog_col_record}:</strong> {detailRow.entityType}{" "}
+                <strong>{t.auditLog_col_record}:</strong> {detailEntityLabel}{" "}
                 {detailRow.entityId != null ? `#${detailRow.entityId}` : ""}
               </Typography>
               <Typography variant="body2">
@@ -593,7 +620,9 @@ export default function PaymentAuditLog({ language = "fr" }) {
                         {fieldLabels[key] || key}
                       </Typography>
                       <Typography component="dd" variant="body2" sx={{ m: 0, wordBreak: "break-word" }}>
-                        {formatValueForDisplay(key, val, fieldLabels, { yes: t.yes, no: t.no })}
+                        {key === "studentId" && Number.isFinite(Number(val)) && mergedStudentNames[Number(val)]
+                          ? `${mergedStudentNames[Number(val)]} (#${val})`
+                          : formatValueForDisplay(key, val, fieldLabels, { yes: t.yes, no: t.no })}
                       </Typography>
                     </Box>
                   ))}

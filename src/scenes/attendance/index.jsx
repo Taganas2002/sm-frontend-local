@@ -1,4 +1,4 @@
-﻿// src/pages/Attendance.jsx
+// src/pages/Attendance.jsx
 import { useEffect, useMemo, useState } from "react";
 import {
   Box,
@@ -23,7 +23,7 @@ import * as XLSX from "xlsx";
 
 import Header from "../../components/Header";
 import { tokens } from "../../theme";
-import translations from "../../translations";
+import translations, { translateBillingModel } from "../../translations";
 
 import SearchIcon from "@mui/icons-material/Search";
 import ClearIcon from "@mui/icons-material/Clear";
@@ -208,6 +208,20 @@ const Attendance = ({ language = "fr" }) => {
     }
   };
 
+  /** API returns ids only; resolve labels like the Groups screen. */
+  const displayGroups = useMemo(
+    () =>
+      (groups || []).map((g) => ({
+        ...g,
+        teacherName: teachers.find((x) => x.id === g.teacherId)?.fullName || g.teacherName || "",
+        subjectName: subjects.find((x) => x.id === g.subjectId)?.name || g.subjectName || "",
+        levelName: levels.find((x) => x.id === g.levelId)?.name || g.levelName || "",
+        sectionName:
+          sections.find((x) => Number(x.id) === Number(g.sectionId))?.name || g.sectionName || "",
+      })),
+    [groups, teachers, subjects, levels, sections]
+  );
+
   /* ---------- Matrix state ---------- */
   const [matrixLoading, setMatrixLoading] = useState(false);
   const [sessionDates, setSessionDates] = useState([]);   // ONLY dates with sessions
@@ -241,33 +255,41 @@ const Attendance = ({ language = "fr" }) => {
   }, [view, selectedGroup, monthAnchor]);
 
   /* ---------- Group columns ---------- */
-  const groupColumns = [
-    { field: "name", headerName: t.groupName || "Group", flex: 1.2 },
-    { field: "teacherName", headerName: t.teacher || "Teacher", flex: 1 },
-    { field: "subjectName", headerName: t.subject || "Subject", flex: 0.9 },
-    { field: "levelName", headerName: t.level || "Level", flex: 0.8 },
-    { field: "sectionName", headerName: t.section || "Section", flex: 0.8 },
-    { field: "billingModel", headerName: t.billingModel || "Billing", width: 130 },
-    {
-      field: "capacity",
-      headerName: t.capacity || "Capacity",
-      width: 110,
-      align: "center",
-      headerAlign: "center",
-    },
-    {
-      field: "actions",
-      headerName: t.actions || "Actions",
-      width: 140,
-      sortable: false,
-      filterable: false,
-      renderCell: (params) => (
-        <IconButton size="small" onClick={() => openMatrix(params.row)} title="View attendance">
-          <VisibilityIcon />
-        </IconButton>
-      ),
-    },
-  ];
+  const groupColumns = useMemo(
+    () => [
+      { field: "name", headerName: t.groupName || "Group", flex: 1.2 },
+      { field: "teacherName", headerName: t.teacher || "Teacher", flex: 1 },
+      { field: "subjectName", headerName: t.subject || "Subject", flex: 0.9 },
+      { field: "levelName", headerName: t.level || "Level", flex: 0.8 },
+      { field: "sectionName", headerName: t.section || "Section", flex: 0.8 },
+      {
+        field: "billingModel",
+        headerName: t.billingModel || "Billing",
+        width: 130,
+        valueFormatter: (value) => translateBillingModel(value, t),
+      },
+      {
+        field: "capacity",
+        headerName: t.capacity || "Capacity",
+        width: 110,
+        align: "center",
+        headerAlign: "center",
+      },
+      {
+        field: "actions",
+        headerName: t.actions || "Actions",
+        width: 140,
+        sortable: false,
+        filterable: false,
+        renderCell: (params) => (
+          <IconButton size="small" onClick={() => openMatrix(params.row)} title={t.presences}>
+            <VisibilityIcon />
+          </IconButton>
+        ),
+      },
+    ],
+    [t]
+  );
 
   /* ===================== EXPORT: EXACT TABLE ===================== */
   const safeName = (s) => (s || "").toString().replace(/[\\/:*?"<>|]/g, "_");
@@ -291,29 +313,35 @@ const Attendance = ({ language = "fr" }) => {
     const aoa = [];
 
     // Header block (above table)
-    aoa.push([ "Group", selectedGroup.name ?? "", "", "Academic Year", selectedGroup.academicYear ?? "" ]);
-    aoa.push([ "Level", levelName, "", "Subject", subjectName, "", "Section", sectionName ]);
-    aoa.push([ "Month", monthAnchor.format("MMMM YYYY") ]);
+    aoa.push([
+      t.groupName || "Group",
+      selectedGroup.name ?? "",
+      "",
+      t.academicYear || "Academic year",
+      selectedGroup.academicYear ?? "",
+    ]);
+    aoa.push([t.level || "Level", levelName, "", t.subject || "Subject", subjectName, "", t.section || "Section", sectionName]);
+    aoa.push([t.reportMonthLabel || "Month", monthAnchor.format("MMMM YYYY")]);
     aoa.push([]); // empty spacer row
 
-    // Table header (only session dates, left->right; if none, one 'â€“' column)
-    const header = ["#", language === "ar" ? "Ø§Ù„Ø¥Ø³Ù…" : "Nom"];
+    // Table header (only session dates, left->right; if none, one em dash column)
+    const header = ["#", t.name || "Name"];
     if (hasSessions) {
       header.push(...sessionDates.map((d) => dayjs(d).format("DD/MM")));
     } else {
-      header.push("â€“");
+      header.push("\u2014");
     }
     aoa.push(header);
 
-    // Table rows (âœ“ / âœ— / â€“)
+    // Table rows (P / A / em dash for Excel compatibility)
     studentsRows.forEach((s, idx) => {
       const row = [idx + 1, s.name];
       if (!hasSessions) {
-        row.push("â€“");
+        row.push("\u2014");
       } else {
         sessionDates.forEach((d) => {
           const v = s.byDate?.[d] ?? null;
-          row.push(v === "P" ? "âœ“" : v === "A" ? "âœ—" : "â€“");
+          row.push(v === "P" ? "P" : v === "A" ? "A" : "\u2014");
         });
       }
       aoa.push(row);
@@ -352,17 +380,14 @@ const Attendance = ({ language = "fr" }) => {
               setView("LIST");
               setSelectedGroup(null);
             }}
-            title={language === "ar" ? "Ø±Ø¬ÙˆØ¹ Ø¥Ù„Ù‰ Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø£ÙÙˆØ§Ø¬" : "Back to groups"}
+            title={t.attendanceBackToGroups}
             size="small"
           >
             <ArrowBackIosNewIcon fontSize="small" />
           </IconButton>
         </Box>
 
-        <Header
-          title={language === "ar" ? "Ø§Ù„Ø­Ø¶ÙˆØ± ÙˆØ§Ù„ØºÙŠØ§Ø¨" : "PrÃ©sence & Absence"}
-          subtitle={selectedGroup?.name ? String(selectedGroup.name) : ""}
-        />
+        <Header title={t.presence} subtitle={selectedGroup?.name ? String(selectedGroup.name) : ""} />
 
         {/* Top controls: arrows + month + export + back */}
         <Box display="flex" alignItems="center" gap={2} mb={2} flexWrap="wrap">
@@ -391,7 +416,7 @@ const Attendance = ({ language = "fr" }) => {
           <Box sx={{ flex: 1 }} />
 
           <Button variant="contained" onClick={handleExportExcel} startIcon={<FileDownloadIcon />}>
-            {language === "ar" ? "ØªØµØ¯ÙŠØ± Excel" : "Export Excel"}
+            {t.attendanceExportExcel}
           </Button>
 
           <Button
@@ -402,7 +427,7 @@ const Attendance = ({ language = "fr" }) => {
               setSelectedGroup(null);
             }}
           >
-            {language === "ar" ? "Ø±Ø¬ÙˆØ¹" : "Back"}
+            {t.back}
           </Button>
         </Box>
 
@@ -419,7 +444,7 @@ const Attendance = ({ language = "fr" }) => {
                 <TableRow>
                   <TableCell sx={{ fontWeight: "bold", width: 60 }}>#</TableCell>
                   <TableCell sx={{ fontWeight: "bold", minWidth: 220 }}>
-                    {language === "ar" ? "Ø§Ù„Ø¥Ø³Ù…" : "Nom"}
+                    {t.name}
                   </TableCell>
                   <TableCell
                     align="center"
@@ -430,7 +455,7 @@ const Attendance = ({ language = "fr" }) => {
                   </TableCell>
                 </TableRow>
 
-                {/* Header dates (or single 'â€“') */}
+                {/* Header dates (or single em dash) */}
                 <TableRow>
                   <TableCell />
                   <TableCell />
@@ -441,7 +466,7 @@ const Attendance = ({ language = "fr" }) => {
                       </TableCell>
                     ))
                   ) : (
-                    <TableCell align="center">â€“</TableCell>
+                    <TableCell align="center">{"\u2014"}</TableCell>
                   )}
                 </TableRow>
               </TableHead>
@@ -463,7 +488,7 @@ const Attendance = ({ language = "fr" }) => {
                               <CancelIcon sx={{ color: "#ef4444" }} fontSize="small" />
                             ) : (
                               <Typography component="span" sx={{ opacity: 0.5 }}>
-                                â€“
+                                {"\u2014"}
                               </Typography>
                             )}
                           </TableCell>
@@ -472,7 +497,7 @@ const Attendance = ({ language = "fr" }) => {
                     ) : (
                       <TableCell align="center">
                         <Typography component="span" sx={{ opacity: 0.5 }}>
-                          â€“
+                          {"\u2014"}
                         </Typography>
                       </TableCell>
                     )}
@@ -483,7 +508,7 @@ const Attendance = ({ language = "fr" }) => {
                   <TableRow>
                     <TableCell colSpan={2 + (hasSessions ? sessionDates.length : 1)}>
                       <Box py={4} textAlign="center" sx={{ opacity: 0.7 }}>
-                        {language === "ar" ? "Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¨ÙŠØ§Ù†Ø§Øª" : "No data"}
+                        {t.noData}
                       </Box>
                     </TableCell>
                   </TableRow>
@@ -499,10 +524,7 @@ const Attendance = ({ language = "fr" }) => {
   // ======== LIST VIEW (Groups) ========
   return (
     <Box m="20px">
-      <Header
-        title={language === "ar" ? "Ø§Ù„Ø­Ø¶ÙˆØ± ÙˆØ§Ù„ØºÙŠØ§Ø¨" : "PrÃ©sence & Absence"}
-        subtitle={language === "ar" ? "Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø£ÙÙˆØ§Ø¬ - Ø§Ø®ØªÙŠØ§Ø± ÙÙ‚Ø·" : "Select a group to view attendance"}
-      />
+      <Header title={t.presence} subtitle={t.attendancePickGroup} />
 
       {/* Filter Bar (read-only list + filters) */}
       <Box
@@ -516,8 +538,8 @@ const Attendance = ({ language = "fr" }) => {
         <TextField
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          label={language === "ar" ? "Ø¨Ø­Ø« Ø¨Ø§Ù„Ø¥Ø³Ù…" : "Search by name"}
-          placeholder={language === "ar" ? "Ø§ÙƒØªØ¨ Ø§Ø³Ù… Ø§Ù„ÙÙˆØ¬..." : "Type group name..."}
+          label={t.attendanceSearchGroup}
+          placeholder={t.attendanceSearchGroupPh}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -537,8 +559,8 @@ const Attendance = ({ language = "fr" }) => {
         <TextField
           value={academicYear}
           onChange={(e) => setAcademicYear(e.target.value)}
-          label={language === "ar" ? "Ø§Ù„Ø³Ù†Ø© Ø§Ù„Ø¯Ø±Ø§Ø³ÙŠØ©" : "Academic Year"}
-          placeholder={language === "ar" ? "Ù…Ø«Ø§Ù„: 2024-2025" : "e.g. 2024-2025"}
+          label={t.academicYear}
+          placeholder={t.academicYearHint}
           InputProps={{
             endAdornment: academicYear ? (
               <InputAdornment position="end">
@@ -554,15 +576,15 @@ const Attendance = ({ language = "fr" }) => {
           select
           value={activeFilter}
           onChange={(e) => setActiveFilter(e.target.value)}
-          label={language === "ar" ? "Ø§Ù„Ø­Ø§Ù„Ø©" : "Status"}
+          label={t.status}
         >
-          <MenuItem value="">{language === "ar" ? "Ø§Ù„ÙƒÙ„" : "All"}</MenuItem>
-          <MenuItem value="true">{language === "ar" ? "Ù…ÙØ¹Ù„" : "Active"}</MenuItem>
-          <MenuItem value="false">{language === "ar" ? "ØºÙŠØ± Ù…ÙØ¹Ù„" : "Inactive"}</MenuItem>
+          <MenuItem value="">{t.all}</MenuItem>
+          <MenuItem value="true">{t.active}</MenuItem>
+          <MenuItem value="false">{t.inactive}</MenuItem>
         </TextField>
 
         <TextField select value={teacherFilter} onChange={(e) => setTeacherFilter(e.target.value)} label={t.teacher}>
-          <MenuItem value="">{language === "ar" ? "Ø§Ù„ÙƒÙ„" : "All"}</MenuItem>
+          <MenuItem value="">{t.all}</MenuItem>
           {teachers.map((x) => (
             <MenuItem key={x.id} value={x.id}>
               {x.fullName}
@@ -571,7 +593,7 @@ const Attendance = ({ language = "fr" }) => {
         </TextField>
 
         <TextField select value={subjectFilter} onChange={(e) => setSubjectFilter(e.target.value)} label={t.subject}>
-          <MenuItem value="">{language === "ar" ? "Ø§Ù„ÙƒÙ„" : "All"}</MenuItem>
+          <MenuItem value="">{t.all}</MenuItem>
           {subjects.map((x) => (
             <MenuItem key={x.id} value={x.id}>
               {x.name}
@@ -598,7 +620,7 @@ const Attendance = ({ language = "fr" }) => {
           }}
           label={t.level}
         >
-          <MenuItem value="">{language === "ar" ? "Ø§Ù„ÙƒÙ„" : "All"}</MenuItem>
+          <MenuItem value="">{t.all}</MenuItem>
           {levels.map((x) => (
             <MenuItem key={x.id} value={x.id}>
               {x.name}
@@ -613,7 +635,7 @@ const Attendance = ({ language = "fr" }) => {
           label={t.section}
           disabled={!levelFilter}
         >
-          <MenuItem value="">{language === "ar" ? "Ø§Ù„ÙƒÙ„" : "All"}</MenuItem>
+          <MenuItem value="">{t.all}</MenuItem>
           {sections.map((x) => (
             <MenuItem key={x.id} value={x.id}>
               {x.name}
@@ -625,22 +647,22 @@ const Attendance = ({ language = "fr" }) => {
           select
           value={privateFilter}
           onChange={(e) => setPrivateFilter(e.target.value)}
-          label={language === "ar" ? "Ø®Ø§ØµØ©" : "Private"}
+          label={t.privateGroup}
         >
-          <MenuItem value="">{language === "ar" ? "Ø§Ù„ÙƒÙ„" : "All"}</MenuItem>
-          <MenuItem value="true">{language === "ar" ? "Ù†Ø¹Ù…" : "Yes"}</MenuItem>
-          <MenuItem value="false">{language === "ar" ? "Ù„Ø§" : "No"}</MenuItem>
+          <MenuItem value="">{t.all}</MenuItem>
+          <MenuItem value="true">{t.yes}</MenuItem>
+          <MenuItem value="false">{t.no}</MenuItem>
         </TextField>
 
         <TextField
           select
           value={revisionFilter}
           onChange={(e) => setRevisionFilter(e.target.value)}
-          label={language === "ar" ? "Ù…Ø±Ø§Ø¬Ø¹Ø©" : "Revision"}
+          label={t.revisionGroup}
         >
-          <MenuItem value="">{language === "ar" ? "Ø§Ù„ÙƒÙ„" : "All"}</MenuItem>
-          <MenuItem value="true">{language === "ar" ? "Ù†Ø¹Ù…" : "Yes"}</MenuItem>
-          <MenuItem value="false">{language === "ar" ? "Ù„Ø§" : "No"}</MenuItem>
+          <MenuItem value="">{t.all}</MenuItem>
+          <MenuItem value="true">{t.yes}</MenuItem>
+          <MenuItem value="false">{t.no}</MenuItem>
         </TextField>
       </Box>
 
@@ -661,7 +683,7 @@ const Attendance = ({ language = "fr" }) => {
         }}
       >
         <DataGrid
-          rows={groups}
+          rows={displayGroups}
           columns={groupColumns}
           getRowId={(r) => r.id}
           loading={loadingGroups}

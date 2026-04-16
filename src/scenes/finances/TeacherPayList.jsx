@@ -11,6 +11,58 @@ import { tokens } from "../../theme";
 import { searchTeachers } from "../../api/teachersApi";
 import TeacherPayoutHistoryDialog from "./components/TeacherPayoutHistoryDialog";
 
+const teacherActionButtonSx = (theme, variant = "primary") => {
+  const palettes = {
+    primary: {
+      light: {
+        border: "#1d4ed8",
+        color: "#ffffff",
+        background: "#2563eb",
+        hover: "#1d4ed8",
+      },
+      dark: {
+        border: "#60a5fa",
+        color: "#f8fafc",
+        background: "#2563eb",
+        hover: "#3b82f6",
+      },
+    },
+    neutral: {
+      light: {
+        border: "#64748b",
+        color: "#334155",
+        background: "#ffffff",
+        hover: "#f8fafc",
+      },
+      dark: {
+        border: "#cbd5e1",
+        color: "#f8fafc",
+        background: "rgba(30, 41, 59, 0.85)",
+        hover: "rgba(51, 65, 85, 0.95)",
+      },
+    },
+  };
+  const tone = theme.palette.mode === "light" ? palettes[variant].light : palettes[variant].dark;
+
+  return {
+    textTransform: "none",
+    borderRadius: 2,
+    fontWeight: 700,
+    minWidth: 96,
+    borderColor: tone.border,
+    color: tone.color,
+    backgroundColor: tone.background,
+    boxShadow: theme.palette.mode === "light" ? "0 2px 8px rgba(15, 23, 42, 0.08)" : "none",
+    "& .MuiButton-startIcon svg": {
+      color: tone.color,
+    },
+    "&:hover": {
+      borderColor: tone.border,
+      backgroundColor: tone.hover,
+    },
+  };
+};
+
 export default function TeacherPayList({ language }) {
   const navigate = useNavigate();
 
@@ -86,7 +138,7 @@ export default function TeacherPayList({ language }) {
             variant="contained"
             startIcon={<PaymentIcon />}
             onClick={() => navigate(`/finances/teacher-pay/${p.row.id}`)}
-            sx={{ textTransform: "none", borderRadius: 2 }}
+            sx={teacherActionButtonSx(theme, "primary")}
           >
             Pay
           </Button>
@@ -95,7 +147,7 @@ export default function TeacherPayList({ language }) {
             variant="outlined"
             startIcon={<HistoryIcon />}
             onClick={() => openHistory(p.row)}
-            sx={{ textTransform: "none", borderRadius: 2 }}
+            sx={teacherActionButtonSx(theme, "neutral")}
           >
             History
           </Button>

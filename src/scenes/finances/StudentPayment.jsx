@@ -31,6 +31,7 @@ import {
 import { DataGrid } from "@mui/x-data-grid";
 import {
   collectPayment,
+  defaultBillingCycleSearchRange,
   searchCycleRange,
   studentReceipts,
   studentSummaryAll,
@@ -94,16 +95,18 @@ export default function StudentPayment({ language = "fr" }) {
 
   const groupId = groupValue?.id;
 
+  const cycleSearchRange = useMemo(() => defaultBillingCycleSearchRange(), []);
+
   // Selection state
   const [selected, setSelected] = useState({});
 
   // Student cycles: cashier view shows all matching open cycles for the student
   const { data, isFetching, refetch } = useQuery({
-    queryKey: ["cycles-student", studentId, groupId],
+    queryKey: ["cycles-student", studentId, groupId, cycleSearchRange.start, cycleSearchRange.end],
     queryFn: () =>
       searchCycleRange({
-        start: "1900-01",
-        end: "2999-12",
+        start: cycleSearchRange.start,
+        end: cycleSearchRange.end,
         status: "ALL",
         groupId,
         studentId,
@@ -607,7 +610,7 @@ export default function StudentPayment({ language = "fr" }) {
   ];
 
   return (
-    <Box m={2}>
+    <Box m={2} pb={{ xs: 2, lg: 14 }}>
       {/* NEW: back arrow to Finances → Billing */}
       <Box mb={1}>
         <IconButton
@@ -740,45 +743,61 @@ export default function StudentPayment({ language = "fr" }) {
             {(t.openCycles || t.unpaidGroups)} - {visibleRows.length}{" "}
             {visibleRows.length === 1 ? "row" : "rows"}
           </Typography>
-          <div style={{ height: "min(58vh, 520px)", minHeight: 360, width: "100%" }}>
-            <DataGrid
-              rows={visibleRows}
-              columns={columns}
-              loading={isFetching}
-              disableRowSelectionOnClick
-              density="compact"
-              pageSize={isCompactScreen ? 8 : 10}
-              rowsPerPageOptions={isCompactScreen ? [8, 12, 20] : [10, 20, 30]}
-              columnVisibilityModel={{
-                paid: !isCompactScreen,
-                status: !isCompactScreen,
-              }}
-              sx={{
-                "& .MuiDataGrid-root": { border: "none" },
-                "& .MuiDataGrid-columnHeaders": {
-                  backgroundColor: colors.blueAccent[700],
-                  borderBottom: "none",
-                },
-                "& .MuiDataGrid-virtualScroller": {
-                  backgroundColor: colors.primary[400],
-                },
-                "& .MuiDataGrid-footerContainer": {
-                  borderTop: "none",
-                  backgroundColor: colors.blueAccent[400],
-                },
-                "& .MuiDataGrid-cell, & .MuiDataGrid-columnHeader": {
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                },
-              }}
-            />
-          </div>
+          <DataGrid
+            autoHeight
+            rows={visibleRows}
+            columns={columns}
+            loading={isFetching}
+            disableRowSelectionOnClick
+            density="compact"
+            pageSize={isCompactScreen ? 8 : 10}
+            rowsPerPageOptions={isCompactScreen ? [8, 12, 20] : [10, 20, 30]}
+            columnVisibilityModel={{
+              paid: !isCompactScreen,
+              status: !isCompactScreen,
+            }}
+            sx={{
+              border: "none",
+              "& .MuiDataGrid-columnHeaders": {
+                backgroundColor: colors.blueAccent[700],
+                borderBottom: "none",
+              },
+              "& .MuiDataGrid-virtualScroller": {
+                backgroundColor: colors.primary[400],
+              },
+              "& .MuiDataGrid-footerContainer": {
+                borderTop: "none",
+                backgroundColor: colors.blueAccent[400],
+              },
+              "& .MuiDataGrid-cell, & .MuiDataGrid-columnHeader": {
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              },
+            }}
+          />
         </CardContent>
       </Card>
 
       {/* Bottom bar */}
-      <Box mt={2} display="flex" flexWrap="wrap" alignItems="center" gap={2} justifyContent="space-between" sx={{ position: "sticky", bottom: 12, zIndex: 5, p: 2, borderRadius: 2, bgcolor: colors.primary[400], border: `1px solid ${colors.primary[300]}` }}>
+      <Box
+        mt={2}
+        display="flex"
+        flexWrap="wrap"
+        alignItems="center"
+        gap={2}
+        justifyContent="space-between"
+        sx={{
+          position: { xs: "static", lg: "sticky" },
+          bottom: { lg: 12 },
+          zIndex: 5,
+          p: 2,
+          borderRadius: 2,
+          bgcolor: colors.primary[400],
+          border: `1px solid ${colors.primary[300]}`,
+          boxShadow: { lg: "0 12px 28px rgba(15, 23, 42, 0.24)" },
+        }}
+      >
         <Stack spacing={0.5} sx={{ minWidth: 260 }}>
           <Typography variant="h6">
             {t.totalSelected || "Selected total"}: {money.format(selectedTotal)}

@@ -18,7 +18,7 @@ async function fetchTeachers({ q = "", page = 0, size = 10 }) {
   const params = { page, size, sort: "fullName,asc" };
   // if backend supports search param use it, harmless if ignored
   if (q) params.search = q;
-  const { data } = await api.get("/api/teachers", { params });
+  const { data } = await api.get("/teachers", { params });
   return data; // Spring Page {content,totalElements,...}
 }
 

@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -21,7 +21,7 @@ import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import PaymentOutlinedIcon from "@mui/icons-material/PaymentOutlined";
 import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
 import Header from "../../components/Header";
-import { searchCycleRange } from "../../api/billing";
+import { defaultBillingCycleSearchRange, searchCycleRange } from "../../api/billing";
 import { lookupGroups } from "../../api/groups";
 import StudentHistoryDialog from "./components/StudentHistoryDialog";
 import { getTranslations, translateBillingModel, translateBillingStatus } from "../../translations";
@@ -30,9 +30,6 @@ import { tokens } from "../../theme";
 const STATUSES = ["OPEN_DUE", "ALL", "UNPAID", "PARTIAL", "PAID", "PENDING_ATTENDANCE"];
 const SCANNER_LS_KEY = "billing:studentSearchScannerOn";
 const BILLING_DENSITY_LS_KEY = "billing:studentSearchDensity";
-const ALL_TIME_START = "1900-01";
-const ALL_TIME_END = "2999-12";
-
 const moneyFmt = new Intl.NumberFormat(undefined, {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
@@ -69,6 +66,67 @@ const inferModel = (period, held, required) => {
   const isDate = /^\d{4}-\d{2}-\d{2}$/.test(String(period || ""));
   if (isDate && Number(held) === 1 && Number(required) === 0) return "PER_HOUR";
   return isDate && Number(required) === 1 && Number(held) >= 0 ? "PER_SESSION" : "MONTHLY";
+};
+
+const actionIconButtonSx = (theme, variant = "primary", disabled = false) => {
+  const palettes = {
+    primary: {
+      light: {
+        border: "#1d4ed8",
+        color: "#1d4ed8",
+        background: "#eff6ff",
+        hover: "#dbeafe",
+      },
+      dark: {
+        border: "#93c5fd",
+        color: "#eff6ff",
+        background: "rgba(59, 130, 246, 0.22)",
+        hover: "rgba(96, 165, 250, 0.34)",
+      },
+    },
+    neutral: {
+      light: {
+        border: "#64748b",
+        color: "#334155",
+        background: "#f8fafc",
+        hover: "#e2e8f0",
+      },
+      dark: {
+        border: "#cbd5e1",
+        color: "#f8fafc",
+        background: "rgba(148, 163, 184, 0.18)",
+        hover: "rgba(148, 163, 184, 0.3)",
+      },
+    },
+  };
+  const tone = theme.palette.mode === "light" ? palettes[variant].light : palettes[variant].dark;
+
+  return {
+    border: "1px solid",
+    borderColor: tone.border,
+    color: tone.color,
+    borderRadius: "10px",
+    backgroundColor: tone.background,
+    boxShadow: theme.palette.mode === "light" ? "0 1px 2px rgba(15, 23, 42, 0.08)" : "none",
+    "&:hover": {
+      backgroundColor: tone.hover,
+    },
+    "& .MuiSvgIcon-root": {
+      color: tone.color,
+    },
+    "&.Mui-disabled": {
+      borderColor: theme.palette.mode === "light" ? "#d0d5dd" : "rgba(148, 163, 184, 0.28)",
+      color: theme.palette.mode === "light" ? "#98a2b3" : "rgba(226, 232, 240, 0.42)",
+      backgroundColor: theme.palette.mode === "light" ? "#f8fafc" : "rgba(15, 23, 42, 0.18)",
+    },
+    ...(disabled
+      ? {
+          borderColor: theme.palette.mode === "light" ? "#d0d5dd" : "rgba(148, 163, 184, 0.28)",
+          color: theme.palette.mode === "light" ? "#98a2b3" : "rgba(226, 232, 240, 0.42)",
+          backgroundColor: theme.palette.mode === "light" ? "#f8fafc" : "rgba(15, 23, 42, 0.18)",
+        }
+      : {}),
+  };
 };
 
 export default function StudentBillingSearch({ language = "fr" }) {
@@ -136,8 +194,10 @@ export default function StudentBillingSearch({ language = "fr" }) {
 
   const groupId = groupValue?.id;
   const q = search.trim();
-  const effectiveStart = ALL_TIME_START;
-  const effectiveEnd = ALL_TIME_END;
+  const { effectiveStart, effectiveEnd } = useMemo(
+    () => defaultBillingCycleSearchRange(),
+    []
+  );
 
   const { data, isFetching, error } = useQuery({
     queryKey: ["dues-cycles-range", effectiveStart, effectiveEnd, status, groupId, q, scannedStudentId, page, size],
@@ -349,12 +409,7 @@ export default function StudentBillingSearch({ language = "fr" }) {
                     disabled={pendingAttendance}
                     onClick={() => navigate(`/finances/pay/${params.row.studentId}?period=${params.row.period}&name=${encodeURIComponent(params.row.studentFullName || "")}`)}
                     size="small"
-                    sx={{
-                      border: "1px solid",
-                      borderColor: "primary.main",
-                      color: "primary.main",
-                      borderRadius: "10px",
-                    }}
+                    sx={actionIconButtonSx(theme, "primary", pendingAttendance)}
                   >
                     <PaymentOutlinedIcon fontSize="small" />
                   </IconButton>
@@ -364,14 +419,7 @@ export default function StudentBillingSearch({ language = "fr" }) {
                 <IconButton
                 onClick={() => openHistory(params.row)}
                   size="small"
-                  sx={{
-                    border: "1px solid",
-                    borderColor: colors.blueAccent[300],
-                    color: colors.blueAccent[100],
-                    borderRadius: "10px",
-                    backgroundColor: "rgba(255,255,255,0.03)",
-                    "&:hover": { backgroundColor: "rgba(255,255,255,0.08)" },
-                  }}
+                  sx={actionIconButtonSx(theme, "neutral")}
                 >
                   <HistoryOutlinedIcon fontSize="small" />
                 </IconButton>
@@ -381,7 +429,7 @@ export default function StudentBillingSearch({ language = "fr" }) {
         },
       },
     ],
-    [navigate, openHistory, payBlockedUntilAttendanceLabel, t, colors.blueAccent]
+    [navigate, openHistory, payBlockedUntilAttendanceLabel, t, theme]
   );
 
   return (

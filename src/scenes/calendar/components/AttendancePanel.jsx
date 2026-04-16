@@ -16,7 +16,7 @@ import {
   getSessionSummary,
 } from "../../../api/attendanceApi";
 import { listEnrollments } from "../../../api/enrollmentsApi";
-import { searchStudents } from "../../../api/studentsApi";
+import { fetchStudentNamesByIds } from "../../../api/studentsApi";
 
 const SESSIONS_LS_KEY = "att:scheduleToSession";
 const PENDING_LS_KEY  = "att:pendingPresents";
@@ -58,11 +58,9 @@ export default function AttendancePanel({
         const enr = await listEnrollments({ groupId, status: "ACTIVE" });
         const ids = (enr.content || enr || []).map(e => e.studentId);
 
-        const namesRes = await searchStudents({ ids });
-        const nameMap = {};
-        (namesRes.content || namesRes || []).forEach(s => { nameMap[s.id] = s.fullName; });
+        const nameMap = await fetchStudentNamesByIds(ids);
 
-        const base = ids.map(id => ({ id, name: nameMap[id] || `Student ${id}`, present: false }));
+        const base = ids.map(id => ({ id, name: nameMap[id] || `Student #${id}`, present: false }));
         if (!mounted) return;
         setStudents(base);
 

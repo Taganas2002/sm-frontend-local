@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Autocomplete,
@@ -45,8 +45,10 @@ import {
   updateEnrollmentStatus,
   deleteEnrollment,
 } from "../../api/enrollmentsApi";
-import { searchStudents, getStudent } from "../../api/studentsApi";
+import { searchStudents, getStudent, fetchStudentNamesByIds } from "../../api/studentsApi";
 import { searchGroups, lookupGroups } from "../../api/groupsApi";
+import { listLevels } from "../../api/levelsApi";
+import { listSections } from "../../api/sectionsApi";
 
 const STATUS_OPTIONS = ["ACTIVE", "SUSPENDED", "DROPPED", "COMPLETED"];
 const ENROLLMENT_SCANNER_LS_KEY = "enrollment:studentScannerOn";
@@ -98,6 +100,57 @@ const getEnrollmentStatusLabel = (status, t) => {
   return map[status] || status;
 };
 
+const primaryActionSx = (theme, colors) => ({
+  backgroundColor:
+    theme.palette.mode === "light" ? colors.blueAccent[800] : colors.blueAccent[400],
+  color: "#fff",
+  fontWeight: 700,
+  "&:hover": {
+    backgroundColor:
+      theme.palette.mode === "light" ? colors.blueAccent[600] : colors.blueAccent[300],
+  },
+});
+
+const modalSurfaceSx = (theme, colors) => ({
+  bgcolor: theme.palette.mode === "light" ? "#ffffff" : colors.primary[400],
+  color: theme.palette.mode === "light" ? "#101828" : "#f8fafc",
+});
+
+const modalFieldSx = (theme) => ({
+  "& .MuiInputLabel-root": {
+    color: theme.palette.mode === "light" ? "#3152b5" : "#bfdbfe",
+    fontWeight: 600,
+  },
+  "& .MuiInputLabel-root.Mui-focused": {
+    color: theme.palette.mode === "light" ? "#2643a2" : "#dbeafe",
+  },
+  "& .MuiInputBase-root": {
+    color: theme.palette.mode === "light" ? "#101828" : "#f8fafc",
+  },
+  "& .MuiOutlinedInput-notchedOutline": {
+    borderColor: theme.palette.mode === "light" ? "#2b50c7" : "#bfdbfe",
+    borderWidth: 2,
+  },
+  "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": {
+    borderColor: theme.palette.mode === "light" ? "#1e40af" : "#dbeafe",
+  },
+  "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
+    borderColor: theme.palette.mode === "light" ? "#1d4ed8" : "#ffffff",
+  },
+  "& .MuiSvgIcon-root": {
+    color: theme.palette.mode === "light" ? "#6b7280" : "#f8fafc",
+  },
+  "& .MuiInputBase-input::placeholder": {
+    color: theme.palette.mode === "light" ? "#6b7280" : "#cbd5e1",
+    opacity: 1,
+  },
+});
+
+const secondaryActionSx = (theme) => ({
+  color: theme.palette.mode === "light" ? "#475467" : "#e2e8f0",
+  fontWeight: 700,
+});
+
 const Enrollments = ({ language = "fr" }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -106,6 +159,8 @@ const Enrollments = ({ language = "fr" }) => {
   const [rows, setRows] = useState([]);
   const [studentsList, setStudentsList] = useState([]);
   const [groups, setGroups] = useState([]);
+  const [levels, setLevels] = useState([]);
+  const [sections, setSections] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [editingEnrollment, setEditingEnrollment] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -126,6 +181,8 @@ const Enrollments = ({ language = "fr" }) => {
   const [addModeTab, setAddModeTab] = useState(0);
   const [bulkGroupId, setBulkGroupId] = useState("");
   const [bulkSearch, setBulkSearch] = useState("");
+  const [bulkLevelId, setBulkLevelId] = useState("");
+  const [bulkSectionId, setBulkSectionId] = useState("");
   const [bulkSelectedIds, setBulkSelectedIds] = useState(() => new Set());
   const [alreadyInGroupIds, setAlreadyInGroupIds] = useState(() => new Set());
   const [groupLoadError, setGroupLoadError] = useState("");
@@ -169,6 +226,59 @@ const Enrollments = ({ language = "fr" }) => {
       console.error("Failed to load students", e);
       setStudentsList([]);
       setStudentOptions([]);
+    }
+  };
+
+  /** Enrolled students may be missing from the first 1000 search results — fetch names by id for the grid. */
+  useEffect(() => {
+    const have = new Set((studentsList || []).map((s) => Number(s.id)));
+    const needIds = [
+      ...new Set(
+        rows
+          .map((r) => Number(r.studentId))
+          .filter((id) => Number.isFinite(id) && id > 0 && !have.has(id))
+      ),
+    ];
+    if (needIds.length === 0) return undefined;
+    let cancelled = false;
+    (async () => {
+      try {
+        const map = await fetchStudentNamesByIds(needIds);
+        if (cancelled) return;
+        setStudentsList((prev) => {
+          const h = new Set((prev || []).map((s) => Number(s.id)));
+          const add = Object.entries(map)
+            .filter(([id]) => !h.has(Number(id)))
+            .map(([id, fullName]) => ({ id: Number(id), fullName }));
+          if (add.length === 0) return prev;
+          return [...(prev || []), ...add];
+        });
+      } catch (e) {
+        console.error("Failed to resolve enrollment student names", e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [rows, studentsList]);
+
+  const loadLevels = async () => {
+    try {
+      const data = await listLevels();
+      setLevels(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error("Failed to load levels", e);
+      setLevels([]);
+    }
+  };
+
+  const loadSections = async () => {
+    try {
+      const data = await listSections();
+      setSections(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error("Failed to load sections", e);
+      setSections([]);
     }
   };
 
@@ -250,6 +360,8 @@ const Enrollments = ({ language = "fr" }) => {
   useEffect(() => {
     loadStudents();
     loadGroups();
+    loadLevels();
+    loadSections();
   }, []);
 
   useEffect(() => {
@@ -301,16 +413,19 @@ const Enrollments = ({ language = "fr" }) => {
   const bulkVisibleStudents = useMemo(() => {
     const term = (bulkSearch || "").trim().toLowerCase();
     const list = studentsList || [];
-    const filtered = !term
-      ? list
-      : list.filter((s) => {
+    const filtered = list.filter((s) => {
+        const studentLevelId = s?.levelId == null ? "" : String(s.levelId);
+        const studentSectionId = s?.sectionId == null ? "" : String(s.sectionId);
+        if (bulkLevelId && studentLevelId !== String(bulkLevelId)) return false;
+        if (bulkSectionId && studentSectionId !== String(bulkSectionId)) return false;
+        if (!term) return true;
           const name = (s.fullName || "").toLowerCase();
           const phone = (s.phone || "").toLowerCase();
           const gphone = (s.guardianPhone || "").toLowerCase();
           return name.includes(term) || phone.includes(term) || gphone.includes(term);
         });
     return [...filtered].sort((a, b) => String(a.fullName || "").localeCompare(String(b.fullName || ""), undefined, { sensitivity: "base" }));
-  }, [studentsList, bulkSearch]);
+  }, [studentsList, bulkSearch, bulkLevelId, bulkSectionId]);
 
   useEffect(() => {
     if (!openDialog || editingEnrollment || addModeTab !== 1) {
@@ -367,6 +482,8 @@ const Enrollments = ({ language = "fr" }) => {
     setAddModeTab(0);
     setBulkGroupId("");
     setBulkSearch("");
+    setBulkLevelId("");
+    setBulkSectionId("");
     setBulkSelectedIds(new Set());
     setAlreadyInGroupIds(new Set());
     setGroupLoadError("");
@@ -433,7 +550,7 @@ const Enrollments = ({ language = "fr" }) => {
           .slice(0, 5)
           .map((sk) => `#${sk.studentId}: ${skipReasonLabel(sk.code)}`)
           .join("; ");
-        msg += ` â€” ${preview}${res.skips.length > 5 ? "â€¦" : ""}`;
+        msg += ` - ${preview}${res.skips.length > 5 ? "..." : ""}`;
       }
       setSnack({
         open: true,
@@ -518,12 +635,12 @@ const Enrollments = ({ language = "fr" }) => {
   const columns = [
     {
       field: "studentId",
-      headerName: t.studentId || "Student",
+      headerName: t.studentName || t.student || "Student",
       flex: 1,
       renderCell: (params) => {
         const sid = Number(params.row.studentId);
         const s = Number.isFinite(sid) ? studentsById[sid] : undefined;
-        return s ? s.fullName : params.row.studentId;
+        return s?.fullName ?? (Number.isFinite(sid) ? `#${sid}` : params.row.studentId);
       },
     },
     {
@@ -680,8 +797,7 @@ const Enrollments = ({ language = "fr" }) => {
               setOpenDialog(true);
             }}
             sx={{
-              backgroundColor: theme.palette.mode === "light" ? colors.blueAccent[800] : colors.blueAccent[300],
-              color: theme.palette.mode === "light" ? "#fff" : colors.blueAccent[900],
+              ...primaryActionSx(theme, colors),
             }}
             startIcon={<AddIcon />}
           >
@@ -700,8 +816,20 @@ const Enrollments = ({ language = "fr" }) => {
         fullWidth
         maxWidth={!editingEnrollment && addModeTab === 1 ? "md" : "sm"}
         data-testid="enrollments-dialog"
+        PaperProps={{
+          sx: {
+            ...modalSurfaceSx(theme, colors),
+          },
+        }}
       >
-        <DialogTitle sx={{ backgroundColor: theme.palette.mode === "light" ? "#0d47a1" : "#4274c7", color: "#fff", fontWeight: "bold" }}>
+        <DialogTitle
+          sx={{
+            backgroundColor:
+              theme.palette.mode === "light" ? colors.blueAccent[800] : colors.blueAccent[400],
+            color: "#fff",
+            fontWeight: 800,
+          }}
+        >
           {editingEnrollment ? t.editEnrollment || "Edit enrollment" : t.addEnrollment || "Add enrollment"}
         </DialogTitle>
 
@@ -712,7 +840,14 @@ const Enrollments = ({ language = "fr" }) => {
         )}
 
         {!editingEnrollment && (
-          <Box sx={{ direction: "ltr", width: "100%" }} dir="ltr">
+          <Box
+            sx={{
+              direction: "ltr",
+              width: "100%",
+              bgcolor: theme.palette.mode === "light" ? "#ffffff" : colors.primary[400],
+            }}
+            dir="ltr"
+          >
             <Tabs
               value={addModeTab}
               onChange={(_, v) => {
@@ -720,7 +855,22 @@ const Enrollments = ({ language = "fr" }) => {
                 setGroupLoadError("");
               }}
               variant="fullWidth"
-              sx={{ borderBottom: 1, borderColor: "divider", px: 1 }}
+              sx={{
+                borderBottom: 1,
+                borderColor: theme.palette.mode === "light" ? "#d0d5dd" : "rgba(255,255,255,0.12)",
+                px: 1,
+                "& .MuiTabs-indicator": {
+                  backgroundColor: theme.palette.mode === "light" ? colors.blueAccent[700] : "#dbeafe",
+                  height: 3,
+                },
+                "& .MuiTab-root": {
+                  color: theme.palette.mode === "light" ? "#475467" : "#cbd5e1",
+                  fontWeight: 700,
+                },
+                "& .Mui-selected": {
+                  color: theme.palette.mode === "light" ? `${colors.blueAccent[700]} !important` : "#ffffff !important",
+                },
+              }}
               data-testid="enrollments-add-mode-tabs"
             >
               <Tab label={t.enrollmentSingle || "One student"} data-testid="enrollments-tab-single" />
@@ -747,9 +897,9 @@ const Enrollments = ({ language = "fr" }) => {
 
         {!editingEnrollment && addModeTab === 1 ? (
           <>
-            <DialogContent dir={language === "ar" ? "rtl" : "ltr"}>
+            <DialogContent dir={language === "ar" ? "rtl" : "ltr"} sx={modalSurfaceSx(theme, colors)}>
               <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 0.5 }}>
-                {t.bulkStep1Title || "Step 1 â€” Group"}
+                {t.bulkStep1Title || "Step 1 - Group"}
               </Typography>
               <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1.5 }}>
                 {t.bulkEnrollmentHelp || "Choose the group, then select students."}
@@ -766,18 +916,19 @@ const Enrollments = ({ language = "fr" }) => {
                 }}
                 data-testid="enrollments-bulk-group"
                 InputLabelProps={{ shrink: true }}
+                sx={modalFieldSx(theme)}
                 SelectProps={{
                   displayEmpty: true,
                   renderValue: (selected) => {
                     if (selected === "" || selected == null) {
-                      return t.enrollmentPickGroup || "â€” Select group â€”";
+                      return t.enrollmentPickGroup || "- Select group -";
                     }
                     const g = groups.find((x) => String(x.id) === String(selected));
                     return g?.name ?? String(selected);
                   },
                 }}
               >
-                <MenuItem value="">{t.enrollmentPickGroup || "â€” Select group â€”"}</MenuItem>
+                <MenuItem value="">{t.enrollmentPickGroup || "- Select group -"}</MenuItem>
                 {groups.map((g) => (
                   <MenuItem key={g.id} value={String(g.id)}>
                     {g.name}
@@ -789,14 +940,14 @@ const Enrollments = ({ language = "fr" }) => {
                 <Alert severity="info" sx={{ mt: 1, mb: 1 }} variant="outlined">
                   <Typography variant="body2" component="span">
                     <strong>{bulkSelectedGroup.name}</strong>
-                    {" â€” "}
+                    {" - "}
                     {t.bulkStep2Hint || "Tick students below, then Save."}
                   </Typography>
                 </Alert>
               )}
 
               <Typography variant="subtitle2" fontWeight="bold" sx={{ mt: 1, mb: 0.5 }}>
-                {t.bulkStep2Title || "Step 2 â€” Students"}
+                {t.bulkStep2Title || "Step 2 - Students"}
               </Typography>
 
               <TextField
@@ -808,6 +959,7 @@ const Enrollments = ({ language = "fr" }) => {
                 value={formik.values.status}
                 onChange={formik.handleChange}
                 InputLabelProps={{ shrink: true }}
+                sx={modalFieldSx(theme)}
               >
                 {STATUS_OPTIONS.map((status) => (
                   <MenuItem key={status} value={status}>
@@ -825,28 +977,116 @@ const Enrollments = ({ language = "fr" }) => {
                 onChange={formik.handleChange}
                 multiline
                 minRows={2}
+                sx={modalFieldSx(theme)}
               />
 
               <Divider sx={{ my: 1.5 }} />
 
-              <Box display="flex" gap={1} flexWrap="wrap" alignItems="center" mb={1}>
+              <Box
+                sx={{
+                  mb: 1.5,
+                  p: 1.5,
+                  borderRadius: 2,
+                  border: "1px solid",
+                  borderColor: theme.palette.mode === "light" ? "#d0d5dd" : "rgba(191,219,254,0.18)",
+                  backgroundColor: theme.palette.mode === "light" ? "#f8fbff" : "rgba(15,23,42,0.3)",
+                }}
+              >
+                <Box display="grid" gridTemplateColumns={{ xs: "1fr", md: "1.2fr 0.8fr 0.8fr auto" }} gap={1.25} alignItems="start" mb={1}>
+                  <TextField
+                    size="small"
+                    fullWidth
+                    sx={modalFieldSx(theme)}
+                    label={t.searchStudents || "Search students"}
+                    value={bulkSearch}
+                    onChange={(e) => setBulkSearch(e.target.value)}
+                    data-testid="enrollments-bulk-search"
+                    InputLabelProps={{ shrink: true }}
+                    helperText={t.searchStudentsHelp || "Search by name, phone, or guardian phone"}
+                  />
+                  <TextField
+                    select
+                    size="small"
+                    fullWidth
+                    label={t.level || "Level"}
+                    value={bulkLevelId}
+                    onChange={(e) => setBulkLevelId(e.target.value)}
+                    InputLabelProps={{ shrink: true }}
+                    sx={modalFieldSx(theme)}
+                    SelectProps={{
+                      displayEmpty: true,
+                      renderValue: (selected) => {
+                        if (!selected) return t.all || "All";
+                        const level = levels.find((item) => String(item.id) === String(selected));
+                        return level?.name ?? String(selected);
+                      },
+                    }}
+                  >
+                    <MenuItem value="">{t.all || "All"}</MenuItem>
+                    {levels.map((level) => (
+                      <MenuItem key={level.id} value={String(level.id)}>
+                        {level.name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                  <TextField
+                    select
+                    size="small"
+                    fullWidth
+                    label={t.section || t.branch || "Branch"}
+                    value={bulkSectionId}
+                    onChange={(e) => setBulkSectionId(e.target.value)}
+                    InputLabelProps={{ shrink: true }}
+                    sx={modalFieldSx(theme)}
+                    SelectProps={{
+                      displayEmpty: true,
+                      renderValue: (selected) => {
+                        if (!selected) return t.all || "All";
+                        const section = sections.find((item) => String(item.id) === String(selected));
+                        return section?.name ?? String(selected);
+                      },
+                    }}
+                  >
+                    <MenuItem value="">{t.all || "All"}</MenuItem>
+                    {sections.map((section) => (
+                      <MenuItem key={section.id} value={String(section.id)}>
+                        {section.name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                  <Chip
+                    label={(t.selectedStudentsCount || "{{n}} selected").replace("{{n}}", String(bulkSelectedIds.size))}
+                    color="primary"
+                    variant="outlined"
+                    sx={{
+                      alignSelf: "center",
+                      justifySelf: { xs: "start", md: "end" },
+                      color: theme.palette.mode === "light" ? "#1d4ed8" : "#dbeafe",
+                      borderColor: theme.palette.mode === "light" ? "#93c5fd" : "#93c5fd",
+                      fontWeight: 700,
+                      backgroundColor: theme.palette.mode === "light" ? "#eff6ff" : "rgba(30,64,175,0.18)",
+                    }}
+                  />
+                </Box>
                 <TextField
                   size="small"
                   fullWidth
-                  sx={{ flex: "1 1 200px" }}
-                  label={t.searchStudents || "Search students"}
-                  value={bulkSearch}
-                  onChange={(e) => setBulkSearch(e.target.value)}
-                  data-testid="enrollments-bulk-search"
-                  InputLabelProps={{ shrink: true }}
-                />
-                <Chip
-                  label={(t.selectedStudentsCount || "{{n}} selected").replace("{{n}}", String(bulkSelectedIds.size))}
-                  color="primary"
-                  variant="outlined"
+                  disabled
+                  value={
+                    bulkVisibleStudents.length === 0
+                      ? t.noStudentsMatch || "No students match the current filters"
+                      : `${bulkVisibleStudents.length} ${t.students || "students"}`
+                  }
+                  sx={{
+                    ...modalFieldSx(theme),
+                    "& .MuiInputBase-input.Mui-disabled": {
+                      WebkitTextFillColor: theme.palette.mode === "light" ? "#475467" : "#e2e8f0",
+                      fontWeight: 600,
+                    },
+                  }}
                 />
               </Box>
-              <Box display="flex" gap={1} mb={1} flexWrap="wrap">
+              <Box display="flex" gap={1} mb={1.5} flexWrap="wrap">
                 <Button size="small" variant="outlined" onClick={selectAllVisibleEligible} disabled={!bulkGroupId}>
                   {t.selectAllVisibleStudents || "Select all (visible)"}
                 </Button>
@@ -857,33 +1097,62 @@ const Enrollments = ({ language = "fr" }) => {
 
               <Box
                 sx={{
-                  maxHeight: 340,
-                  overflow: "auto",
-                  border: 1,
-                  borderColor: "divider",
-                  borderRadius: 1,
-                  p: 1,
+                  maxHeight: "min(52vh, 520px)",
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                  border: "1px solid",
+                  borderColor: theme.palette.mode === "light" ? "#d0d5dd" : "rgba(191,219,254,0.18)",
+                  borderRadius: 2,
+                  p: 1.25,
+                  bgcolor: theme.palette.mode === "light" ? "#ffffff" : "rgba(15,23,42,0.38)",
+                  boxShadow: theme.palette.mode === "light" ? "inset 0 1px 0 rgba(255,255,255,0.7)" : "inset 0 1px 0 rgba(255,255,255,0.04)",
                 }}
                 data-testid="enrollments-bulk-list"
               >
                 {!bulkGroupId ? (
-                  <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 3 }}>
+                  <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 3, fontWeight: 600 }}>
                     {t.bulkSelectGroupFirst || "Select a group first to load students."}
                   </Typography>
                 ) : bulkVisibleStudents.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 3 }}>
-                    {t.searchStudents || "No students"}
+                  <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 3, fontWeight: 600 }}>
+                    {t.noStudentsMatch || "No students match the current filters."}
                   </Typography>
                 ) : (
                   <FormGroup>
                     {bulkVisibleStudents.map((s) => {
                       const id = Number(s.id);
                       const inGroup = alreadyInGroupIds.has(id);
+                      const levelName = levels.find((item) => Number(item.id) === Number(s.levelId))?.name;
+                      const sectionName = sections.find((item) => Number(item.id) === Number(s.sectionId))?.name;
                       return (
                         <FormControlLabel
                           key={s.id}
                           labelPlacement="end"
-                          sx={{ mr: 0, ml: 0, alignItems: "flex-start", opacity: inGroup ? 0.55 : 1 }}
+                          sx={{
+                            mr: 0,
+                            ml: 0,
+                            mb: 0.75,
+                            alignItems: "flex-start",
+                            opacity: inGroup ? 0.6 : 1,
+                            border: "1px solid",
+                            borderColor: inGroup
+                              ? theme.palette.mode === "light"
+                                ? "#e4e7ec"
+                                : "rgba(148,163,184,0.18)"
+                              : theme.palette.mode === "light"
+                                ? "#dbeafe"
+                                : "rgba(147,197,253,0.18)",
+                            borderRadius: 2,
+                            px: 1.25,
+                            py: 0.75,
+                            backgroundColor: inGroup
+                              ? theme.palette.mode === "light"
+                                ? "#f8fafc"
+                                : "rgba(30,41,59,0.45)"
+                              : theme.palette.mode === "light"
+                                ? "#ffffff"
+                                : "rgba(15,23,42,0.54)",
+                          }}
                           control={
                             <Checkbox
                               checked={bulkSelectedIds.has(id)}
@@ -893,10 +1162,20 @@ const Enrollments = ({ language = "fr" }) => {
                             />
                           }
                           label={
-                            <Box>
-                              <Typography variant="body2">{s.fullName}</Typography>
+                            <Box sx={{ pt: 0.25 }}>
+                              <Typography variant="body1" sx={{ color: theme.palette.mode === "light" ? "#101828" : "#f8fafc", fontWeight: 700 }}>
+                                {s.fullName}
+                              </Typography>
+                              <Typography variant="caption" sx={{ display: "block", color: theme.palette.mode === "light" ? "#475467" : "#cbd5e1", mt: 0.25 }}>
+                                {[s.phone, s.guardianPhone].filter(Boolean).join(" • ") || (t.studentId || "Student")}
+                              </Typography>
+                              {(levelName || sectionName) && (
+                                <Typography variant="caption" sx={{ display: "block", color: theme.palette.mode === "light" ? "#1d4ed8" : "#93c5fd", mt: 0.25, fontWeight: 600 }}>
+                                  {[levelName, sectionName].filter(Boolean).join(" • ")}
+                                </Typography>
+                              )}
                               {inGroup && (
-                                <Typography variant="caption" color="warning.main">
+                                <Typography variant="caption" color="warning.main" sx={{ display: "block", mt: 0.4, fontWeight: 700 }}>
                                   {t.alreadyEnrolledShort || "Already in group"}
                                 </Typography>
                               )}
@@ -909,8 +1188,8 @@ const Enrollments = ({ language = "fr" }) => {
                 )}
               </Box>
             </DialogContent>
-            <DialogActions>
-              <Button data-testid="enrollments-cancel" type="button" onClick={handleClose}>
+            <DialogActions sx={{ px: 3, pb: 2, ...modalSurfaceSx(theme, colors) }}>
+              <Button data-testid="enrollments-cancel" type="button" onClick={handleClose} sx={secondaryActionSx(theme)}>
                 {t.cancel || "Cancel"}
               </Button>
               <Button
@@ -919,6 +1198,7 @@ const Enrollments = ({ language = "fr" }) => {
                 variant="contained"
                 disabled={!bulkGroupId || bulkSelectedIds.size === 0}
                 onClick={handleBulkSave}
+                sx={primaryActionSx(theme, colors)}
               >
                 {t.save || "Save"}
               </Button>
@@ -926,7 +1206,7 @@ const Enrollments = ({ language = "fr" }) => {
           </>
         ) : (
           <form onSubmit={formik.handleSubmit}>
-            <DialogContent dir={language === "ar" ? "rtl" : "ltr"}>
+            <DialogContent dir={language === "ar" ? "rtl" : "ltr"} sx={modalSurfaceSx(theme, colors)}>
               {editingEnrollment && (
                 <TextField
                   margin="dense"
@@ -934,7 +1214,7 @@ const Enrollments = ({ language = "fr" }) => {
                   disabled
                   label={t.studentId || "Student"}
                   value={selectedStudent?.fullName || String(editingEnrollment.studentId || "")}
-                  sx={{ mb: 1 }}
+                  sx={{ mb: 1, ...modalFieldSx(theme) }}
                 />
               )}
               {!editingEnrollment && (
@@ -967,6 +1247,7 @@ const Enrollments = ({ language = "fr" }) => {
                         onBlur={formik.handleBlur}
                         error={formik.touched.studentId && Boolean(formik.errors.studentId)}
                         helperText={formik.touched.studentId && formik.errors.studentId}
+                        sx={modalFieldSx(theme)}
                       />
                     )}
                   />
@@ -1009,10 +1290,11 @@ const Enrollments = ({ language = "fr" }) => {
                 helperText={formik.touched.groupId && formik.errors.groupId}
                 disabled={!!editingEnrollment}
                 InputLabelProps={{ shrink: true }}
+                sx={modalFieldSx(theme)}
                 SelectProps={{
                   displayEmpty: true,
                   renderValue: (selected) => {
-                    if (selected === "" || selected == null) return "â€”";
+                    if (selected === "" || selected == null) return "-";
                     const g = groups.find((x) => String(x.id) === String(selected));
                     return g?.name ?? String(selected);
                   },
@@ -1037,6 +1319,7 @@ const Enrollments = ({ language = "fr" }) => {
                 onBlur={formik.handleBlur}
                 error={formik.touched.status && Boolean(formik.errors.status)}
                 helperText={formik.touched.status && formik.errors.status}
+                sx={modalFieldSx(theme)}
               >
                 {STATUS_OPTIONS.map((status) => (
                   <MenuItem key={status} value={status}>
@@ -1057,14 +1340,20 @@ const Enrollments = ({ language = "fr" }) => {
                 helperText={formik.touched.notes && formik.errors.notes}
                 multiline
                 minRows={2}
+                sx={modalFieldSx(theme)}
               />
             </DialogContent>
 
-            <DialogActions>
-              <Button data-testid="enrollments-cancel" type="button" onClick={handleClose}>
+            <DialogActions sx={{ px: 3, pb: 2, ...modalSurfaceSx(theme, colors) }}>
+              <Button data-testid="enrollments-cancel" type="button" onClick={handleClose} sx={secondaryActionSx(theme)}>
                 {t.cancel || "Cancel"}
               </Button>
-              <Button data-testid="enrollments-save" type="submit" variant="contained">
+              <Button
+                data-testid="enrollments-save"
+                type="submit"
+                variant="contained"
+                sx={primaryActionSx(theme, colors)}
+              >
                 {t.save || "Save"}
               </Button>
             </DialogActions>

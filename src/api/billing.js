@@ -1,6 +1,20 @@
 // Axios client for Billing endpoints
 import api from "./client";
 
+/**
+ * ~20-year rolling YYYY-MM window (aligned with server clamp).
+ * Avoids 1900-01..2999-12 which overloads Postgres on cycle-range search.
+ */
+export function defaultBillingCycleSearchRange() {
+  const now = new Date();
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const start = new Date(end);
+  start.setMonth(start.getMonth() - 239);
+  const pad = (n) => String(n).padStart(2, "0");
+  const toYm = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+  return { start: toYm(start), end: toYm(end) };
+}
+
 /** Single student: unpaid MONTHLY groups for a given period (YYYY-MM) */
 export const unpaidMonthlyGroups = async (studentId, period) => {
   const { data } = await api.get(
@@ -43,8 +57,19 @@ export const searchCycleRange = async ({
   page = 0,
   size = 50,
 }) => {
+  const range =
+    start && end ? { start, end } : defaultBillingCycleSearchRange();
   const { data } = await api.get("/billing/dues/cycle-range/search", {
-    params: { start, end, status, groupId, studentId, q, page, size },
+    params: {
+      start: range.start,
+      end: range.end,
+      status,
+      groupId,
+      studentId,
+      q,
+      page,
+      size,
+    },
   });
   return data;
 };
@@ -111,6 +136,7 @@ export default {
   studentReceipts,
   newCollectIdempotencyKey,
   collectPayment,
+  defaultBillingCycleSearchRange,
   searchCycleRange,
   searchMonthlyRange,
   studentMonthlyRange,

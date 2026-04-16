@@ -19,6 +19,10 @@ import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
 import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import AccountBalanceOutlinedIcon from "@mui/icons-material/AccountBalanceOutlined";
 import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
+import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined";
+import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
+import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined";
+import PaidOutlinedIcon from "@mui/icons-material/PaidOutlined";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import DoorFrontOutlinedIcon from "@mui/icons-material/DoorFrontOutlined";
 import MenuBookTwoToneIcon from "@mui/icons-material/MenuBookTwoTone";
@@ -49,7 +53,16 @@ const Item = ({ title, to, icon, onClick, active }) => {
         navigate(to);
       }}
     >
-      <Typography sx={{ fontSize: "1.20rem", fontWeight: "bold" }}>
+      <Typography
+        sx={{
+          fontSize: "1.20rem",
+          fontWeight: "bold",
+          whiteSpace: "normal",
+          lineHeight: 1.25,
+          wordBreak: "break-word",
+          textAlign: "inherit",
+        }}
+      >
         {title}
       </Typography>
     </MenuItem>
@@ -76,11 +89,32 @@ const CAN = {
   ABOUT: "MENU:ABOUT_VIEW",
 };
 
+const financeNavTypographySx = (language) => ({
+  fontSize: "1.05rem",
+  fontWeight: "bold",
+  whiteSpace: "normal",
+  lineHeight: 1.25,
+  wordBreak: "break-word",
+  textAlign: language === "ar" ? "right" : "left",
+  color: "#1e293b !important",
+  maxWidth: "100%",
+});
+
+/** Same size/weight as top-level `Item` labels (Finance was using smaller body text). */
+const financeSubmenuTitleSx = (language) => ({
+  ...financeNavTypographySx(language),
+  fontSize: "1.20rem",
+});
+
+const financeChildIconSx = { fontSize: "1.25rem", color: "#1e293b" };
+
 const MySidebar = ({ language }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const t = getTranslations(language);
+  const finNavSx = financeNavTypographySx(language);
+  const financeTitleSx = financeSubmenuTitleSx(language);
 
   const { can, hasRole, user } = useAuth();
   const location = useLocation();
@@ -144,6 +178,11 @@ const handleLogoChange = (e) => {
           },
           "& .ps-submenu .ps-menu-button svg": {
             color: "#1e293b !important", // Finance icon + arrow (chevron)
+          },
+          /* SubMenu row label: match other primary nav items (bold + full size) */
+          "& .ps-submenu-root > .ps-menu-button .MuiTypography-root": {
+            fontSize: "1.20rem !important",
+            fontWeight: "700 !important",
           },
       }}
     >
@@ -364,13 +403,7 @@ const handleLogoChange = (e) => {
             {can(CAN.FINANCE) && (
               <SubMenu
                 label={
-                  <Typography
-                    sx={{
-                      fontSize: "1.20rem",
-                      fontWeight: "bold",
-                      color: "#1e293b !important",
-                    }}
-                  >
+                  <Typography sx={financeTitleSx}>
                     {t.finance}
                   </Typography>
                 }
@@ -378,77 +411,39 @@ const handleLogoChange = (e) => {
                   <AccountBalanceOutlinedIcon sx={{ color: "#1e293b !important" }} />
                 }
               >
-                {/* Student billing */}
-                <MenuItem component={<Link to="/finances/billing" />}>
-                  <Typography
-                    sx={{
-                      fontSize: "1.20rem",
-                      fontWeight: "bold",
-                      textAlign: "center",
-                      color: "#1e293b !important",
-                    }}
-                  >
-                    {t.income}
-                  </Typography>
+                <MenuItem
+                  component={<Link to="/finances/billing" />}
+                  icon={<PaymentsOutlinedIcon sx={financeChildIconSx} />}
+                >
+                  <Typography sx={finNavSx}>{t.income}</Typography>
                 </MenuItem>
 
-                {/* Expenses list */}
-                <MenuItem component={<Link to="/finances/expenses" />}>
-                  <Typography
-                    sx={{
-                      fontSize: "1.20rem",
-                      fontWeight: "bold",
-                      textAlign: "center",
-                      color: "#1e293b !important",
-                    }}
-                  >
-                    {t.expense}
-                  </Typography>
+                <MenuItem
+                  component={<Link to="/finances/expenses" />}
+                  icon={<ReceiptLongOutlinedIcon sx={financeChildIconSx} />}
+                >
+                  <Typography sx={finNavSx}>{t.expense}</Typography>
                 </MenuItem>
 
-                {/* ✅ Profit & Loss (replaces Sales) */}
-                <MenuItem component={<Link to="/finances/profit-loss" />}>
-                  <Typography
-                    sx={{
-                      fontSize: "1.20rem",
-                      fontWeight: "bold",
-                      textAlign: "center",
-                      color: "#1e293b !important",
-                    }}
-                  >
-                    {t.profitLoss}
-                  </Typography>
+                <MenuItem
+                  component={<Link to="/finances/profit-loss" />}
+                  icon={<AssessmentOutlinedIcon sx={financeChildIconSx} />}
+                >
+                  <Typography sx={finNavSx}>{t.profitLoss}</Typography>
                 </MenuItem>
 
-                {/* Teacher pay */}
-                <MenuItem component={<Link to="/finances/teacher-pay" />}>
-                  <Typography
-                    sx={{
-                      fontSize: "1.20rem",
-                      fontWeight: "bold",
-                      textAlign: "center",
-                      color: "#1e293b !important",
-                    }}
-                  >
-                    {t.teacherPay}
-                  </Typography>
+                <MenuItem
+                  component={<Link to="/finances/teacher-pay" />}
+                  icon={<PaidOutlinedIcon sx={financeChildIconSx} />}
+                >
+                  <Typography sx={finNavSx}>{t.teacherPay}</Typography>
                 </MenuItem>
 
-                {/* Financial audit log */}
-                <MenuItem component={<Link to="/finances/audit-log" />}>
-                  <Box display="flex" alignItems="center" gap={1} justifyContent="center" width="100%">
-                    <FactCheckOutlinedIcon sx={{ fontSize: "1.15rem", color: "#1e293b" }} />
-                    <Typography
-                      sx={{
-                        fontSize: "1.20rem",
-                        fontWeight: "bold",
-                        textAlign: "center",
-                        color: "#1e293b !important",
-                      }}
-                    >
-                      {t.paymentAuditLog}
-                    </Typography>
-                  </Box>
+                <MenuItem
+                  component={<Link to="/finances/audit-log" />}
+                  icon={<FactCheckOutlinedIcon sx={financeChildIconSx} />}
+                >
+                  <Typography sx={finNavSx}>{t.auditLog_nav || t.paymentAuditLog}</Typography>
                 </MenuItem>
               </SubMenu>
             )}
