@@ -42,6 +42,28 @@ function readToken() {
   }
 }
 
+function hasStoredAuth() {
+  try {
+    if (typeof window === "undefined") return false;
+    return !!localStorage.getItem("auth");
+  } catch {
+    return false;
+  }
+}
+
+function forceLogoutToLogin() {
+  try {
+    if (typeof window === "undefined") return;
+    localStorage.removeItem("auth");
+    const h = window.location?.hash || "";
+    if (h !== "#/login" && h !== "#/signup" && h !== "#/super-admin/login" && h !== "#/expired") {
+      window.location.hash = "#/login";
+    }
+  } catch {
+    // no-op
+  }
+}
+
 api.interceptors.request.use((config) => {
   const token = readToken();
   if (token) {
@@ -68,8 +90,11 @@ api.interceptors.response.use(
       window.location.hash = "#/expired";
     }
 
-    // Do not redirect or clear auth on 401 here. A global hash jump logs users out of good sessions
-    // when one endpoint fails (e.g. calendar) while the JWT is still valid. Let callers handle 401.
+    // If token/session is no longer valid, force logout and move to login.
+    // We only do this when auth exists to avoid redirect noise on public pages.
+    if (status === 401 && hasStoredAuth()) {
+      forceLogoutToLogin();
+    }
 
     let message = data?.message;
     if (
