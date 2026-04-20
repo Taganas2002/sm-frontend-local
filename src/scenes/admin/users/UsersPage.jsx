@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Button,
@@ -24,12 +24,17 @@ import { tokens } from "../../../theme";
 import Header from "../../../components/Header";
 import UserFormDialog from "./UserFormDialog";
 import PermissionsDialog from "./PermissionsDialog";
-import translations from "../../../translations";
+import translations, { labelForRole } from "../../../translations";
+import { useAuth } from "../../../auth/AuthContext";
+
+const STAFF_ROLE_NAMES = new Set(["ROLE_TEACHER", "ROLE_REGISTRAR", "ROLE_ACCOUNTANT"]);
 
 const UsersPage = ({ language = "fr" }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const t = translations[language] || translations.fr;
+  const { hasRole } = useAuth();
+  const isRootUser = hasRole("ROLE_SUPER_ADMIN");
 
   const [rows, setRows] = useState([]);
   const [page, setPage] = useState(0);
@@ -49,6 +54,14 @@ const UsersPage = ({ language = "fr" }) => {
   useEffect(() => {
     listRoles().then(setRoles).catch(() => setRoles([]));
   }, []);
+
+  const assignableRoles = useMemo(
+    () =>
+      roles.filter((r) =>
+        STAFF_ROLE_NAMES.has(r.name) || (isRootUser && r.name === "ROLE_ADMIN")
+      ),
+    [roles, isRootUser]
+  );
 
   const fetch = async () => {
     setLoading(true);
@@ -107,7 +120,7 @@ const UsersPage = ({ language = "fr" }) => {
                 return (
                   <Chip
                     key={r}
-                    label={role}
+                    label={labelForRole(r, t)}
                     color={color}
                     size="small"
                     sx={{
@@ -273,7 +286,7 @@ const UsersPage = ({ language = "fr" }) => {
         <UserFormDialog
           open={openCreate}
           onClose={() => setOpenCreate(false)}
-          roles={roles}
+          roles={assignableRoles}
           onSubmit={handleCreate}
           mode="create"
           language={language}
@@ -299,7 +312,7 @@ const UsersPage = ({ language = "fr" }) => {
           open={!!openPerms}
           onClose={() => setOpenPerms(null)}
           user={openPerms}
-          roles={roles}
+          roles={assignableRoles}
           language={language}
         />
       )}

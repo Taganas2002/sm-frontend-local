@@ -16,7 +16,7 @@ import {
 import SaveIcon from "@mui/icons-material/Save";
 import UpdateIcon from "@mui/icons-material/Update";
 import { tokens } from "../../../theme";
-import translations from "../../../translations";
+import translations, { labelForRole } from "../../../translations";
 
 export default function UserFormDialog({
   open,
@@ -148,7 +148,7 @@ export default function UserFormDialog({
                   >
                     {roles.map((r) => (
                       <MenuItem key={r.id} value={r.id}>
-                        {r.name}
+                        {labelForRole(r.name, t)}
                       </MenuItem>
                     ))}
                   </TextField>

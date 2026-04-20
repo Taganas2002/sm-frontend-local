@@ -20,6 +20,16 @@ export function labelForMenu(code, t) {
     .join(" ");
 }
 
+export function labelForRole(roleName, t) {
+  const normalized = String(roleName || "").replace(/^ROLE_/, "").trim();
+  if (!normalized) return "";
+  if (t?.roleNames?.[normalized]) return t.roleNames[normalized];
+  return normalized
+    .split("_")
+    .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
+    .join(" ");
+}
+
 export function translateBillingStatus(value, t) {
   const normalized = String(value || "").toUpperCase();
   const labels = {

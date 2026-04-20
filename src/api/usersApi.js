@@ -91,3 +91,8 @@ export const savePermissions = async (userId, body) => {
   const { data } = await api.post(`/admin/accounts/${userId}/permissions`, body);
   return data; // { userId, authorities: [...] }
 };
+
+export const resetAccountPassword = async (userId, newPassword) => {
+  const { data } = await api.post(`/admin/accounts/${userId}/reset-password`, { newPassword });
+  return data;
+};

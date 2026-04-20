@@ -595,9 +595,26 @@ const fr = {
   title: "Autorisations",
   role: "Rôle",
   roleHelper:
-    "Changer le rôle met à jour la base ; les sélections ici autorisent/interdisent en plus.",
+    "Sélectionnez un rôle du personnel. Le rôle administrateur est protégé pour le compte root.",
   menuVisibility:
     "Visibilité du menu (case cochée = visible). Basé sur le rôle + vos modifications.",
+  resetPassword: "Réinitialiser le mot de passe",
+  resetPasswordTitle: "Réinitialisation root",
+  newPassword: "Nouveau mot de passe",
+  resetPasswordHint:
+    "Seul l'utilisateur root peut réinitialiser le mot de passe d'un autre compte.",
+  resetPasswordSuccess: "Mot de passe réinitialisé avec succès.",
+  rootOnlyAction: "Cette action est réservée à l'utilisateur root.",
+  roleNames: {
+    ADMIN: "Administrateur",
+    TEACHER: "Enseignant",
+    REGISTRAR: "Agent d'inscription",
+    ACCOUNTANT: "Comptable",
+    PRINCIPAL: "Directeur",
+    USER: "Utilisateur",
+    MODERATOR: "Modérateur",
+    SUPER_ADMIN: "Root",
+  },
 
   // Validation messages
   requiredClassroom: "La salle est obligatoire",

@@ -13,6 +13,7 @@ import {
   TextField,
   Typography,
   Chip,
+  Divider,
   useTheme,
   Snackbar,
   Alert
@@ -23,9 +24,11 @@ import { tokens } from "../../../theme";
 import {
   getPermissionsSnapshot,
   listPermissionCodes,
+  resetAccountPassword,
   savePermissions
 } from "../../../api/usersApi";
-import translations, { labelForMenu } from "../../../translations";
+import translations, { labelForMenu, labelForRole } from "../../../translations";
+import { useAuth } from "../../../auth/AuthContext";
 
 export default function PermissionsDialog({
   open,
@@ -37,12 +40,16 @@ export default function PermissionsDialog({
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const t = translations[language] || translations.fr;
+  const { hasRole } = useAuth();
+  const isRootUser = hasRole("ROLE_SUPER_ADMIN");
 
   // data
   const [codes, setCodes] = useState([]);
   const [snapshot, setSnapshot] = useState(null);
   const [roleId, setRoleId] = useState("");
   const [loading, setLoading] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
 
   // UI state for each code:
   // - baseline: boolean (from role)
@@ -90,6 +97,10 @@ export default function PermissionsDialog({
       }
     })();
   }, [open, user?.id]);
+
+  useEffect(() => {
+    if (!open) setNewPassword("");
+  }, [open]);
 
   const onToggle = (code) => {
     setState((s) => {
@@ -158,6 +169,28 @@ export default function PermissionsDialog({
     }
   };
 
+  const submitPasswordReset = async () => {
+    if (!isRootUser) {
+      setToast({ severity: "warning", msg: t.rootOnlyAction });
+      return;
+    }
+    const pwd = newPassword.trim();
+    if (pwd.length < 8) {
+      setToast({ severity: "error", msg: t.passwordMinLength || "Password must be at least 8 characters." });
+      return;
+    }
+    try {
+      setResetLoading(true);
+      await resetAccountPassword(user.id, pwd);
+      setNewPassword("");
+      setToast({ severity: "success", msg: t.resetPasswordSuccess });
+    } catch (e) {
+      setToast({ severity: "error", msg: e?.message || t.failedSave });
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   return (
     <>
       <Dialog
@@ -189,7 +222,7 @@ export default function PermissionsDialog({
             >
               {roles.map((r) => (
                 <MenuItem key={r.id} value={r.id}>
-                  {r.name}
+                  {labelForRole(r.name, t)}
                 </MenuItem>
               ))}
             </TextField>
@@ -248,6 +281,32 @@ export default function PermissionsDialog({
                 );
               })}
             </Grid>
+
+            <Divider />
+            <Stack spacing={1.2}>
+              <Typography variant="subtitle2">{t.resetPasswordTitle || t.resetPassword}</Typography>
+              <Typography variant="caption" color="text.secondary">
+                {t.resetPasswordHint}
+              </Typography>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+                <TextField
+                  label={t.newPassword || t.password}
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  size="small"
+                  fullWidth
+                  disabled={!isRootUser || resetLoading}
+                />
+                <Button
+                  variant="outlined"
+                  onClick={submitPasswordReset}
+                  disabled={!isRootUser || resetLoading || !newPassword.trim()}
+                >
+                  {t.resetPassword}
+                </Button>
+              </Stack>
+            </Stack>
           </Stack>
         </DialogContent>
         <DialogActions sx={{ gap: 2 }}>
