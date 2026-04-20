@@ -42,6 +42,7 @@ export default function PermissionsDialog({
   const t = translations[language] || translations.fr;
   const { hasRole } = useAuth();
   const isRootUser = hasRole("ROLE_SUPER_ADMIN");
+  const canResetPassword = isRootUser || hasRole("ROLE_ADMIN");
 
   // data
   const [codes, setCodes] = useState([]);
@@ -170,8 +171,8 @@ export default function PermissionsDialog({
   };
 
   const submitPasswordReset = async () => {
-    if (!isRootUser) {
-      setToast({ severity: "warning", msg: t.rootOnlyAction });
+    if (!canResetPassword) {
+      setToast({ severity: "warning", msg: t.adminOrRootOnlyAction || t.rootOnlyAction });
       return;
     }
     const pwd = newPassword.trim();
@@ -296,12 +297,12 @@ export default function PermissionsDialog({
                   onChange={(e) => setNewPassword(e.target.value)}
                   size="small"
                   fullWidth
-                  disabled={!isRootUser || resetLoading}
+                  disabled={!canResetPassword || resetLoading}
                 />
                 <Button
                   variant="outlined"
                   onClick={submitPasswordReset}
-                  disabled={!isRootUser || resetLoading || !newPassword.trim()}
+                  disabled={!canResetPassword || resetLoading || !newPassword.trim()}
                 >
                   {t.resetPassword}
                 </Button>

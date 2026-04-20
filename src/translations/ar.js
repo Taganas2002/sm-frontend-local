@@ -601,11 +601,12 @@ const ar = {
   menuVisibility:
     "إظهار القوائم (مربع محدد = ظاهر). الأساس من الدور + تعديلاتك.",
   resetPassword: "إعادة تعيين كلمة المرور",
-  resetPasswordTitle: "إعادة تعيين بواسطة الجذر",
+  resetPasswordTitle: "إعادة تعيين بواسطة المسؤول/الجذر",
   newPassword: "كلمة المرور الجديدة",
-  resetPasswordHint: "فقط مستخدم الجذر يمكنه تغيير كلمة مرور أي حساب.",
+  resetPasswordHint: "فقط المسؤول أو مستخدم الجذر يمكنه تغيير كلمة مرور أي حساب.",
   resetPasswordSuccess: "تمت إعادة تعيين كلمة المرور بنجاح.",
   rootOnlyAction: "هذا الإجراء متاح فقط لمستخدم الجذر.",
+  adminOrRootOnlyAction: "هذا الإجراء متاح فقط للمسؤول أو مستخدم الجذر.",
   roleNames: {
     ADMIN: "مسؤول",
     TEACHER: "أستاذ",

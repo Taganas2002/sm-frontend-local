@@ -599,12 +599,13 @@ const fr = {
   menuVisibility:
     "Visibilité du menu (case cochée = visible). Basé sur le rôle + vos modifications.",
   resetPassword: "Réinitialiser le mot de passe",
-  resetPasswordTitle: "Réinitialisation root",
+  resetPasswordTitle: "Réinitialisation admin/root",
   newPassword: "Nouveau mot de passe",
   resetPasswordHint:
-    "Seul l'utilisateur root peut réinitialiser le mot de passe d'un autre compte.",
+    "Seul un admin ou l'utilisateur root peut réinitialiser le mot de passe d'un autre compte.",
   resetPasswordSuccess: "Mot de passe réinitialisé avec succès.",
   rootOnlyAction: "Cette action est réservée à l'utilisateur root.",
+  adminOrRootOnlyAction: "Cette action est réservée à un admin ou à l'utilisateur root.",
   roleNames: {
     ADMIN: "Administrateur",
     TEACHER: "Enseignant",
