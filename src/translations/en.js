@@ -85,6 +85,7 @@ const en = {
   typeGroupName: "Type group name...",
   userManagement: "User management",
   userManagementSubtitle: "Create staff accounts and assign roles and permissions",
+  roles: "Roles",
   addUser: "Add user",
   createUser: "Create user",
   editUser: "Edit user",

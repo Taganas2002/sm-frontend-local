@@ -622,6 +622,7 @@ const ar = {
   password: "كلمة المرور",
   userManagement: "إدارة المستخدمين",
   userManagementSubtitle: "إدارة حسابات الموظفين والأدوار",
+  roles: "الأدوار",
   search: "بحث",
   searchPlaceholder: "الاسم / البريد / الهاتف",
   addUser: "إضافة مستخدم",
