@@ -40,6 +40,37 @@ function toCsv(rows) {
     .join("\n");
 }
 
+const payoutActionButtonSx = (theme, variant = "primary") => {
+  const palettes = {
+    primary: {
+      light: { bg: "#2563eb", fg: "#ffffff", border: "#1d4ed8", hover: "#1d4ed8" },
+      dark: { bg: "#2563eb", fg: "#f8fafc", border: "#60a5fa", hover: "#3b82f6" },
+    },
+    secondary: {
+      light: { bg: "#0f766e", fg: "#ffffff", border: "#0f766e", hover: "#0d9488" },
+      dark: { bg: "#0f766e", fg: "#f8fafc", border: "#5eead4", hover: "#0d9488" },
+    },
+    neutral: {
+      light: { bg: "#f8fafc", fg: "#0f172a", border: "#64748b", hover: "#e2e8f0" },
+      dark: { bg: "rgba(30,41,59,.9)", fg: "#f8fafc", border: "#cbd5e1", hover: "rgba(51,65,85,.95)" },
+    },
+  };
+  const tone = theme.palette.mode === "light" ? palettes[variant].light : palettes[variant].dark;
+  return {
+    textTransform: "none",
+    fontWeight: 700,
+    borderRadius: 2,
+    minWidth: 104,
+    borderColor: tone.border,
+    color: tone.fg,
+    backgroundColor: tone.bg,
+    "&:hover": {
+      borderColor: tone.border,
+      backgroundColor: tone.hover,
+    },
+  };
+};
+
 export default function TeacherPayoutHistoryDialog({
   open,
   onClose,
@@ -209,8 +240,13 @@ export default function TeacherPayoutHistoryDialog({
       headerAlign: "center",
       align: "center",
       renderCell: (params) => (
-        <Button size="small" variant="outlined" onClick={() => setReport(params.row.raw)}>
-          View
+        <Button
+          size="small"
+          variant="contained"
+          onClick={() => setReport(params.row.raw)}
+          sx={payoutActionButtonSx(theme, "primary")}
+        >
+          {t.view || "View"}
         </Button>
       ),
     },
@@ -256,12 +292,18 @@ export default function TeacherPayoutHistoryDialog({
             sx={{ minWidth: 220 }}
             renderInput={(params) => <TextField {...params} label={t.group || "Group"} />}
           />
-          <Button size="small" variant="outlined" onClick={() => { setGroupFilter("ALL"); setFromDate(""); setToDate(""); }}>
-            Clear
+          <Button
+            size="small"
+            variant="contained"
+            sx={payoutActionButtonSx(theme, "neutral")}
+            onClick={() => { setGroupFilter("ALL"); setFromDate(""); setToDate(""); }}
+          >
+            {t.clear || "Clear"}
           </Button>
           <Button
             size="small"
-            variant="outlined"
+            variant="contained"
+            sx={payoutActionButtonSx(theme, "secondary")}
             onClick={() => {
               const d = new Date();
               const from = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
@@ -270,7 +312,7 @@ export default function TeacherPayoutHistoryDialog({
               setToDate(to);
             }}
           >
-            This month
+            {t.thisMonth || "This month"}
           </Button>
         </Stack>
 
@@ -381,7 +423,8 @@ export default function TeacherPayoutHistoryDialog({
         </DialogContent>
         <DialogActions>
           <Button
-            variant="outlined"
+            variant="contained"
+            sx={payoutActionButtonSx(theme, "secondary")}
             onClick={() => {
               const csv = toCsv(reportRows);
               const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -397,8 +440,9 @@ export default function TeacherPayoutHistoryDialog({
           >
             Export CSV
           </Button>
-          <Button variant="outlined" onClick={() => window.print()}>Print</Button>
-          <Button onClick={() => setReport(null)} variant="contained">Close</Button>
+          <Button onClick={() => setReport(null)} variant="contained" sx={payoutActionButtonSx(theme, "primary")}>
+            {t.close || "Close"}
+          </Button>
         </DialogActions>
       </Dialog>
     </Dialog>
