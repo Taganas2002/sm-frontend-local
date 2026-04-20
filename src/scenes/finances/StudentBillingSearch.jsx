@@ -17,6 +17,7 @@ import {
   useTheme,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
+import { arSD } from "@mui/x-data-grid/locales";
 import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import PaymentOutlinedIcon from "@mui/icons-material/PaymentOutlined";
 import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
@@ -136,12 +137,18 @@ export default function StudentBillingSearch({ language = "fr" }) {
   const isCompactScreen = useMediaQuery(theme.breakpoints.down("lg"));
   const colors = tokens(theme.palette.mode);
 
-  const startLabel = language === "ar" ? "??????? (YYYY-MM)" : language === "en" ? "Start (YYYY-MM)" : "Dï¿½but (YYYY-MM)";
-  const endLabel = language === "ar" ? "??????? (YYYY-MM)" : language === "en" ? "End (YYYY-MM)" : "Fin (YYYY-MM)";
-  const scannerOnLabel = language === "ar" ? "????? ???? QR" : language === "en" ? "Turn QR scanner ON" : "Activer le scanner QR";
-  const scannerOffLabel = language === "ar" ? "????? ???? QR" : language === "en" ? "Turn QR scanner OFF" : "Dï¿½sactiver le scanner QR";
-  const scanNotRecognizedLabel = language === "ar" ? "?? ??? ?????? ??? ?????" : language === "en" ? "Scan not recognized" : "Scan non reconnu";
-  const studentSelectedLabel = language === "ar" ? "?? ????? ??????" : language === "en" ? "Student selected" : "ï¿½lï¿½ve sï¿½lectionnï¿½";
+  const startLabel =
+    language === "ar" ? "البداية (YYYY-MM)" : language === "en" ? "Start (YYYY-MM)" : "Début (YYYY-MM)";
+  const endLabel =
+    language === "ar" ? "النهاية (YYYY-MM)" : language === "en" ? "End (YYYY-MM)" : "Fin (YYYY-MM)";
+  const scannerOnLabel =
+    language === "ar" ? "تشغيل ماسح QR" : language === "en" ? "Turn QR scanner ON" : "Activer le scanner QR";
+  const scannerOffLabel =
+    language === "ar" ? "إيقاف ماسح QR" : language === "en" ? "Turn QR scanner OFF" : "Désactiver le scanner QR";
+  const scanNotRecognizedLabel =
+    language === "ar" ? "لم يُتعرَف على المسح" : language === "en" ? "Scan not recognized" : "Scan non reconnu";
+  const studentSelectedLabel =
+    language === "ar" ? "تم اختيار التلميذ" : language === "en" ? "Student selected" : "Élève sélectionné";
 
   const [status, setStatus] = useState("OPEN_DUE");
   const [page, setPage] = useState(0);
@@ -583,6 +590,7 @@ export default function StudentBillingSearch({ language = "fr" }) {
             setPage(m.page);
             setSize(m.pageSize);
           }}
+          localeText={language === "ar" ? arSD : undefined}
           disableRowSelectionOnClick
           slots={error ? { noRowsOverlay: () => <div style={{ padding: 16 }}>{t.loadError}</div> } : undefined}
         />

@@ -24,6 +24,41 @@ export const getAccount = async (id) => {
   return data;
 };
 
+function accountToDisplayLabel(acc) {
+  if (!acc) return null;
+  const u = acc.username ?? acc.name;
+  if (u && String(u).trim()) return String(u).trim();
+  if (acc.phone) return String(acc.phone);
+  if (acc.email) return String(acc.email);
+  return null;
+}
+
+/**
+ * Resolve staff account ids to a short display label (parallel GET /admin/accounts/{id}).
+ * @param {Array<number|string>} ids
+ * @returns {Promise<Record<number, string>>}
+ */
+export async function fetchAccountLabelsByIds(ids) {
+  const uniq = [...new Set((ids || []).map((x) => Number(x)).filter((n) => Number.isFinite(n) && n > 0))];
+  const out = {};
+  const concurrency = 10;
+  for (let i = 0; i < uniq.length; i += concurrency) {
+    const slice = uniq.slice(i, i + concurrency);
+    await Promise.all(
+      slice.map(async (id) => {
+        try {
+          const acc = await getAccount(id);
+          const label = accountToDisplayLabel(acc);
+          if (label) out[id] = label;
+        } catch {
+          /* missing or forbidden */
+        }
+      })
+    );
+  }
+  return out;
+}
+
 export const createAccount = async (payload) => {
   const { data } = await api.post("/admin/accounts", payload);
   return data;

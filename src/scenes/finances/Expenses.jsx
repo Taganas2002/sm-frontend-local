@@ -1,4 +1,4 @@
-﻿    // src/scenes/finances/Expenses.jsx
+    // src/scenes/finances/Expenses.jsx
     import { useEffect, useMemo, useState } from "react";
     import {
     Box,
@@ -24,7 +24,7 @@
     import { useQuery, useQueryClient } from "@tanstack/react-query";
     import Header from "../../components/Header";
     import { tokens } from "../../theme";
-    import translations from "../../translations";
+    import { getTranslations } from "../../translations";
 
 
     
@@ -52,7 +52,7 @@
     const [q, setQ] = useState("");
     const theme = useTheme();
     const colors = tokens(theme.palette.mode);
-    const t = translations[language] || translations["fr"];
+    const t = getTranslations(language);
 
 
     const [page, setPage] = useState(0);
@@ -60,7 +60,7 @@
     const [sort, setSort] = useState([{ field: "expenseDate", sort: "desc" }]);
 
     // Dialog state
-    const [dialog, setDialog] = useState({ open: false, initial: null });
+    const [dialog, setDialog] = useState({ open: false, expenseId: null });
     // Delete dialog state
 const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 const [deleteId, setDeleteId] = useState(null);
@@ -94,14 +94,25 @@ const [deleteId, setDeleteId] = useState(null);
                 ? `${sort[0].field},${sort[0].sort || "asc"}`
                 : "expenseDate,desc",
         }),
-        keepPreviousData: true,
+        placeholderData: (previousData) => previousData,
     });
 
     // Robust row mapping + preformatted display fields
     const rows = useMemo(() => {
         const list = data?.content ?? data?.items ?? [];
         return list.map((e) => {
-        const expenseDate = e.expenseDate || e.date || "";
+        const rawDate = e.expenseDate ?? e.date;
+        let expenseDate = "";
+        if (rawDate != null && rawDate !== "") {
+          if (Array.isArray(rawDate) && rawDate.length >= 3) {
+            const [y, mo, d] = rawDate;
+            expenseDate = `${String(y).padStart(4, "0")}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+          } else if (typeof rawDate === "string") {
+            expenseDate = rawDate.slice(0, 10);
+          } else {
+            expenseDate = dayjs(rawDate).isValid() ? dayjs(rawDate).format("YYYY-MM-DD") : "";
+          }
+        }
         const createdAt =
             e.createdAt || e.created_at || e.issuedAt || e.created || null;
 
@@ -113,9 +124,12 @@ const [deleteId, setDeleteId] = useState(null);
             id: e.id,
             expenseDate,                                // YYYY-MM-DD
             time: createdAt ? dayjs(createdAt).format("hh:mm A") : "",
-            categoryLabel: [e.category, e.subCategory].filter(Boolean).join(" â€” "),
+            category: e.category || "",
+            subCategory: e.subCategory || "",
+            categoryLabel: [e.category, e.subCategory].filter(Boolean).join(" — "),
             method: e.method || null,
             amountNum,                                  // keep numeric for potential future sorting
+            amount: amountNum,
             amountLabel: nf.format(amountNum),
             notes: e.notes || "",
         };
@@ -159,7 +173,7 @@ const [deleteId, setDeleteId] = useState(null);
     renderCell: (params) => (
         <Box display="flex" gap={1} mt={1}>
         <Button
-            onClick={() => setDialog({ open: true, initial: params.row })}
+            onClick={() => setDialog({ open: true, expenseId: params.row.id })}
             variant="contained"
             size="small"
             sx={{
@@ -224,7 +238,7 @@ const [deleteId, setDeleteId] = useState(null);
             </Grid>
             <Grid item>
             <TextField
-            label={t.from}
+            label={t.to}
                 type="date"
                 size="small"
                 value={to}
@@ -282,7 +296,7 @@ const [deleteId, setDeleteId] = useState(null);
             }}
                 startIcon={<AddIcon />}
                 variant="contained"
-                onClick={() => setDialog({ open: true, initial: null })}
+                onClick={() => setDialog({ open: true, expenseId: null })}
             >
             {t.addExpense}
             </Button>
@@ -346,9 +360,13 @@ const [deleteId, setDeleteId] = useState(null);
         {/* Create / Edit dialog */}
         <ExpenseDialog
             open={dialog.open}
-            initial={dialog.initial}
-            onClose={() => setDialog({ open: false, initial: null })}
-            onSaved={() => qc.invalidateQueries({ queryKey: ["expenses"] })}
+            language={language}
+            expenseId={dialog.expenseId}
+            onClose={() => setDialog({ open: false, expenseId: null })}
+            reloadExpenses={async () => {
+              await qc.invalidateQueries({ queryKey: ["expenses"] });
+              await qc.invalidateQueries({ queryKey: ["expense"] });
+            }}
         />
 
             <Dialog

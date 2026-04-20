@@ -29,6 +29,7 @@ import { tokens } from "../../theme";
 import { getTranslations } from "../../translations";
 import { searchAuditLogs } from "../../api/auditLogs";
 import { fetchStudentNamesByIds } from "../../api/studentsApi";
+import { fetchAccountLabelsByIds } from "../../api/usersApi";
 
 const PAGE_SIZE = 25;
 
@@ -270,6 +271,24 @@ export default function PaymentAuditLog({ language = "fr" }) {
     staleTime: 60_000,
   });
 
+  const actorIdsOnPage = useMemo(() => {
+    const ids = new Set();
+    for (const r of rows) {
+      if (r.actorUserId != null) {
+        const n = Number(r.actorUserId);
+        if (Number.isFinite(n) && n > 0) ids.add(n);
+      }
+    }
+    return [...ids];
+  }, [rows]);
+
+  const { data: actorNameMap = {} } = useQuery({
+    queryKey: ["audit-log-actor-names", actorIdsOnPage.slice().sort((a, b) => a - b).join(",")],
+    queryFn: () => fetchAccountLabelsByIds(actorIdsOnPage),
+    enabled: actorIdsOnPage.length > 0,
+    staleTime: 60_000,
+  });
+
   const detailStudentIdForName = useMemo(() => {
     if (!detailRow) return null;
     const m = parseMetadata(detailRow.metadataJson);
@@ -286,10 +305,38 @@ export default function PaymentAuditLog({ language = "fr" }) {
     staleTime: 60_000,
   });
 
+  const detailActorIdForName = useMemo(() => {
+    if (!detailRow || detailRow.actorUserId == null) return null;
+    const n = Number(detailRow.actorUserId);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }, [detailRow]);
+
+  const { data: detailActorNameMap = {} } = useQuery({
+    queryKey: ["audit-log-detail-actor-name", detailActorIdForName],
+    queryFn: () => fetchAccountLabelsByIds([detailActorIdForName]),
+    enabled: detailActorIdForName != null && !actorNameMap[detailActorIdForName],
+    staleTime: 60_000,
+  });
+
   const mergedStudentNames = useMemo(
     () => ({ ...studentNameMap, ...detailStudentNameMap }),
     [studentNameMap, detailStudentNameMap]
   );
+
+  const mergedActorNames = useMemo(
+    () => ({ ...actorNameMap, ...detailActorNameMap }),
+    [actorNameMap, detailActorNameMap]
+  );
+
+  const detailActorDisplay = useMemo(() => {
+    if (!detailRow || detailRow.actorUserId == null) return null;
+    const n = Number(detailRow.actorUserId);
+    const idOk = Number.isFinite(n) && n > 0;
+    return {
+      primary: idOk && mergedActorNames[n] ? mergedActorNames[n] : t.auditLog_userUnknown,
+      caption: idOk ? t.auditLog_userIdCaption.replace("%s", String(n)) : String(detailRow.actorUserId),
+    };
+  }, [detailRow, mergedActorNames, t]);
 
   const total = data?.total ?? 0;
 
@@ -361,8 +408,33 @@ export default function PaymentAuditLog({ language = "fr" }) {
       {
         field: "actorUserId",
         headerName: t.auditLog_col_user,
-        width: 95,
-        valueFormatter: (value) => (value == null ? "—" : String(value)),
+        width: isNarrow ? 150 : 200,
+        minWidth: 130,
+        sortable: true,
+        renderCell: (params) => {
+          const raw = params.value;
+          if (raw == null) {
+            return (
+              <Typography variant="body2" color="text.secondary" sx={{ py: 0.5 }}>
+                —
+              </Typography>
+            );
+          }
+          const n = Number(raw);
+          const idOk = Number.isFinite(n) && n > 0;
+          const label = idOk && mergedActorNames[n] ? mergedActorNames[n] : null;
+          const caption = idOk ? t.auditLog_userIdCaption.replace("%s", String(n)) : String(raw);
+          return (
+            <Stack justifyContent="center" sx={{ minHeight: 52, py: 0.5, overflow: "hidden" }}>
+              <Typography variant="body2" lineHeight={1.25} noWrap title={label || caption}>
+                {label || t.auditLog_userUnknown}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" noWrap title={caption}>
+                {caption}
+              </Typography>
+            </Stack>
+          );
+        },
       },
       {
         field: "summary",
@@ -384,7 +456,7 @@ export default function PaymentAuditLog({ language = "fr" }) {
         ),
       },
     ],
-    [actionCatalog, entityDisplay, isNarrow, mergedStudentNames, t]
+    [actionCatalog, entityDisplay, isNarrow, mergedActorNames, mergedStudentNames, t]
   );
 
   const detailMeta = detailRow ? parseMetadata(detailRow.metadataJson) : null;
@@ -596,10 +668,23 @@ export default function PaymentAuditLog({ language = "fr" }) {
                 <strong>{t.auditLog_col_record}:</strong> {detailEntityLabel}{" "}
                 {detailRow.entityId != null ? `#${detailRow.entityId}` : ""}
               </Typography>
-              <Typography variant="body2">
-                <strong>{t.auditLog_col_user}:</strong>{" "}
-                {detailRow.actorUserId != null ? `#${detailRow.actorUserId}` : "—"}
-              </Typography>
+              <Box>
+                <Typography variant="body2" component="div">
+                  <strong>{t.auditLog_col_user}</strong>
+                </Typography>
+                {detailActorDisplay ? (
+                  <Stack spacing={0.25} sx={{ mt: 0.25 }}>
+                    <Typography variant="body2">{detailActorDisplay.primary}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {detailActorDisplay.caption}
+                    </Typography>
+                  </Stack>
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    —
+                  </Typography>
+                )}
+              </Box>
               <Typography variant="subtitle2" sx={{ mt: 1 }}>
                 {t.auditLog_detail_payloadTitle}
               </Typography>

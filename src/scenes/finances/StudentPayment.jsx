@@ -29,6 +29,7 @@ import {
   IconButton,                 // <-- added
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
+import { arSD } from "@mui/x-data-grid/locales";
 import {
   collectPayment,
   defaultBillingCycleSearchRange,
@@ -714,7 +715,7 @@ export default function StudentPayment({ language = "fr" }) {
       <Card sx={{ mb: 2 }}>
         <CardContent>
           <Typography variant="h6" mb={1}>
-            {t.summary || "Summary"} - {rowSummary.cycles}{" "}
+            {t.summary || "Summary"} — {rowSummary.cycles}{" "}
             {t.cycles || "cycles"}
           </Typography>
           <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center" useFlexGap>
@@ -740,8 +741,8 @@ export default function StudentPayment({ language = "fr" }) {
       <Card sx={{ mb: 2 }}>
         <CardContent>
           <Typography variant="h6" mb={1}>
-            {(t.openCycles || t.unpaidGroups)} - {visibleRows.length}{" "}
-            {visibleRows.length === 1 ? "row" : "rows"}
+            {(t.openCycles || t.unpaidGroups)} — {visibleRows.length}{" "}
+            {visibleRows.length === 1 ? t.tableRowSingular || "row" : t.tableRowPlural || "rows"}
           </Typography>
           <DataGrid
             autoHeight
@@ -756,6 +757,7 @@ export default function StudentPayment({ language = "fr" }) {
               paid: !isCompactScreen,
               status: !isCompactScreen,
             }}
+            localeText={language === "ar" ? arSD : undefined}
             sx={{
               border: "none",
               "& .MuiDataGrid-columnHeaders": {

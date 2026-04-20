@@ -1,4 +1,4 @@
-﻿    import { Box, Button, useTheme } from "@mui/material";
+    import { Box, Button, useTheme } from "@mui/material";
     import { DataGrid } from "@mui/x-data-grid";
     import { tokens } from "../../theme";
     import Header from "../../components/Header";
@@ -12,7 +12,7 @@
 
     // import dialogs
     import IncomeDialog from "./IncomeDialog";
-    import ExpenseDialog from "./Expenses";
+    import ExpenseDialog from "./components/ExpenseDialog";
 
     const Finances = ({ language }) => {
     const theme = useTheme();
@@ -220,9 +220,9 @@
             <ExpenseDialog
             open={openDialog}
             onClose={handleClose}
-            onSave={handleSave}
-            initialValues={editingRecord || initialExpense}
-            t={t}
+            language={language}
+            expenseId={null}
+            reloadExpenses={async () => {}}
             />
         )}
         </Box>

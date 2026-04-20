@@ -1,7 +1,7 @@
 {
   "name": "mms",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "Offline School Management (Desktop)",
   "author": "Your Company",
   "type": "module",

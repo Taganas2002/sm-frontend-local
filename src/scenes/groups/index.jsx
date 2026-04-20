@@ -1,4 +1,4 @@
-﻿// src/scenes/groups/Groups.jsx
+// src/scenes/groups/Groups.jsx
 import {
   Box,
   Button,
@@ -16,6 +16,7 @@ import {
   InputAdornment,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
+import { arSD } from "@mui/x-data-grid/locales";
 import { useState, useEffect, useMemo } from "react";
 import { Formik } from "formik";
 import * as yup from "yup";
@@ -125,7 +126,8 @@ const Groups = ({ language = "fr" }) => {
   const isArabic = language === "ar";
   const searchNameLabel = t.searchByName || "Search by name";
   const searchNamePlaceholder = t.typeGroupName || "Type group name...";
-  const academicYearPlaceholder = language === "en" ? "e.g. 2024-2025" : language === "ar" ? "????: 2024-2025" : "ex. 2024-2025";
+  const academicYearPlaceholder =
+    language === "en" ? "e.g. 2024-2025" : language === "ar" ? "مثال: 2024-2025" : "ex. 2024-2025";
   const statusFilterLabel = t.status || "Status";
   const allLabel = t.all || "All";
   const activeLabel = t.activeStatus || t.active || "Active";
@@ -731,6 +733,7 @@ const Groups = ({ language = "fr" }) => {
           onColumnVisibilityModelChange={setColumnVisibilityModel}
           density="compact"
           pageSizeOptions={[25, 50, 100]}
+          localeText={language === "ar" ? arSD : undefined}
           initialState={{
             pagination: { paginationModel: { pageSize: 25, page: 0 } },
           }}
