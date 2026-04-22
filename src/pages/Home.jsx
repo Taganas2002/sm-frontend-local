@@ -32,6 +32,7 @@ import { SupportEmailTileLabel, SupportPhoneInline } from "../utils/supportConta
 import partnerAlkhawarezmiImg from "../assets/partners/alkhawarezmi.png";
 import heroMockupVideo from "../assets/mockup.mp4";
 import heroVideoPoster from "../assets/screenshots/classroom.jpg";
+const LANDING_TUTORIAL_VIDEO_URL = "https://www.youtube.com/embed/WgTN2iOVFJ4";
 
 function SectionTitle({ children, subtitle, centered, isRtl }) {
   const wrap = centered ? (isRtl ? "text-right" : "text-center") : isRtl ? "text-right" : "text-start";
@@ -324,6 +325,38 @@ export default function Home({ language, setLanguage }) {
                 />
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How to use video */}
+      <section className={`py-10 sm:py-12 md:py-14 border-t border-gray-200/80 bg-white ${isRtl ? "text-right" : ""}`}>
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <SectionTitle centered subtitle={t.landingHowVideoSubtitle} isRtl={isRtl}>
+            {t.landingHowVideoTitle}
+          </SectionTitle>
+          <div className="mx-auto max-w-4xl overflow-hidden rounded-2xl border border-gray-200 bg-black shadow-lg">
+            <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
+              <iframe
+                className="absolute inset-0 h-full w-full"
+                src={LANDING_TUTORIAL_VIDEO_URL}
+                title={t.landingHowVideoTitle}
+                loading="lazy"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
+              />
+            </div>
+          </div>
+          <div className="mt-5 text-center">
+            <a
+              href="https://youtu.be/WgTN2iOVFJ4?si=u0Xr0yphfZXP8RN5"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#193d79] px-5 py-2.5 text-sm font-semibold text-white hover:opacity-95 transition"
+            >
+              {t.landingHowVideoCta}
+            </a>
           </div>
         </div>
       </section>

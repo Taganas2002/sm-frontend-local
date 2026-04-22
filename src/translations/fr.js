@@ -971,6 +971,10 @@ editExpense: "Modifier la dépense",
   landingTrustSupport: "Support humain pour activation, renouvellement et accompagnement.",
 
   landingHowTitle: "Démarrer en 3 étapes",
+  landingHowVideoTitle: "Comment utiliser l’application",
+  landingHowVideoSubtitle:
+    "Regardez ce guide rapide pour bien démarrer et éviter les erreurs de configuration.",
+  landingHowVideoCta: "Voir sur YouTube",
   landingStep1Title: "Créez votre établissement",
   landingStep1Desc: "Inscription simple puis accès au tableau de bord.",
   landingStep2Title: "Paramétrez & invitez l’équipe",

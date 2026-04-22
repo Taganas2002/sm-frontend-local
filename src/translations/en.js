@@ -655,6 +655,9 @@ const en = {
   landingTrustSupport: "Human support for activation, renewals, and onboarding.",
 
   landingHowTitle: "Start in 3 steps",
+  landingHowVideoTitle: "How to use the app",
+  landingHowVideoSubtitle: "Watch this quick guide to get started fast and avoid setup mistakes.",
+  landingHowVideoCta: "Watch on YouTube",
   landingStep1Title: "Create your school space",
   landingStep1Desc: "Simple signup, then access your dashboard.",
   landingStep2Title: "Configure & invite your team",
