@@ -198,7 +198,7 @@ export default function Dashboard({ language = "fr" }) {
     },
     {
       key: "attendance",
-      label: t.dashboardActionAttendance || "Attendance",
+      label: t.dashboardActionAttendance || t.attendance || "Attendance & absence",
       icon: <EventAvailableIcon />,
       onClick: () => navigate("/attendance"),
       enabled: can("MENU:ATTENDANCE_VIEW"),
@@ -244,6 +244,8 @@ export default function Dashboard({ language = "fr" }) {
       sx={{
         position: "relative",
         overflow: "hidden",
+        borderRadius: 3,
+        backgroundColor: theme.palette.mode === "light" ? "#f3f8ff" : "transparent",
       }}
     >
       <Box
@@ -291,19 +293,22 @@ export default function Dashboard({ language = "fr" }) {
           mt: 2,
           p: { xs: 2, md: 2.5 },
           borderRadius: 3,
-          border: `1px solid ${colors.primary[300]}`,
+          border: `1px solid ${theme.palette.mode === "light" ? "#bfdbfe" : colors.primary[300]}`,
           background:
             theme.palette.mode === "light"
-              ? "linear-gradient(145deg, rgba(255,255,255,0.95), rgba(239,246,255,0.88))"
+              ? "linear-gradient(145deg, rgba(255,255,255,0.98), rgba(219,234,254,0.92))"
               : "linear-gradient(145deg, rgba(15,23,42,0.88), rgba(30,41,59,0.75))",
           backdropFilter: "blur(12px)",
+          boxShadow:
+            theme.palette.mode === "light"
+              ? "0 12px 28px rgba(30,64,175,.10)"
+              : "0 12px 28px rgba(2,6,23,.32)",
         }}
       >
         <Stack
-          direction={{ xs: "column", md: "row" }}
-          justifyContent="space-between"
-          spacing={1.2}
-          alignItems={{ xs: "flex-start", md: "center" }}
+          direction="column"
+          spacing={1}
+          alignItems={isRtl ? "flex-end" : "flex-start"}
           mb={1}
         >
           <Typography variant="h6" fontWeight={800}>
@@ -313,7 +318,14 @@ export default function Dashboard({ language = "fr" }) {
             {t.dashboardHeroHint || "Launch your most used actions in one click"}
           </Typography>
         </Stack>
-        <Stack direction="row" gap={1} flexWrap="wrap">
+        <Box
+          display="grid"
+          gap={1}
+          gridTemplateColumns={{
+            xs: "1fr 1fr",
+            md: "repeat(3, minmax(180px, 1fr))",
+          }}
+        >
           {quickActions.map((action, index) => (
             <MotionBox
               key={action.key}
@@ -327,10 +339,13 @@ export default function Dashboard({ language = "fr" }) {
                 variant="contained"
                 startIcon={action.icon}
                 onClick={action.onClick}
+                fullWidth
                 sx={{
                   textTransform: "none",
                   fontWeight: 700,
-                  borderRadius: 2,
+                  justifyContent: "center",
+                  minHeight: 44,
+                  borderRadius: 2.5,
                   background:
                     "linear-gradient(135deg, rgba(37,99,235,1), rgba(14,116,144,0.95))",
                   boxShadow: "0 10px 24px rgba(2,6,23,.28)",
@@ -345,7 +360,7 @@ export default function Dashboard({ language = "fr" }) {
               </Button>
             </MotionBox>
           ))}
-        </Stack>
+        </Box>
       </MotionPaper>
 
       <Box
@@ -450,8 +465,8 @@ export default function Dashboard({ language = "fr" }) {
                 <Alert
                   severity={a.severity}
                   action={
-                    <Button color="inherit" size="small" onClick={a.onClick}>
-                      {t.view || "View"}
+                    <Button color="inherit" size="small" onClick={a.onClick} sx={{ textTransform: "none", fontWeight: 700 }}>
+                      {t.dashboardOpenAction || t.view || "View"}
                     </Button>
                   }
                   sx={{
