@@ -422,6 +422,7 @@ const ar = {
   dashboardKpiUnpaidCycles: "الدورات غير المدفوعة",
   dashboardKpiPendingAttendance: "حضور قيد الانتظار",
   dashboardQuickActions: "إجراءات سريعة",
+  dashboardHeroHint: "نفذ أهم الإجراءات بسرعة من مكان واحد",
   dashboardActionCollect: "تحصيل دفعة",
   dashboardActionAttendance: "تسجيل الحضور",
   dashboardActionExpense: "إضافة مصروف",

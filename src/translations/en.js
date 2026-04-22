@@ -489,6 +489,7 @@ const en = {
   dashboardKpiUnpaidCycles: "Unpaid cycles",
   dashboardKpiPendingAttendance: "Pending attendance",
   dashboardQuickActions: "Quick actions",
+  dashboardHeroHint: "Launch your most used actions in one click",
   dashboardActionCollect: "Collect payment",
   dashboardActionAttendance: "Mark attendance",
   dashboardActionExpense: "Add expense",

@@ -446,6 +446,7 @@ const fr = {
   dashboardKpiUnpaidCycles: "Cycles impayés",
   dashboardKpiPendingAttendance: "Présence en attente",
   dashboardQuickActions: "Actions rapides",
+  dashboardHeroHint: "Lancez vos actions principales en un clic",
   dashboardActionCollect: "Encaisser un paiement",
   dashboardActionAttendance: "Saisir les présences",
   dashboardActionExpense: "Ajouter une dépense",
