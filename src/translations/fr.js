@@ -438,6 +438,23 @@ const fr = {
 
   teacherPay: "Salaire des enseignants",
   teacherPayDesc: "Gérer et verser facilement les salaires des enseignants.",
+  dashboardSubtitle: "Vue d'ensemble opérationnelle de votre établissement",
+  dashboardKpiStudents: "Total élèves",
+  dashboardKpiTeachers: "Total enseignants",
+  dashboardKpiGroups: "Total groupes",
+  dashboardKpiCollectedToday: "Encaissements du jour",
+  dashboardKpiUnpaidCycles: "Cycles impayés",
+  dashboardKpiPendingAttendance: "Présence en attente",
+  dashboardQuickActions: "Actions rapides",
+  dashboardActionCollect: "Encaisser un paiement",
+  dashboardActionAttendance: "Saisir les présences",
+  dashboardActionExpense: "Ajouter une dépense",
+  dashboardActionAudit: "Ouvrir le journal d'audit",
+  dashboardNeedsAttention: "Points à traiter",
+  dashboardAlertPendingAttendance: "Cycles en attente de validation de présence",
+  dashboardAlertUnpaid: "Cycles élèves impayés",
+  dashboardNoAlerts: "Aucune alerte urgente pour le moment.",
+  dashboardRecentActivity: "Activité récente",
 
   paymentAuditLog: "Journal d'audit — paiements",
   /** Libellé court pour le menu latéral */
