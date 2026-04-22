@@ -337,7 +337,6 @@ export default function Dashboard({ language = "fr" }) {
             >
               <Button
                 variant="contained"
-                startIcon={action.icon}
                 onClick={action.onClick}
                 fullWidth
                 sx={{
@@ -356,7 +355,28 @@ export default function Dashboard({ language = "fr" }) {
                   },
                 }}
               >
-                {action.label}
+                <Stack
+                  direction={isRtl ? "row-reverse" : "row"}
+                  alignItems="center"
+                  justifyContent="center"
+                  spacing={1.1}
+                  sx={{ width: "100%" }}
+                >
+                  <Box component="span" sx={{ lineHeight: 1.1 }}>
+                    {action.label}
+                  </Box>
+                  <Box
+                    component="span"
+                    sx={{
+                      display: "inline-grid",
+                      placeItems: "center",
+                      minWidth: 20,
+                      opacity: 0.95,
+                    }}
+                  >
+                    {action.icon}
+                  </Box>
+                </Stack>
               </Button>
             </MotionBox>
           ))}
