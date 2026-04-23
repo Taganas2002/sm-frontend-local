@@ -285,13 +285,26 @@ const Attendance = ({ language = "fr" }) => {
         sortable: false,
         filterable: false,
         renderCell: (params) => (
-          <IconButton size="small" onClick={() => openMatrix(params.row)} title={t.presences}>
-            <VisibilityIcon />
+          <IconButton
+            size="medium"
+            onClick={() => openMatrix(params.row)}
+            title={t.presences}
+            sx={{
+              bgcolor: alpha(colors.blueAccent[500], 0.22),
+              border: `1px solid ${alpha(colors.blueAccent[200], 0.45)}`,
+              color: theme.palette.mode === "dark" ? "#e0f2fe" : colors.blueAccent[900],
+              "&:hover": {
+                bgcolor: alpha(colors.blueAccent[500], 0.38),
+                borderColor: alpha(colors.blueAccent[100], 0.6),
+              },
+            }}
+          >
+            <VisibilityIcon fontSize="small" />
           </IconButton>
         ),
       },
     ],
-    [t]
+    [t, theme.palette.mode, colors]
   );
 
   /* ===================== EXPORT: EXACT TABLE ===================== */
@@ -382,26 +395,13 @@ const Attendance = ({ language = "fr" }) => {
     const stickyCellBg =
       theme.palette.mode === "light" ? theme.palette.background.paper : alpha(theme.palette.background.paper, 0.98);
 
+    const backToList = () => {
+      setView("LIST");
+      setSelectedGroup(null);
+    };
+
     return (
       <Box m="20px" dir={isRtl ? "rtl" : "ltr"}>
-        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
-          <IconButton
-            onClick={() => {
-              setView("LIST");
-              setSelectedGroup(null);
-            }}
-            title={t.attendanceBackToGroups}
-            size="small"
-            sx={{
-              border: `1px solid ${borderSubtle}`,
-              borderRadius: 2,
-              bgcolor: alpha(theme.palette.action.hover, 0.06),
-            }}
-          >
-            <ArrowBackIosNewIcon fontSize="small" sx={{ transform: isRtl ? "scaleX(-1)" : undefined }} />
-          </IconButton>
-        </Stack>
-
         <Header title={t.presence} subtitle={selectedGroup?.name ? String(selectedGroup.name) : ""} />
 
         <Paper
@@ -469,13 +469,49 @@ const Attendance = ({ language = "fr" }) => {
               </IconButton>
             </Stack>
 
-            <Stack direction="row" spacing={1.5} flexWrap="wrap" justifyContent={{ xs: "center", md: "flex-end" }}>
+            <Stack
+              direction="row"
+              spacing={3}
+              flexWrap="wrap"
+              useFlexGap
+              justifyContent={{ xs: "center", md: "flex-end" }}
+              alignItems="center"
+              sx={{ columnGap: 3, rowGap: 1.5 }}
+            >
+              <Button
+                variant="contained"
+                onClick={backToList}
+                title={t.attendanceBackToGroups}
+                sx={{
+                  minHeight: 48,
+                  minWidth: 132,
+                  px: 2.5,
+                  fontWeight: 800,
+                  textTransform: "none",
+                  borderRadius: 2.5,
+                  color: theme.palette.mode === "dark" ? "#0f172a" : "#0f172a",
+                  background: theme.palette.mode === "dark" ? "#e2e8f0" : "#f1f5f9",
+                  border: theme.palette.mode === "dark" ? "2px solid #cbd5e1" : "2px solid #94a3b8",
+                  boxShadow: theme.palette.mode === "dark" ? `0 4px 16px ${alpha("#000", 0.35)}` : `0 4px 14px ${alpha("#0f172a", 0.08)}`,
+                  "&:hover": {
+                    background: theme.palette.mode === "dark" ? "#f8fafc" : "#e2e8f0",
+                    borderColor: theme.palette.mode === "dark" ? "#e2e8f0" : "#64748b",
+                  },
+                }}
+              >
+                <Stack direction="row" alignItems="center" spacing={1.25} sx={{ ...(isRtl ? { flexDirection: "row-reverse" } : {}) }}>
+                  <ReplyIcon sx={{ fontSize: 22 }} />
+                  <Typography component="span" variant="body2" sx={{ fontWeight: 800 }}>
+                    {t.back}
+                  </Typography>
+                </Stack>
+              </Button>
               <Button
                 variant="contained"
                 onClick={handleExportExcel}
                 disabled={!selectedGroup}
                 sx={{
-                  minHeight: 46,
+                  minHeight: 48,
                   px: 2.75,
                   py: 1,
                   fontWeight: 800,
@@ -500,26 +536,6 @@ const Attendance = ({ language = "fr" }) => {
                   <Typography component="span" variant="body2" sx={{ fontWeight: 800 }}>
                     {t.attendanceExportExcel}
                   </Typography>
-                </Stack>
-              </Button>
-              <Button
-                variant="outlined"
-                onClick={() => {
-                  setView("LIST");
-                  setSelectedGroup(null);
-                }}
-                sx={{
-                  minHeight: 46,
-                  px: 2,
-                  fontWeight: 700,
-                  textTransform: "none",
-                  borderRadius: 2.5,
-                  borderColor: borderSubtle,
-                }}
-              >
-                <Stack direction="row" alignItems="center" spacing={1} sx={{ ...(isRtl ? { flexDirection: "row-reverse" } : {}) }}>
-                  <ReplyIcon fontSize="small" />
-                  {t.back}
                 </Stack>
               </Button>
             </Stack>
@@ -745,20 +761,53 @@ const Attendance = ({ language = "fr" }) => {
   }
 
   // ======== LIST VIEW (Groups) ========
+  const listIsRtl = language === "ar";
+  const listBorder = alpha(theme.palette.divider, theme.palette.mode === "light" ? 0.9 : 0.25);
+  const fieldSx = {
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 2,
+      bgcolor: alpha(theme.palette.background.paper, theme.palette.mode === "light" ? 1 : 0.55),
+    },
+    "& .MuiInputLabel-root": { fontWeight: 600 },
+  };
+
   return (
-    <Box m="20px">
+    <Box m="20px" dir={listIsRtl ? "rtl" : "ltr"}>
       <Header title={t.presence} subtitle={t.attendancePickGroup} />
 
-      {/* Filter Bar (read-only list + filters) */}
-      <Box
-        mb={2}
-        display="grid"
-        gridTemplateColumns="1.3fr 0.9fr 0.8fr 1fr 1fr 1fr 1fr 0.9fr 0.9fr"
-        gap={1}
-        alignItems="center"
-        dir={language === "ar" ? "rtl" : "ltr"}
+      <Paper
+        elevation={0}
+        sx={{
+          mb: 2,
+          p: { xs: 1.5, sm: 2 },
+          borderRadius: 3,
+          border: `1px solid ${listBorder}`,
+          background:
+            theme.palette.mode === "light"
+              ? alpha(theme.palette.primary.main, 0.03)
+              : alpha(theme.palette.common.white, 0.04),
+          boxShadow:
+            theme.palette.mode === "light"
+              ? `0 8px 24px ${alpha("#0f172a", 0.05)}`
+              : `0 10px 28px ${alpha("#000", 0.25)}`,
+        }}
       >
+        <Box
+          display="grid"
+          gap={1.25}
+          alignItems="stretch"
+          sx={{
+            gridTemplateColumns: {
+              xs: "1fr",
+              sm: "repeat(2, minmax(0, 1fr))",
+              md: "repeat(3, minmax(0, 1fr))",
+              lg: "repeat(4, minmax(0, 1fr))",
+              xl: "repeat(5, minmax(0, 1fr))",
+            },
+          }}
+        >
         <TextField
+          sx={{ ...fieldSx, gridColumn: { xs: "1 / -1", md: "span 2" } }}
           value={q}
           onChange={(e) => setQ(e.target.value)}
           label={t.attendanceSearchGroup}
@@ -780,6 +829,7 @@ const Attendance = ({ language = "fr" }) => {
         />
 
         <TextField
+          sx={fieldSx}
           value={academicYear}
           onChange={(e) => setAcademicYear(e.target.value)}
           label={t.academicYear}
@@ -796,6 +846,7 @@ const Attendance = ({ language = "fr" }) => {
         />
 
         <TextField
+          sx={fieldSx}
           select
           value={activeFilter}
           onChange={(e) => setActiveFilter(e.target.value)}
@@ -806,7 +857,7 @@ const Attendance = ({ language = "fr" }) => {
           <MenuItem value="false">{t.inactive}</MenuItem>
         </TextField>
 
-        <TextField select value={teacherFilter} onChange={(e) => setTeacherFilter(e.target.value)} label={t.teacher}>
+        <TextField sx={fieldSx} select value={teacherFilter} onChange={(e) => setTeacherFilter(e.target.value)} label={t.teacher}>
           <MenuItem value="">{t.all}</MenuItem>
           {teachers.map((x) => (
             <MenuItem key={x.id} value={x.id}>
@@ -815,7 +866,7 @@ const Attendance = ({ language = "fr" }) => {
           ))}
         </TextField>
 
-        <TextField select value={subjectFilter} onChange={(e) => setSubjectFilter(e.target.value)} label={t.subject}>
+        <TextField sx={fieldSx} select value={subjectFilter} onChange={(e) => setSubjectFilter(e.target.value)} label={t.subject}>
           <MenuItem value="">{t.all}</MenuItem>
           {subjects.map((x) => (
             <MenuItem key={x.id} value={x.id}>
@@ -825,6 +876,7 @@ const Attendance = ({ language = "fr" }) => {
         </TextField>
 
         <TextField
+          sx={fieldSx}
           select
           value={levelFilter}
           onChange={(e) => {
@@ -852,6 +904,7 @@ const Attendance = ({ language = "fr" }) => {
         </TextField>
 
         <TextField
+          sx={fieldSx}
           select
           value={sectionFilter}
           onChange={(e) => setSectionFilter(e.target.value)}
@@ -867,6 +920,7 @@ const Attendance = ({ language = "fr" }) => {
         </TextField>
 
         <TextField
+          sx={fieldSx}
           select
           value={privateFilter}
           onChange={(e) => setPrivateFilter(e.target.value)}
@@ -878,6 +932,7 @@ const Attendance = ({ language = "fr" }) => {
         </TextField>
 
         <TextField
+          sx={fieldSx}
           select
           value={revisionFilter}
           onChange={(e) => setRevisionFilter(e.target.value)}
@@ -887,22 +942,58 @@ const Attendance = ({ language = "fr" }) => {
           <MenuItem value="true">{t.yes}</MenuItem>
           <MenuItem value="false">{t.no}</MenuItem>
         </TextField>
-      </Box>
+        </Box>
+      </Paper>
 
       {/* Groups table (read-only) */}
-      <Box
-        height="75vh"
-        dir={language === "ar" ? "rtl" : "ltr"}
+      <Paper
+        elevation={0}
         sx={{
-          "& .MuiDataGrid-root": { border: "none" },
-          "& .MuiDataGrid-columnHeaders": {
-            backgroundColor: colors.blueAccent[700],
-            borderBottom: "none",
-            textAlign: language === "ar" ? "right" : "left",
+          borderRadius: 3,
+          border: `1px solid ${listBorder}`,
+          overflow: "hidden",
+          boxShadow:
+            theme.palette.mode === "light"
+              ? `0 8px 24px ${alpha("#0f172a", 0.06)}`
+              : `0 12px 32px ${alpha("#000", 0.3)}`,
+        }}
+      >
+      <Box
+        height="min(72vh, 720px)"
+        minHeight={420}
+        dir={listIsRtl ? "rtl" : "ltr"}
+        sx={{
+          width: "100%",
+          "& .MuiDataGrid-root": {
+            border: "none",
+            fontSize: "0.875rem",
           },
-          "& .MuiDataGrid-cell": { textAlign: language === "ar" ? "right" : "left" },
-          "& .MuiDataGrid-virtualScroller": { backgroundColor: colors.primary[400] },
-          "& .MuiDataGrid-footerContainer": { borderTop: "none", backgroundColor: colors.blueAccent[400] },
+          "& .MuiDataGrid-columnHeaders": {
+            background: `linear-gradient(180deg, ${colors.blueAccent[700]} 0%, ${alpha(colors.blueAccent[800], 0.98)} 100%)`,
+            borderBottom: `2px solid ${alpha("#000", 0.15)}`,
+            color: "#f8fafc",
+            fontWeight: 700,
+            textAlign: listIsRtl ? "right" : "left",
+          },
+          "& .MuiDataGrid-columnHeaderTitle": { fontWeight: 700 },
+          "& .MuiDataGrid-cell": {
+            textAlign: listIsRtl ? "right" : "left",
+            borderBottom: `1px solid ${listBorder}`,
+          },
+          "& .MuiDataGrid-row": {
+            minHeight: "52px !important",
+            "&:hover": { bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === "light" ? 0.06 : 0.12) },
+          },
+          "& .MuiDataGrid-columnSeparator": {
+            color: alpha("#fff", 0.35),
+          },
+          "& .MuiDataGrid-virtualScroller": {
+            backgroundColor: theme.palette.mode === "light" ? colors.primary[100] : colors.primary[400],
+          },
+          "& .MuiDataGrid-footerContainer": {
+            borderTop: `1px solid ${listBorder}`,
+            backgroundColor: theme.palette.mode === "light" ? colors.blueAccent[100] : colors.blueAccent[400],
+          },
         }}
       >
         <DataGrid
@@ -924,6 +1015,7 @@ const Attendance = ({ language = "fr" }) => {
           }}
         />
       </Box>
+      </Paper>
     </Box>
   );
 };
