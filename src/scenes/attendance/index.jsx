@@ -14,9 +14,12 @@ import {
   TableRow,
   TableCell,
   TableBody,
+  TableContainer,
+  Stack,
   useTheme,
   CircularProgress,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import { DataGrid } from "@mui/x-data-grid";
 import dayjs from "dayjs";
 import * as XLSX from "xlsx";
@@ -370,11 +373,18 @@ const Attendance = ({ language = "fr" }) => {
   if (view === "MATRIX") {
     const monthTitle = monthAnchor.format("MMMM YYYY");
     const hasSessions = sessionDates.length > 0;
+    const isRtl = language === "ar";
+    const borderSubtle = alpha(theme.palette.divider, theme.palette.mode === "light" ? 0.9 : 0.22);
+    const headerBg =
+      theme.palette.mode === "light"
+        ? `linear-gradient(135deg, ${alpha(colors.blueAccent[700], 0.95)} 0%, ${alpha("#1e40af", 0.92)} 100%)`
+        : `linear-gradient(135deg, ${alpha("#1e3a8a", 0.95)} 0%, ${alpha("#0f172a", 0.98)} 100%)`;
+    const stickyCellBg =
+      theme.palette.mode === "light" ? theme.palette.background.paper : alpha(theme.palette.background.paper, 0.98);
 
     return (
-      <Box m="20px">
-        {/* NEW: Small arrow to go back to groups table */}
-        <Box mb={1}>
+      <Box m="20px" dir={isRtl ? "rtl" : "ltr"}>
+        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
           <IconButton
             onClick={() => {
               setView("LIST");
@@ -382,139 +392,352 @@ const Attendance = ({ language = "fr" }) => {
             }}
             title={t.attendanceBackToGroups}
             size="small"
+            sx={{
+              border: `1px solid ${borderSubtle}`,
+              borderRadius: 2,
+              bgcolor: alpha(theme.palette.action.hover, 0.06),
+            }}
           >
-            <ArrowBackIosNewIcon fontSize="small" />
+            <ArrowBackIosNewIcon fontSize="small" sx={{ transform: isRtl ? "scaleX(-1)" : undefined }} />
           </IconButton>
-        </Box>
+        </Stack>
 
         <Header title={t.presence} subtitle={selectedGroup?.name ? String(selectedGroup.name) : ""} />
 
-        {/* Top controls: arrows + month + export + back */}
-        <Box display="flex" alignItems="center" gap={2} mb={2} flexWrap="wrap">
-          <IconButton onClick={() => shiftMonth(-1)}>
-            <ArrowBackIosNewIcon />
-          </IconButton>
-
-          <Typography
-            variant="h6"
-            sx={{
-              px: 1.5,
-              py: 0.5,
-              borderRadius: 1,
-              background: theme.palette.mode === "light" ? "#1f3b6d" : "#24407a",
-              color: "#fff",
-              fontWeight: "bold",
-            }}
+        <Paper
+          elevation={0}
+          sx={{
+            mt: 2,
+            mb: 2,
+            p: { xs: 1.5, sm: 2 },
+            borderRadius: 3,
+            border: `1px solid ${borderSubtle}`,
+            background:
+              theme.palette.mode === "light"
+                ? alpha(theme.palette.primary.main, 0.04)
+                : alpha(theme.palette.common.white, 0.04),
+            backdropFilter: "blur(8px)",
+          }}
+        >
+          <Stack
+            direction={{ xs: "column", md: "row" }}
+            alignItems={{ xs: "stretch", md: "center" }}
+            justifyContent="space-between"
+            spacing={2}
           >
-            {monthTitle}
-          </Typography>
+            <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" justifyContent={{ xs: "center", md: "flex-start" }}>
+              <IconButton
+                onClick={() => shiftMonth(-1)}
+                size="small"
+                sx={{
+                  border: `1px solid ${borderSubtle}`,
+                  borderRadius: 2,
+                  bgcolor: alpha(theme.palette.action.hover, 0.08),
+                }}
+                aria-label="previous month"
+              >
+                <ArrowBackIosNewIcon fontSize="small" sx={{ transform: isRtl ? "scaleX(-1)" : undefined }} />
+              </IconButton>
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  px: 2,
+                  py: 1,
+                  borderRadius: 2,
+                  fontWeight: 800,
+                  letterSpacing: 0.02,
+                  color: "#fff",
+                  background: headerBg,
+                  boxShadow: `0 8px 24px ${alpha("#1e3a8a", 0.25)}`,
+                  minWidth: 160,
+                  textAlign: "center",
+                }}
+              >
+                {monthTitle}
+              </Typography>
+              <IconButton
+                onClick={() => shiftMonth(1)}
+                size="small"
+                sx={{
+                  border: `1px solid ${borderSubtle}`,
+                  borderRadius: 2,
+                  bgcolor: alpha(theme.palette.action.hover, 0.08),
+                }}
+                aria-label="next month"
+              >
+                <ArrowForwardIosIcon fontSize="small" sx={{ transform: isRtl ? "scaleX(-1)" : undefined }} />
+              </IconButton>
+            </Stack>
 
-          <IconButton onClick={() => shiftMonth(1)}>
-            <ArrowForwardIosIcon />
-          </IconButton>
+            <Stack direction="row" spacing={1.5} flexWrap="wrap" justifyContent={{ xs: "center", md: "flex-end" }}>
+              <Button
+                variant="contained"
+                onClick={handleExportExcel}
+                disabled={!selectedGroup}
+                sx={{
+                  minHeight: 46,
+                  px: 2.75,
+                  py: 1,
+                  fontWeight: 800,
+                  textTransform: "none",
+                  borderRadius: 2.5,
+                  color: "#fff",
+                  background: "linear-gradient(180deg, #1d8f4a 0%, #107c41 45%, #0b5c30 100%)",
+                  border: "1px solid rgba(255,255,255,0.22)",
+                  boxShadow: "0 6px 20px rgba(16, 124, 65, 0.42)",
+                  "&:hover": {
+                    background: "linear-gradient(180deg, #22a855 0%, #107c41 55%, #0b5c30 100%)",
+                    boxShadow: "0 10px 28px rgba(16, 124, 65, 0.5)",
+                  },
+                  "&.Mui-disabled": {
+                    color: alpha("#fff", 0.65),
+                    background: alpha("#107c41", 0.35),
+                  },
+                }}
+              >
+                <Stack direction="row" alignItems="center" spacing={1.25} sx={{ ...(isRtl ? { flexDirection: "row-reverse" } : {}) }}>
+                  <FileDownloadIcon sx={{ fontSize: 22 }} />
+                  <Typography component="span" variant="body2" sx={{ fontWeight: 800 }}>
+                    {t.attendanceExportExcel}
+                  </Typography>
+                </Stack>
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setView("LIST");
+                  setSelectedGroup(null);
+                }}
+                sx={{
+                  minHeight: 46,
+                  px: 2,
+                  fontWeight: 700,
+                  textTransform: "none",
+                  borderRadius: 2.5,
+                  borderColor: borderSubtle,
+                }}
+              >
+                <Stack direction="row" alignItems="center" spacing={1} sx={{ ...(isRtl ? { flexDirection: "row-reverse" } : {}) }}>
+                  <ReplyIcon fontSize="small" />
+                  {t.back}
+                </Stack>
+              </Button>
+            </Stack>
+          </Stack>
+        </Paper>
 
-          <Box sx={{ flex: 1 }} />
-
-          <Button variant="contained" onClick={handleExportExcel} startIcon={<FileDownloadIcon />}>
-            {t.attendanceExportExcel}
-          </Button>
-
-          <Button
-            variant="outlined"
-            startIcon={<ReplyIcon />}
-            onClick={() => {
-              setView("LIST");
-              setSelectedGroup(null);
-            }}
-          >
-            {t.back}
-          </Button>
-        </Box>
-
-        {/* Matrix table */}
-        <Paper sx={{ overflow: "auto", borderRadius: 2 }}>
+        <Paper
+          elevation={0}
+          sx={{
+            borderRadius: 3,
+            overflow: "hidden",
+            border: `1px solid ${borderSubtle}`,
+            boxShadow:
+              theme.palette.mode === "light"
+                ? `0 12px 40px ${alpha("#0f172a", 0.06)}`
+                : `0 16px 48px ${alpha("#000", 0.35)}`,
+          }}
+        >
           {matrixLoading ? (
             <Box display="flex" justifyContent="center" alignItems="center" p={6}>
               <CircularProgress />
             </Box>
           ) : (
-            <Table size="small" stickyHeader>
-              <TableHead>
-                {/* Month bar */}
-                <TableRow>
-                  <TableCell sx={{ fontWeight: "bold", width: 60 }}>#</TableCell>
-                  <TableCell sx={{ fontWeight: "bold", minWidth: 220 }}>
-                    {t.name}
-                  </TableCell>
-                  <TableCell
-                    align="center"
-                    colSpan={hasSessions ? sessionDates.length : 1}
-                    sx={{ fontWeight: "bold", backgroundColor: "#9AA3FF55" }}
-                  >
-                    {monthAnchor.format("MMMM")}
-                  </TableCell>
-                </TableRow>
-
-                {/* Header dates (or single em dash) */}
-                <TableRow>
-                  <TableCell />
-                  <TableCell />
-                  {hasSessions ? (
-                    sessionDates.map((d) => (
-                      <TableCell key={d} align="center" sx={{ whiteSpace: "nowrap" }}>
-                        {dayjs(d).format("DD/MM")}
-                      </TableCell>
-                    ))
-                  ) : (
-                    <TableCell align="center">{"\u2014"}</TableCell>
-                  )}
-                </TableRow>
-              </TableHead>
-
-              <TableBody>
-                {studentsRows.map((s, idx) => (
-                  <TableRow key={s.id || idx} hover>
-                    <TableCell>{idx + 1}</TableCell>
-                    <TableCell>{s.name}</TableCell>
-
+            <TableContainer sx={{ maxHeight: "calc(100vh - 320px)" }}>
+              <Table size="small" stickyHeader sx={{ borderCollapse: "separate", borderSpacing: 0 }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell
+                      sx={{
+                        fontWeight: 800,
+                        width: 52,
+                        minWidth: 52,
+                        borderBottom: `1px solid ${borderSubtle}`,
+                        background: headerBg,
+                        color: "#fff",
+                        position: "sticky",
+                        left: isRtl ? "auto" : 0,
+                        right: isRtl ? 0 : "auto",
+                        zIndex: 4,
+                        boxShadow: isRtl ? `-4px 0 12px ${alpha("#000", 0.12)}` : `4px 0 12px ${alpha("#000", 0.12)}`,
+                      }}
+                    >
+                      #
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        fontWeight: 800,
+                        minWidth: 200,
+                        maxWidth: 280,
+                        borderBottom: `1px solid ${borderSubtle}`,
+                        background: headerBg,
+                        color: "#fff",
+                        position: "sticky",
+                        left: isRtl ? "auto" : 52,
+                        right: isRtl ? 52 : "auto",
+                        zIndex: 4,
+                        boxShadow: isRtl ? `-4px 0 12px ${alpha("#000", 0.12)}` : `4px 0 12px ${alpha("#000", 0.12)}`,
+                      }}
+                    >
+                      {t.name}
+                    </TableCell>
                     {hasSessions ? (
-                      sessionDates.map((d) => {
-                        const v = s.byDate?.[d] ?? null;
-                        return (
-                          <TableCell key={`${s.id}-${d}`} align="center">
-                            {v === "P" ? (
-                              <CheckCircleIcon sx={{ color: "#22c55e" }} fontSize="small" />
-                            ) : v === "A" ? (
-                              <CancelIcon sx={{ color: "#ef4444" }} fontSize="small" />
-                            ) : (
-                              <Typography component="span" sx={{ opacity: 0.5 }}>
-                                {"\u2014"}
-                              </Typography>
-                            )}
-                          </TableCell>
-                        );
-                      })
+                      sessionDates.map((d) => (
+                        <TableCell
+                          key={d}
+                          align="center"
+                          sx={{
+                            whiteSpace: "nowrap",
+                            fontWeight: 800,
+                            fontVariantNumeric: "tabular-nums",
+                            borderBottom: `1px solid ${borderSubtle}`,
+                            bgcolor: alpha(theme.palette.info.main, theme.palette.mode === "light" ? 0.14 : 0.22),
+                            color: theme.palette.text.primary,
+                            minWidth: 58,
+                            py: 1.25,
+                          }}
+                        >
+                          <Box component="span" sx={{ display: "block", lineHeight: 1.2 }}>
+                            {dayjs(d).format("DD/MM")}
+                          </Box>
+                        </TableCell>
+                      ))
                     ) : (
-                      <TableCell align="center">
-                        <Typography component="span" sx={{ opacity: 0.5 }}>
-                          {"\u2014"}
-                        </Typography>
+                      <TableCell
+                        align="center"
+                        sx={{
+                          borderBottom: `1px solid ${borderSubtle}`,
+                          bgcolor: alpha(theme.palette.info.main, theme.palette.mode === "light" ? 0.12 : 0.18),
+                          fontWeight: 700,
+                        }}
+                      >
+                        {"\u2014"}
                       </TableCell>
                     )}
                   </TableRow>
-                ))}
+                </TableHead>
 
-                {studentsRows.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={2 + (hasSessions ? sessionDates.length : 1)}>
-                      <Box py={4} textAlign="center" sx={{ opacity: 0.7 }}>
-                        {t.noData}
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                <TableBody>
+                  {studentsRows.map((s, idx) => (
+                    <TableRow
+                      key={s.id || idx}
+                      hover
+                      sx={{
+                        "&:nth-of-type(even) .MuiTableCell-root": {
+                          bgcolor: alpha(theme.palette.action.hover, theme.palette.mode === "light" ? 0.35 : 0.08),
+                        },
+                        "&:hover .MuiTableCell-root": {
+                          bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === "light" ? 0.06 : 0.1),
+                        },
+                      }}
+                    >
+                      <TableCell
+                        sx={{
+                          fontWeight: 700,
+                          fontVariantNumeric: "tabular-nums",
+                          borderRight: isRtl ? undefined : `1px solid ${borderSubtle}`,
+                          borderLeft: isRtl ? `1px solid ${borderSubtle}` : undefined,
+                          borderBottom: `1px solid ${borderSubtle}`,
+                          position: "sticky",
+                          left: isRtl ? "auto" : 0,
+                          right: isRtl ? 0 : "auto",
+                          zIndex: 2,
+                          bgcolor: stickyCellBg,
+                          boxShadow: isRtl ? `-2px 0 6px ${alpha("#000", 0.06)}` : `2px 0 6px ${alpha("#000", 0.06)}`,
+                        }}
+                      >
+                        {idx + 1}
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          fontWeight: 600,
+                          borderRight: isRtl ? undefined : `1px solid ${borderSubtle}`,
+                          borderLeft: isRtl ? `1px solid ${borderSubtle}` : undefined,
+                          borderBottom: `1px solid ${borderSubtle}`,
+                          maxWidth: 280,
+                          position: "sticky",
+                          left: isRtl ? "auto" : 52,
+                          right: isRtl ? 52 : "auto",
+                          zIndex: 2,
+                          bgcolor: stickyCellBg,
+                          boxShadow: isRtl ? `-2px 0 6px ${alpha("#000", 0.06)}` : `2px 0 6px ${alpha("#000", 0.06)}`,
+                        }}
+                      >
+                        {s.name}
+                      </TableCell>
+
+                      {hasSessions ? (
+                        sessionDates.map((d) => {
+                          const v = s.byDate?.[d] ?? null;
+                          return (
+                            <TableCell
+                              key={`${s.id}-${d}`}
+                              align="center"
+                              sx={{
+                                borderBottom: `1px solid ${borderSubtle}`,
+                                py: 1,
+                              }}
+                            >
+                              {v === "P" ? (
+                                <Box
+                                  sx={{
+                                    display: "inline-grid",
+                                    placeItems: "center",
+                                    width: 34,
+                                    height: 34,
+                                    borderRadius: "50%",
+                                    bgcolor: alpha("#22c55e", 0.18),
+                                    border: `1px solid ${alpha("#22c55e", 0.45)}`,
+                                  }}
+                                >
+                                  <CheckCircleIcon sx={{ color: "#16a34a", fontSize: 22 }} />
+                                </Box>
+                              ) : v === "A" ? (
+                                <Box
+                                  sx={{
+                                    display: "inline-grid",
+                                    placeItems: "center",
+                                    width: 34,
+                                    height: 34,
+                                    borderRadius: "50%",
+                                    bgcolor: alpha("#ef4444", 0.16),
+                                    border: `1px solid ${alpha("#ef4444", 0.45)}`,
+                                  }}
+                                >
+                                  <CancelIcon sx={{ color: "#dc2626", fontSize: 22 }} />
+                                </Box>
+                              ) : (
+                                <Typography component="span" variant="body2" sx={{ opacity: 0.45, fontWeight: 600 }}>
+                                  {"\u2014"}
+                                </Typography>
+                              )}
+                            </TableCell>
+                          );
+                        })
+                      ) : (
+                        <TableCell align="center" sx={{ borderBottom: `1px solid ${borderSubtle}` }}>
+                          <Typography component="span" sx={{ opacity: 0.5 }}>
+                            {"\u2014"}
+                          </Typography>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+
+                  {studentsRows.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={2 + (hasSessions ? sessionDates.length : 1)}>
+                        <Box py={6} textAlign="center" sx={{ opacity: 0.75 }}>
+                          <Typography variant="body1" fontWeight={600}>
+                            {t.noData}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
           )}
         </Paper>
       </Box>
