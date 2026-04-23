@@ -1,8 +1,7 @@
 // src/scenes/global/Sidebar.jsx
 import { useState } from "react";
 import { Sidebar, Menu, MenuItem, SubMenu } from "react-pro-sidebar";
-import { Box, IconButton, Stack, Typography, useTheme } from "@mui/material";
-import { alpha } from "@mui/material/styles";
+import { Box, IconButton, Typography, useTheme } from "@mui/material";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { tokens } from "../../theme";
 import { getTranslations } from "../../translations/index";
@@ -30,18 +29,17 @@ import MenuBookTwoToneIcon from "@mui/icons-material/MenuBookTwoTone";
 import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
 import PaletteOutlinedIcon from "@mui/icons-material/PaletteOutlined";
 
-const Item = ({ title, to, icon, onClick, active, isRtl }) => {
+const Item = ({ title, to, icon, onClick, active }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const navigate = useNavigate();
-  const textMain = theme.palette.mode === "light" ? "#1e293b" : colors.grey[900];
   return (
     <MenuItem
       component="button"
       type="button"
       active={!!active}
       style={{
-        color: textMain,
+        color: theme.palette.mode === "light" ? "#334155" : colors.grey[900],
         width: "100%",
         border: "none",
         background: "transparent",
@@ -49,62 +47,24 @@ const Item = ({ title, to, icon, onClick, active, isRtl }) => {
         textAlign: "inherit",
         cursor: "pointer",
       }}
+      icon={icon}
       onClick={(e) => {
         onClick?.(e);
         navigate(to);
       }}
     >
-      <Stack
-        direction={isRtl ? "row-reverse" : "row"}
-        alignItems="center"
-        spacing={2}
+      <Typography
         sx={{
-          width: "100%",
-          py: 0.75,
-          px: { xs: 0.25, sm: 0.5 },
-          textAlign: isRtl ? "right" : "left",
+          fontSize: "1.20rem",
+          fontWeight: "bold",
+          whiteSpace: "normal",
+          lineHeight: 1.25,
+          wordBreak: "break-word",
+          textAlign: "inherit",
         }}
       >
-        <Box
-          aria-hidden
-          sx={{
-            flexShrink: 0,
-            width: 44,
-            height: 44,
-            borderRadius: 2,
-            display: "grid",
-            placeItems: "center",
-            bgcolor: active
-              ? alpha(theme.palette.primary.main, theme.palette.mode === "light" ? 0.16 : 0.28)
-              : alpha(theme.palette.action.hover, theme.palette.mode === "light" ? 0.5 : 0.12),
-            color: active ? theme.palette.primary.dark : textMain,
-            border: `1px solid ${
-              active
-                ? alpha(theme.palette.primary.main, theme.palette.mode === "light" ? 0.35 : 0.45)
-                : alpha(theme.palette.divider, theme.palette.mode === "light" ? 0.6 : 0.2)
-            }`,
-            boxShadow: active ? `0 2px 8px ${alpha(theme.palette.primary.main, 0.2)}` : "none",
-            transition: "background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease",
-            "& .MuiSvgIcon-root": { fontSize: "1.35rem" },
-          }}
-        >
-          {icon}
-        </Box>
-        <Typography
-          sx={{
-            flex: 1,
-            minWidth: 0,
-            fontSize: "1.05rem",
-            fontWeight: 800,
-            whiteSpace: "normal",
-            lineHeight: 1.35,
-            wordBreak: "break-word",
-            color: textMain,
-          }}
-        >
-          {title}
-        </Typography>
-      </Stack>
+        {title}
+      </Typography>
     </MenuItem>
   );
 };
@@ -155,7 +115,6 @@ const MySidebar = ({ language }) => {
   const t = getTranslations(language);
   const finNavSx = financeNavTypographySx(language);
   const financeTitleSx = financeSubmenuTitleSx(language);
-  const isRtl = language === "ar";
 
   const { can, hasRole, user } = useAuth();
   const location = useLocation();
@@ -201,58 +160,24 @@ const handleLogoChange = (e) => {
         "& .pro-sidebar-inner": {
           background: `${colors.primary[400]} !important`,
         },
-        "& hr": {
-          border: "none",
-          height: "1px",
-          margin: "8px 12px !important",
-          backgroundColor: `${alpha(theme.palette.mode === "light" ? "#64748b" : "#94a3b8", 0.28)} !important`,
-        },
         "& .pro-icon-wrapper": {
           backgroundColor: "transparent !important",
         },
         "& .pro-inner-item": {
-          padding: "10px 14px !important",
-          borderRadius: "12px !important",
-          margin: "4px 8px !important",
-          transition: "background-color 0.2s ease, box-shadow 0.2s ease",
+          padding: "5px 35px 5px 20px !important",
         },
         "& .pro-inner-item:hover": {
-          color: "inherit !important",
-          backgroundColor: `${alpha(theme.palette.mode === "light" ? "#ffffff" : "#0f172a", theme.palette.mode === "light" ? 0.55 : 0.25)} !important`,
-          boxShadow:
-            theme.palette.mode === "light"
-              ? `0 2px 10px ${alpha("#0f172a", 0.06)} !important`
-              : `0 2px 12px ${alpha("#000", 0.35)} !important`,
-        },
-        "& .pro-menu-item.active .pro-inner-item": {
-          backgroundColor: `${alpha(theme.palette.primary.main, theme.palette.mode === "light" ? 0.12 : 0.22)} !important`,
-          boxShadow: `inset 0 0 0 1px ${alpha(theme.palette.primary.main, 0.35)}`,
+          color: "#868dfb !important",
         },
         "& .pro-menu-item.active": {
-          color: "inherit !important",
+          color: "#6870fa !important",
         },
             "& .ps-submenu .ps-menu-button": {
             fontWeight: "normal !important",
-            color: "#1e293b !important",
-            padding: "10px 14px !important",
-            borderRadius: "12px !important",
-            margin: "4px 8px !important",
-            gap: "14px !important",
-            columnGap: "14px !important",
+            color: "#1e293b !important", // Finance + children text
           },
           "& .ps-submenu .ps-menu-button svg": {
-            color: "#1e293b !important",
-          },
-          "& .ps-submenu-content .ps-menu-button": {
-            padding: "10px 14px !important",
-            borderRadius: "10px !important",
-            margin: "2px 8px !important",
-            gap: "14px !important",
-            columnGap: "14px !important",
-          },
-          "& .ps-submenu-content .ps-menu-icon": {
-            marginInlineEnd: "4px !important",
-            minWidth: "40px !important",
+            color: "#1e293b !important", // Finance icon + arrow (chevron)
           },
           /* SubMenu row label: match other primary nav items (bold + full size) */
           "& .ps-submenu-root > .ps-menu-button .MuiTypography-root": {
@@ -370,7 +295,6 @@ const handleLogoChange = (e) => {
                 to="/dashboard"
                 icon={<HomeOutlinedIcon />}
                 active={isActive("/dashboard")}
-                isRtl={isRtl}
               />
             )}
 <hr className="my-1 border-gray-300" />
@@ -381,7 +305,6 @@ const handleLogoChange = (e) => {
                 to="/levels"
                 icon={<LayersOutlinedIcon />}
                 active={isActive("/levels")}
-                isRtl={isRtl}
               />
             )}
 <hr className="my-1 border-gray-300" />
@@ -392,7 +315,6 @@ const handleLogoChange = (e) => {
                 to="/sections"
                 icon={<CategoryIcon />}
                 active={isActive("/sections")}
-                isRtl={isRtl}
               />
             )}
 <hr className="my-1 border-gray-300" />
@@ -403,7 +325,6 @@ const handleLogoChange = (e) => {
                 to="/subjects"
                 icon={<SchoolOutlinedIcon />}
                 active={isActive("/subjects")}
-                isRtl={isRtl}
               />
             )}
 <hr className="my-1 border-gray-300" />
@@ -414,7 +335,6 @@ const handleLogoChange = (e) => {
                 to="/classes"
                 icon={<DoorFrontOutlinedIcon />}
                 active={isActive("/classes")}
-                isRtl={isRtl}
               />
             )}
 <hr className="my-1 border-gray-300" />
@@ -425,7 +345,6 @@ const handleLogoChange = (e) => {
                 to="/teachers"
                 icon={<PeopleOutlinedIcon />}
                 active={isActive("/teachers")}
-                isRtl={isRtl}
               />
             )}
 <hr className="my-1 border-gray-300" />
@@ -436,7 +355,6 @@ const handleLogoChange = (e) => {
                 to="/students"
                 icon={<ContactsOutlinedIcon />}
                 active={isActive("/students")}
-                isRtl={isRtl}
               />
             )}
 <hr className="my-1 border-gray-300" />
@@ -447,7 +365,6 @@ const handleLogoChange = (e) => {
                 to="/groups"
                 icon={<MenuBookOutlinedIcon />}
                 active={isActive("/groups")}
-                isRtl={isRtl}
               />
             )}
 <hr className="my-1 border-gray-300" />
@@ -458,7 +375,6 @@ const handleLogoChange = (e) => {
                 to="/enrollment"
                 icon={<PeopleOutlinedIcon />}
                 active={isActive("/enrollment")}
-                isRtl={isRtl}
               />
             )}
 <hr className="my-1 border-gray-300" />
@@ -469,7 +385,6 @@ const handleLogoChange = (e) => {
                 to="/calendar"
                 icon={<CalendarTodayOutlinedIcon />}
                 active={isActive("/calendar")}
-                isRtl={isRtl}
               />
             )}
 <hr className="my-1 border-gray-300" />
@@ -480,7 +395,6 @@ const handleLogoChange = (e) => {
                 to="/attendance"
                 icon={<CalendarTodayOutlinedIcon />}
                 active={isActive("/attendance")}
-                isRtl={isRtl}
               />
             )}
             <hr className="my-1 border-gray-300" />
@@ -489,30 +403,12 @@ const handleLogoChange = (e) => {
             {can(CAN.FINANCE) && (
               <SubMenu
                 label={
-                  <Stack
-                    direction={isRtl ? "row-reverse" : "row"}
-                    alignItems="center"
-                    spacing={2}
-                    sx={{ width: "100%", py: 0.25 }}
-                  >
-                    <Box
-                      sx={{
-                        flexShrink: 0,
-                        width: 44,
-                        height: 44,
-                        borderRadius: 2,
-                        display: "grid",
-                        placeItems: "center",
-                        bgcolor: alpha("#1e293b", 0.06),
-                        border: `1px solid ${alpha("#1e293b", 0.12)}`,
-                        color: "#1e293b",
-                        "& .MuiSvgIcon-root": { fontSize: "1.35rem" },
-                      }}
-                    >
-                      <AccountBalanceOutlinedIcon />
-                    </Box>
-                    <Typography sx={{ ...financeTitleSx, flex: 1, minWidth: 0 }}>{t.finance}</Typography>
-                  </Stack>
+                  <Typography sx={financeTitleSx}>
+                    {t.finance}
+                  </Typography>
+                }
+                icon={
+                  <AccountBalanceOutlinedIcon sx={{ color: "#1e293b !important" }} />
                 }
               >
                 <MenuItem
@@ -568,7 +464,6 @@ const handleLogoChange = (e) => {
               to="/Settings"
               icon={<PaletteOutlinedIcon />}
               active={isActive("/Settings")}
-              isRtl={isRtl}
             />
 
 <hr className="my-1 border-gray-300" />
@@ -579,7 +474,6 @@ const handleLogoChange = (e) => {
                 to="/faq"
                 icon={<HelpOutlineOutlinedIcon />}
                 active={isActive("/faq")}
-                isRtl={isRtl}
               />
             )}
           </Box>
