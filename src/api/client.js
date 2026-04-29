@@ -9,11 +9,17 @@ function pickBase() {
     const fromEnv = (import.meta && import.meta.env && import.meta.env.VITE_API_BASE_URL) || null;
     const sameOrigin = hasWindow && window.location?.origin ? window.location.origin : null;
 
-    const looksLocal = (v) =>
-      !!v &&
-      /(^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$)|(^localhost:\d+$)|(^127\.0\.0\.1:\d+$)/i.test(
-        String(v).trim()
-      );
+    const looksLocal = (v) => {
+      if (!v) return false;
+      const s = String(v).trim();
+      try {
+        const u = new URL(/^https?:\/\//i.test(s) ? s : `http://${s}`);
+        const h = String(u.hostname || "").toLowerCase();
+        return h === "localhost" || h === "127.0.0.1" || h === "0.0.0.0";
+      } catch {
+        return /localhost|127\.0\.0\.1|0\.0\.0\.0/i.test(s);
+      }
+    };
 
     // In production browser sessions, ignore stale localStorage apiBase values
     // pointing to localhost to avoid "Network Error" after deployments.
