@@ -20,14 +20,10 @@ export function downloadStudentImportTemplate(language) {
     t.email,
     t.guardianName,
     t.guardianPhone,
-    t.enrollmentDate,
-    t.importExcelMedicalNotes || t.medicalNotes,
-    t.importExcelPhotoUrl,
-    t.importExcelSchoolId,
   ];
   const example = [
     language === "ar" ? "مثال — تلميذ" : language === "fr" ? "Exemple — élève" : "Example — student",
-    "", "", "", "", "", "", "", "", "", "", "", "",
+    "", "", "", "", "", "", "", "",
   ];
   const ws = XLSX.utils.aoa_to_sheet([headers, example, [], []]);
   ws["!cols"] = headers.map(() => ({ wch: 18 }));

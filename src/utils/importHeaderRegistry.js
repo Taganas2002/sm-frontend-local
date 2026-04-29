@@ -53,16 +53,13 @@ const STUDENT_STATIC_HEADERS = [
   ["guardianName", "parent name"],
   ["guardianPhone", "guardianphone"],
   ["guardianPhone", "guardian phone"],
-  ["enrollmentDate", "enrollmentdate"],
-  ["enrollmentDate", "enrollment date"],
-  ["medicalNotes", "medicalnotes"],
-  ["photoUrl", "photourl"],
-  ["schoolId", "schoolid"],
 ];
 
+const STUDENT_HEADER_MAP_VERSION = 2;
+let studentHeaderMapVersion = 0;
 let studentHeaderMap = null;
 export function getStudentImportHeaderMap() {
-  if (studentHeaderMap) return studentHeaderMap;
+  if (studentHeaderMap && studentHeaderMapVersion === STUDENT_HEADER_MAP_VERSION) return studentHeaderMap;
   const map = new Map();
   STUDENT_STATIC_HEADERS.forEach(([field, label]) => putHeader(map, label, field));
 
@@ -78,16 +75,13 @@ export function getStudentImportHeaderMap() {
       ["address", t.address],
       ["guardianName", t.guardianName],
       ["guardianPhone", t.guardianPhone],
-      ["enrollmentDate", t.enrollmentDate],
-      ["medicalNotes", t.importExcelMedicalNotes || t.medicalNotes],
-      ["photoUrl", t.importExcelPhotoUrl],
-      ["schoolId", t.importExcelSchoolId],
     ];
     pairs.forEach(([field, label]) => putHeader(map, label, field));
   };
   LANGS.forEach((lang) => fromT(getTranslations(lang)));
 
   studentHeaderMap = map;
+  studentHeaderMapVersion = STUDENT_HEADER_MAP_VERSION;
   return studentHeaderMap;
 }
 

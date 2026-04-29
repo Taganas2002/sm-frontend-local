@@ -119,12 +119,7 @@ function buildPayload(obj, fullName) {
     address: asOptionalString(obj.address) || null,
     guardianName: asOptionalString(obj.guardianName) || null,
     guardianPhone: asOptionalString(obj.guardianPhone) || null,
-    enrollmentDate: asOptionalDate(obj.enrollmentDate) || null,
-    medicalNotes: asOptionalString(obj.medicalNotes) || null,
-    photoUrl: asOptionalString(obj.photoUrl) || null,
   };
-  const schoolId = asOptionalLong(obj.schoolId);
-  if (schoolId) payload.schoolId = schoolId;
 
   Object.keys(payload).forEach((k) => {
     if (payload[k] === "" || payload[k] === null || payload[k] === undefined) {
