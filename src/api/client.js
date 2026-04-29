@@ -3,17 +3,39 @@ import axios from "axios";
 
 function pickBase() {
   try {
-    const fromStorage =
-      typeof window !== "undefined" && localStorage.getItem("apiBase");
-    const fromWindow =
-      typeof window !== "undefined" && window.__API_BASE__;
+    const hasWindow = typeof window !== "undefined";
+    const fromStorage = hasWindow && localStorage.getItem("apiBase");
+    const fromWindow = hasWindow && window.__API_BASE__;
     const fromEnv = (import.meta && import.meta.env && import.meta.env.VITE_API_BASE_URL) || null;
+    const sameOrigin = hasWindow && window.location?.origin ? window.location.origin : null;
 
-    const raw = fromStorage || fromWindow || fromEnv || "http://127.0.0.1:8080";
+    const looksLocal = (v) =>
+      !!v &&
+      /(^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$)|(^localhost:\d+$)|(^127\.0\.0\.1:\d+$)/i.test(
+        String(v).trim()
+      );
+
+    // In production browser sessions, ignore stale localStorage apiBase values
+    // pointing to localhost to avoid "Network Error" after deployments.
+    const shouldIgnoreStoredLocal =
+      hasWindow &&
+      !!fromStorage &&
+      looksLocal(fromStorage) &&
+      !/^(localhost|127\.0\.0\.1|0\.0\.0\.0)$/i.test(window.location?.hostname || "");
+
+    const raw =
+      (shouldIgnoreStoredLocal ? null : fromStorage) ||
+      fromWindow ||
+      fromEnv ||
+      sameOrigin ||
+      "http://127.0.0.1:8080";
 
     // strip trailing slashes
     return String(raw).replace(/\/+$/, "");
   } catch {
+    if (typeof window !== "undefined" && window.location?.origin) {
+      return String(window.location.origin).replace(/\/+$/, "");
+    }
     return "http://127.0.0.1:8080";
   }
 }
