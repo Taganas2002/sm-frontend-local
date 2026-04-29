@@ -23,16 +23,22 @@ function pickBase() {
 
     // In production browser sessions, ignore stale localStorage apiBase values
     // pointing to localhost to avoid "Network Error" after deployments.
+    const onLocalHost =
+      hasWindow &&
+      /^(localhost|127\.0\.0\.1|0\.0\.0\.0)$/i.test(window.location?.hostname || "");
+
     const shouldIgnoreStoredLocal =
       hasWindow &&
       !!fromStorage &&
       looksLocal(fromStorage) &&
-      !/^(localhost|127\.0\.0\.1|0\.0\.0\.0)$/i.test(window.location?.hostname || "");
+      !onLocalHost;
+    const shouldIgnoreWindowLocal = hasWindow && !!fromWindow && looksLocal(fromWindow) && !onLocalHost;
+    const shouldIgnoreEnvLocal = hasWindow && !!fromEnv && looksLocal(fromEnv) && !onLocalHost;
 
     const raw =
       (shouldIgnoreStoredLocal ? null : fromStorage) ||
-      fromWindow ||
-      fromEnv ||
+      (shouldIgnoreWindowLocal ? null : fromWindow) ||
+      (shouldIgnoreEnvLocal ? null : fromEnv) ||
       sameOrigin ||
       "http://127.0.0.1:8080";
 
