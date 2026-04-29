@@ -18,12 +18,13 @@ export function downloadStudentImportTemplate(language) {
     t.gender,
     t.phone,
     t.email,
+    t.address,
     t.guardianName,
     t.guardianPhone,
   ];
   const example = [
     language === "ar" ? "مثال — تلميذ" : language === "fr" ? "Exemple — élève" : "Example — student",
-    "", "", "", "", "", "", "", "",
+    "", "", "", "", "", "", "", "", "",
   ];
   const ws = XLSX.utils.aoa_to_sheet([headers, example, [], []]);
   ws["!cols"] = headers.map(() => ({ wch: 18 }));
