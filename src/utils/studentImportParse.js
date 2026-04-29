@@ -108,10 +108,14 @@ export function parseStudentImportWorkbook(workbook) {
 function buildPayload(obj, fullName) {
   const levelId = asOptionalLong(obj.levelId);
   const sectionId = asOptionalLong(obj.sectionId);
+  const levelName = asOptionalString(obj.levelName);
+  const sectionName = asOptionalString(obj.sectionName);
   const payload = {
     fullName,
     levelId,
     sectionId,
+    levelName: levelName || null,
+    sectionName: sectionName || null,
     dob: asOptionalDate(obj.dob) || null,
     gender: asOptionalString(obj.gender) || null,
     phone: asOptionalString(obj.phone) || null,

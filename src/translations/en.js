@@ -130,7 +130,7 @@ const en = {
   addStudent: "Add student",
   importStudents: "Import Excel",
   importStudentsHint:
-    "Only the student name is required. Level and branch are optional (use numeric IDs if you include them). Dates: YYYY-MM-DD.",
+    "Only the student name is required. Level and branch names are optional; missing names are created automatically. Dates: YYYY-MM-DD.",
   downloadStudentTemplate: "Download template",
   chooseExcelFile: "Choose Excel file",
   importPreview: "Preview",

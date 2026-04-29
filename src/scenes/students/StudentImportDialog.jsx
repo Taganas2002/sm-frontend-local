@@ -24,11 +24,14 @@ import DownloadIcon from "@mui/icons-material/Download";
 import { tokens } from "../../theme";
 import { getTranslations } from "../../translations";
 import { createStudent } from "../../api/studentsApi";
+import { createLevel, listLevels } from "../../api/levelsApi";
+import { createSection, listSections } from "../../api/sectionsApi";
 import { readStudentImportFile } from "../../utils/studentImportParse";
 import { downloadStudentImportTemplate } from "../../utils/importTemplateWorkbook";
 import { primaryImportBtnSx } from "../../utils/importUi";
 
 const todayYMD = () => new Date().toLocaleDateString("en-CA");
+const normName = (v) => String(v || "").trim().toLowerCase().replace(/\s+/g, " ");
 
 const StudentImportDialog = ({ open, onClose, language, onImported }) => {
   const theme = useTheme();
@@ -89,12 +92,66 @@ const StudentImportDialog = ({ open, onClose, language, onImported }) => {
     setProgress({ done: 0, total: toImport.length });
     const failures = [];
     let ok = 0;
+    let levels = [];
+    let sections = [];
+    try {
+      levels = await listLevels();
+      sections = await listSections();
+    } catch {
+      // keep empty, we can still create on-demand
+    }
+    const levelMap = new Map(
+      (levels || [])
+        .filter((x) => x?.id && x?.name)
+        .map((x) => [normName(x.name), { id: x.id, name: x.name }])
+    );
+    const sectionMap = new Map(
+      (sections || [])
+        .filter((x) => x?.id && x?.name)
+        .map((x) => [normName(x.name), { id: x.id, name: x.name }])
+    );
+
     for (let i = 0; i < toImport.length; i++) {
       const row = toImport[i];
       const payload = {
         ...row.payload,
         enrollmentDate: row.payload.enrollmentDate || todayYMD(),
       };
+
+      try {
+        if (!payload.levelId && payload.levelName) {
+          const key = normName(payload.levelName);
+          let found = levelMap.get(key);
+          if (!found) {
+            const created = await createLevel({ name: payload.levelName.trim() });
+            found = { id: created?.id, name: created?.name || payload.levelName.trim() };
+            if (found?.id) levelMap.set(key, found);
+          }
+          if (found?.id) payload.levelId = found.id;
+        }
+        if (!payload.sectionId && payload.sectionName) {
+          const key = normName(payload.sectionName);
+          let found = sectionMap.get(key);
+          if (!found) {
+            const created = await createSection({ name: payload.sectionName.trim() });
+            found = { id: created?.id, name: created?.name || payload.sectionName.trim() };
+            if (found?.id) sectionMap.set(key, found);
+          }
+          if (found?.id) payload.sectionId = found.id;
+        }
+      } catch (resolveErr) {
+        const msg =
+          resolveErr?.response?.data?.message ||
+          resolveErr?.response?.data?.error ||
+          resolveErr?.message ||
+          "Could not resolve level/section";
+        failures.push({ sheetRow: row.sheetRow, fullName: row.fullName, message: String(msg) });
+        setProgress({ done: i + 1, total: toImport.length });
+        continue;
+      }
+
+      delete payload.levelName;
+      delete payload.sectionName;
       try {
         await createStudent(payload);
         ok += 1;

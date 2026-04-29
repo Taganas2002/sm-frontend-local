@@ -94,7 +94,7 @@ const ar = {
   addStudent: "إضافة طالب",
   importStudents: "استيراد Excel",
   importStudentsHint:
-    "يكفي اسم التلميذ. المستوى والشعبة اختياريان (استخدم الأرقام إن وُجدت). التواريخ: YYYY-MM-DD.",
+    "يكفي اسم التلميذ. اسم المستوى واسم الشعبة اختياريان؛ وإذا لم يكونا موجودين سيتم إنشاؤهما تلقائيا. التواريخ: YYYY-MM-DD.",
   downloadStudentTemplate: "تحميل النموذج",
   chooseExcelFile: "اختيار ملف Excel",
   importPreview: "معاينة",

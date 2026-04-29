@@ -12,8 +12,8 @@ export function downloadStudentImportTemplate(language) {
   const t = getTranslations(language);
   const headers = [
     t.fullName,
-    t.importExcelLevelId,
-    t.importExcelSectionId,
+    t.level,
+    t.section,
     t.dob,
     t.gender,
     t.phone,

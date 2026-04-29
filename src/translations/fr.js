@@ -362,7 +362,7 @@ const fr = {
   studentsTitle: "Étudiants",
   importStudents: "Importer Excel",
   importStudentsHint:
-    "Seul le nom de l’élève est obligatoire. Niveau et branche sont facultatifs (IDs numériques si présents). Dates : AAAA-MM-JJ.",
+    "Seul le nom de l’élève est obligatoire. Les noms de niveau et de branche sont facultatifs; s’ils n’existent pas ils seront créés automatiquement. Dates : AAAA-MM-JJ.",
   downloadStudentTemplate: "Télécharger le modèle",
   chooseExcelFile: "Choisir un fichier Excel",
   importPreview: "Aperçu",
